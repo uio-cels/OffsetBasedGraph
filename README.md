@@ -1,1 +1,1 @@
-== Python module for offset based graphs ==
+# Python module for offset based graphs 
