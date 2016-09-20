@@ -1,7 +1,8 @@
 from __future__ import print_function
-from linearinterval import LinearInterval
+from __future__ import absolute_import
+from .linearinterval import LinearInterval
 from . import regionpath
-from DbWrapper import DbWrapper
+from .DbWrapper import DbWrapper
 
 from config import *
 import pickle, os
@@ -12,7 +13,7 @@ class OffsetBasedGraph():
     def __str__(self):
         elements = [str(block.id) + ": " + str(block)
                     for block in self.blocks.values()]
-        for key, val in self.block_edges.iteritems():
+        for key, val in self.block_edges.items():
             elements.append("%s: %s" % (str(key), str(val)))
         return "\n".join(elements)
 
@@ -124,7 +125,7 @@ class OffsetBasedGraph():
         for block in self.blocks.values():
             if "alt" in block.id:
                 # This is an alt, block: Do a db call to find position on main path
-                alt_id = block.linear_references.values()[0].chromosome
+                alt_id = list(block.linear_references.values())[0].chromosome
                 res = self.db.fetch_all("SELECT chrom, chromStart, chromEnd FROM altLocations where name='%s'" % (alt_id))
                 res = res[0]
 
@@ -133,7 +134,7 @@ class OffsetBasedGraph():
                 end = int(res["chromEnd"])
                 linref = LinearInterval("hg38", chrom, start, end)
             else:
-                linref = block.linear_references.values()[0]
+                linref = list(block.linear_references.values())[0]
 
             block.main_path_linear_reference = linref
 
@@ -144,7 +145,7 @@ class OffsetBasedGraph():
         This dict is used when mapping linear intervals to graph intervals
         """
         index = {}
-        for block_id, block in self.blocks.iteritems():
+        for block_id, block in self.blocks.items():
             for linear_reference in block.linear_references.values():
                 chr_id = linear_reference.chromosome
                 if chr_id in index:
@@ -154,17 +155,12 @@ class OffsetBasedGraph():
 
         self.block_index = index
 
+
     def get_blocks(self, lin_ref):
-        return filter(
-            lambda block: block.contains(lin_ref),
-            self.blocks.values()
-            )
+        return [block for block in list(self.blocks.values()) if block.contains(lin_ref)]
 
     def get_intersecting_blocks(self, lin_ref):
-        return filter(
-            lambda block: block.intersects(lin_ref),
-            self.blocks.values()
-            )
+        return [block for block in list(self.blocks.values()) if block.intersects(lin_ref)]
 
     def get_block(self, lin_ref):
         filtered = self.get_blocks(lin_ref)
@@ -223,9 +219,7 @@ class OffsetBasedGraph():
         Splits a block at the given linear reference. Returns two linear
         references, one before and one after lin_ref
         """
-        current_lin_refs = filter(
-            lambda lr: lr.genome_id == lin_ref.genome_id,
-            block.linear_references.values())
+        current_lin_refs = [lr for lr in list(block.linear_references.values()) if lr.genome_id == lin_ref.genome_id]
         assert len(current_lin_refs) == 1
         current_lin_ref = current_lin_refs[0]
         splitted = []
@@ -360,7 +354,7 @@ class OffsetBasedGraph():
 
     def get_previous_blocks(self, block_id):
         previous_blocks = []
-        for p_block, edges in self.block_edges.iteritems():
+        for p_block, edges in self.block_edges.items():
             if block_id in edges:
                 previous_blocks.append(p_block)
         return previous_blocks
@@ -436,7 +430,7 @@ class OffsetBasedGraph():
 
         graph = cls("hg38")
 
-        for chromosome, length in chrom_sizes.iteritems():
+        for chromosome, length in chrom_sizes.items():
             if "_" not in chromosome:
                 graph.add_chromosome("hg38", chromosome, length)
 
