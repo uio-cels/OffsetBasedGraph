@@ -1,9 +1,10 @@
 from __future__ import print_function
-from offsetbasedgraph.linearinterval import LinearInterval
-from offsetbasedgraph.regionpath import RegionPath
+from linearinterval import LinearInterval
+from . import regionpath
+from DbWrapper import DbWrapper
 
 from config import *
-import pickle
+import pickle, os
 
 
 class OffsetBasedGraph():
@@ -41,7 +42,8 @@ class OffsetBasedGraph():
         self.cur_id = 0
         self.cur_id_counter = {}  # Number of times a base id of block
                                   # has been used
-        #self.db = DbWrapper()
+
+        self.db = DbWrapper()
         self.db.get_chrom_lengths()
         self.chrom_lengths = self.db.chrom_lengths
         self.block_index = {}
@@ -272,8 +274,8 @@ class OffsetBasedGraph():
 
         pre1, post1 = self.split_block(block1, lin_seg_1)
         pre2, post2 = self.split_block(block2, lin_seg_2)
-        pre_block1 = RegionPath(block1.id, {pre1.genome_id: pre1})
-        pre_block2 = RegionPath(block2.id, {pre2.genome_id: pre2})
+        pre_block1 = regionpath.RegionPath(block1.id, {pre1.genome_id: pre1})
+        pre_block2 = regionpath.RegionPath(block2.id, {pre2.genome_id: pre2})
 
         self.blocks[pre_block1.id] = pre_block1
         self.blocks[pre_block2.id] = pre_block2
@@ -422,7 +424,7 @@ class OffsetBasedGraph():
         that are LinearInterval objects
         """
         id = self._generate_id_from_linear_references(linear_references)
-        block = RegionPath(id, linear_references)
+        block = regionpath.RegionPath(id, linear_references)
         self.blocks[id] = block
         return block
 
