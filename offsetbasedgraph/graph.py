@@ -3,10 +3,9 @@ from __future__ import print_function
 
 import pickle
 
-from .regionpath import RegionPath
-from .linearinterval import LinearInterval
+from regionpath import RegionPath
 from DbWrapper import DbWrapper
-
+from linearinterval import LinearInterval
 
 from config import *
 

@@ -10,8 +10,6 @@ class LinearInterval(object):
     def length(self):
         return self.end-self.start
 
-
-
     def contains(self, other):
         if not (self.genome_id == other.genome_id):
             return False
