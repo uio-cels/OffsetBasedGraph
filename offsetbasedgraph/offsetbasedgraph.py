@@ -1,8 +1,8 @@
 from __future__ import print_function
 from __future__ import absolute_import
-from .linearinterval import LinearInterval
-from . import regionpath
-from .DbWrapper import DbWrapper
+from linearinterval import LinearInterval
+import regionpath
+from DbWrapper import DbWrapper
 
 from config import *
 import pickle, os
