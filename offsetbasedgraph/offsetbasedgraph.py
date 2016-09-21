@@ -7,7 +7,7 @@ import regionpath
 from DbWrapper import DbWrapper
 from linearinterval import LinearInterval
 
-from offsetbasedgraph.config import *
+from config import *
 
 
 class OffsetBasedGraph():
