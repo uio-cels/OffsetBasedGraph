@@ -1,10 +1,13 @@
-from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import print_function
+
+import os
+import pickle
 from builtins import object
+
 import pymysql
-from config import *
-import numpy as np
-import pickle, os
+
+from offsetbasedgraph.config import *
 
 
 class Gene(object):

@@ -1,11 +1,13 @@
-from __future__ import print_function
 from __future__ import absolute_import
-from linearinterval import LinearInterval
+from __future__ import print_function
+
+import pickle
+
 import regionpath
 from DbWrapper import DbWrapper
+from linearinterval import LinearInterval
 
-from config import *
-import pickle, os
+from offsetbasedgraph.config import *
 
 
 class OffsetBasedGraph():
