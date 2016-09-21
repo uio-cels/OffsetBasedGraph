@@ -7,7 +7,7 @@ from builtins import object
 
 import pymysql
 
-from offsetbasedgraph.config import *
+from config import *
 
 
 class Gene(object):
