@@ -1,4 +1,8 @@
 *.bak
 .idea
+*.pyc
+*~
+#*
+*#
 __pycache__
 data
