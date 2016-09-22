@@ -7,7 +7,7 @@ from builtins import object
 
 import pymysql
 
-from config import *
+from .config import DATA_PATH
 
 
 class Gene(object):
@@ -113,8 +113,6 @@ class DbWrapper(object):
             if not is_overlapping:
                 alt_loci.append(alt1)
 
-#        if DEBUG: print len(alt_loci)
-#        if DEBUG: print len(res)
         return alt_loci
 
     def alt_loci_info(self, alt_loci_id):
@@ -196,4 +194,4 @@ class DbWrapper(object):
 if __name__ == "__main__":
     db = DbWrapper()
     #res = db.alt_loci_info("chr11_KI270827v1_alt")
-    if DEBUG: print(db.genes_crossing_position("chr1", 100000))
+    #if DEBUG: print(db.genes_crossing_position("chr1", 100000))
