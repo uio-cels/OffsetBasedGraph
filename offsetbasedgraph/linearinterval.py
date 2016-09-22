@@ -35,6 +35,19 @@ class LinearInterval(object):
         return True
         """
 
+    def __add__(self, other):
+        """TODO: check that they are continuous"""
+        assert self.chromosome == other.chromosome
+        assert self.genome_id == other.genome_id
+        assert self.strand == other.strand
+        start = min(self.start, other.start)
+        end = max(self.end, other.end)
+        name = self.gene_name + other.gene_name
+        interval = LinearInterval(self.genome_id, self.chromosome,
+                                  start, end, self.strand)
+        interval.gene_name = name
+        return interval
+
     def __repr__(self):
         return "Lin seg in species %s, %s [%d, %d] %s" % \
                (self.genome_id, self.chromosome,

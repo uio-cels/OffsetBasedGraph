@@ -3,12 +3,12 @@ from __future__ import print_function
 
 import pickle
 
-from regionpath import RegionPath
-from . import LinearInterval
-from DbWrapper import DbWrapper
 
+from .regionpath import RegionPath
+from .linearinterval import LinearInterval
+from .DbWrapper import DbWrapper
 
-from config import *
+from .config import DEBUG
 
 
 class OffsetBasedGraph():
@@ -52,7 +52,6 @@ class OffsetBasedGraph():
         self.chrom_lengths = self.db.chrom_lengths
         self.block_index = {}
         self.name = name
-
 
     def deep_copy(self, name):
         new_graph = OffsetBasedGraph(name)
