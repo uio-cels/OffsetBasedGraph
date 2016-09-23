@@ -166,7 +166,7 @@ class DbWrapper(object):
         :param position: offset
         :return: Returns a list of dicts (each element representing one gene)
         """
-        query = r'SELECT name, txStart, txEnd, chrom from knownGene where chrom like "%alt%"'
+        query = r'SELECT g.*, k.geneSymbol FROM knownGene g, kgXref k where k.kgID=g.name AND g.chrom like "%alt%"'
         res = self.fetch_all(query)
         return res
 
@@ -177,12 +177,12 @@ class DbWrapper(object):
         :param position: offset
         :return: Returns a list of dicts (each element representing one gene)
         """
-        query = r'SELECT name, txStart, txEnd, chrom from knownGene where chrom not like "%\_%"'
+        query = r'SELECT g.*, k.geneSymbol FROM knownGene g, kgXref k where k.kgID=g.name AND g.chrom not like "%\_%"'
         res = self.fetch_all(query)
         return res
 
     def get_gene(self, gene_id):
-        query = r"SELECT * FROM knownGene where name='%s"
+        query = r"SELECT g.*, k.geneSymbol FROM knownGene g, kgXref k where k.kgID=g.name AND name='%s'"
 
     def _md5(self, string):
         # Used to store cached queries, by hashing the query string
@@ -193,5 +193,6 @@ class DbWrapper(object):
 
 if __name__ == "__main__":
     db = DbWrapper()
+    print(db.get_alt_genes())
     #res = db.alt_loci_info("chr11_KI270827v1_alt")
     #if DEBUG: print(db.genes_crossing_position("chr1", 100000))
