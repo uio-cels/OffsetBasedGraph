@@ -8,4 +8,5 @@ setup(name='offsetbasedgraph',
       author_email='',
       license='MIT',
       packages=['offsetbasedgraph'],
-      zip_safe=False)
+      zip_safe=False,
+      install_requires=['pickle', 'pymysql'])
