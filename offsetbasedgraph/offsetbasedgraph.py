@@ -425,7 +425,16 @@ class OffsetBasedGraph():
         return block
 
     @classmethod
-    def create_graph(cls, chrom_sizes, alt_loci_infos, dummy_graph = False):
+    def create_graph_from_blocks(cls, blocks, block_edges):
+        graph = cls("hg38")
+        graph.blocks = blocks
+        graph.block_edges = block_edges
+        graph._create_block_index()
+        graph.set_back_edges()
+        return graph
+
+    @classmethod
+    def create_graph(cls, chrom_sizes, alt_loci_infos, dummy_graph=False):
         """
         Creates and returns a block graph from two dicts
         """
