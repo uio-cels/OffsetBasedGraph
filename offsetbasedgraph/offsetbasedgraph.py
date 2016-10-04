@@ -1,9 +1,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
-
 import pickle
-
-
 from .regionpath import RegionPath
 from .linearinterval import LinearInterval
 from .DbWrapper import DbWrapper
@@ -12,7 +9,7 @@ from .config import DEBUG
 
 
 class OffsetBasedGraph():
-
+    
     def __str__(self):
         elements = [str(block.id) + ": " + str(block)
                     for block in self.blocks.values()]
@@ -40,6 +37,12 @@ class OffsetBasedGraph():
         return pickle.load("graph_%s.txt" % name)
 
     def __init__(self, name):
+        """
+        Initialises the offset based graph with a name. The graph will be empty
+        at this point.
+        :param name: A textual name of the graph
+        :return:
+        """
         self.blocks = {}
         self.block_edges = {}
         self.block_edges_back = {}
@@ -84,6 +87,11 @@ class OffsetBasedGraph():
         return block.id
 
     def remove_block(self, name):
+        """
+        Removes a block.
+        :param name: Some name
+        :return:
+        """
         del self.blocks[name]
 
         if name in self.block_edges:
