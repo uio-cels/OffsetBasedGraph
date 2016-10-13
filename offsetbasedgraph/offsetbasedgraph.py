@@ -9,7 +9,10 @@ from .config import DEBUG
 
 
 class OffsetBasedGraph():
-    
+    """
+    Class holding an offset based graph, consisting of a list of region paths
+    (blocks) and a list of edges connecting these blocks.
+    """
     def __str__(self):
         elements = [str(block.id) + ": " + str(block)
                     for block in self.blocks.values()]
@@ -18,6 +21,10 @@ class OffsetBasedGraph():
         return "\n".join(elements)
 
     def save(self):
+        """
+        Saves the blocks of the graph to a file.
+        :return:
+        """
         filename = "graph_%s.txt" % self.name
         f = open(filename, "w")
         f.write("\n".join(self.blocks.keys()))
@@ -57,6 +64,11 @@ class OffsetBasedGraph():
         self.name = name
 
     def deep_copy(self, name):
+        """
+        Copies the graph.
+        :param name: Name of the copy
+        :return: Returns the copied graph.
+        """
         new_graph = OffsetBasedGraph(name)
         new_graph.blocks = self.blocks.copy()
         new_graph.block_edges = self.block_edges.copy()
@@ -66,6 +78,14 @@ class OffsetBasedGraph():
         return new_graph
 
     def find_overlapping_blocks(self, block):
+        """
+        Finds region paths in the graph that are overlapping with
+        the given block (i.e. comming
+        from the same source sequences). Uses linear references to determine
+        this.
+        :param block:  ID of the region path
+        :return: Returns a list of region paths (blocks) that are overlapping
+        """
         main_path_interval = self.blocks[block].main_path_linear_reference
         return filter(lambda name: self.blocks[name].main_path_linear_reference.intersects(main_path_interval),
                       self.blocks.keys())
@@ -88,8 +108,8 @@ class OffsetBasedGraph():
 
     def remove_block(self, name):
         """
-        Removes a block.
-        :param name: Some name
+        Removes a region path (block).
+        :param name: ID of region path / block
         :return:
         """
         del self.blocks[name]
