@@ -15,6 +15,9 @@ Contents:
  
 .. autoclass:: OffsetBasedGraph
     :members:
+    :undoc-members:
+    :inherited-members:
+    :show-inheritance:
 
 .. autoclass:: LinearInterval
     :members:

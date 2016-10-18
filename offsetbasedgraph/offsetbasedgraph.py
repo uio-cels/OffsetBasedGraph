@@ -10,38 +10,18 @@ from .config import DEBUG
 
 class OffsetBasedGraph():
     """
-    Class holding an offset based graph, consisting of a list of region paths
-    (blocks) and a list of edges connecting these blocks.
+    Class representing an offset based graph,
+    by storing  a list of region paths (sometimes referred to as blocks)
+    and a list of edges connecting these region paths.
+
+    :Example:
+
+    >>> graph = OffsetBasedGraph()
+    >>> graph.create_graph()
+    >>> print(graph.blocks)
+    >>> print(graph.block_edges)
+
     """
-    def __str__(self):
-        elements = [str(block.id) + ": " + str(block)
-                    for block in self.blocks.values()]
-        for key, val in self.block_edges.items():
-            elements.append("%s: %s" % (str(key), str(val)))
-        return "\n".join(elements)
-
-    def save(self):
-        """
-        Saves the blocks of the graph to a file.
-        :return:
-        """
-        filename = "graph_%s.txt" % self.name
-        f = open(filename, "w")
-        f.write("\n".join(self.blocks.keys()))
-        f.close()
-        return filename
-        print("Debug pickle")
-        for block in self.blocks.values():
-            for linref in block.linear_references.values():
-                pickle.dump(linref, f)
-
-        pickle.dump(self, f)
-        f.close()
-        return filename
-
-    @classmethod
-    def load(cls, name):
-        return pickle.load("graph_%s.txt" % name)
 
     def __init__(self, name):
         """
@@ -63,9 +43,16 @@ class OffsetBasedGraph():
         self.block_index = {}
         self.name = name
 
+    def __str__(self):
+        elements = [str(block.id) + ": " + str(block)
+                    for block in self.blocks.values()]
+        for key, val in self.block_edges.items():
+            elements.append("%s: %s" % (str(key), str(val)))
+        return "\n".join(elements)
+
     def deep_copy(self, name):
-        """
-        Copies the graph.
+        """ Copies the graph.
+
         :param name: Name of the copy
         :return: Returns the copied graph.
         """
@@ -75,6 +62,7 @@ class OffsetBasedGraph():
         new_graph.block_edges_back = self.block_edges_back.copy()
         new_graph.cur_id = self.cur_id
         new_graph.cur_id_counter = self.cur_id_counter.copy()
+        new_graph._create_block_index()
         return new_graph
 
     def find_overlapping_blocks(self, block):
@@ -83,19 +71,35 @@ class OffsetBasedGraph():
         the given block (i.e. comming
         from the same source sequences). Uses linear references to determine
         this.
+
         :param block:  ID of the region path
         :return: Returns a list of region paths (blocks) that are overlapping
         """
         main_path_interval = self.blocks[block].main_path_linear_reference
-        return filter(lambda name: self.blocks[name].main_path_linear_reference.intersects(main_path_interval),
-                      self.blocks.keys())
+        return list(filter(lambda name: self.blocks[name].main_path_linear_reference.intersects(main_path_interval),
+                      self.blocks.keys()))
 
     def get_first_block(self, chromosome_id):
-        # Will not always work. Temporarily:
+        """
+        Get the first region path in a chromosome.
+        WARNING: Requires specific naming scheme of region paths,
+        where first block always has id chr[number]-1
+
+        :param chromosome_id:
+        :return: The first region path of given chromosome
+        """
         first_block_id = chromosome_id + "-1"
         return self.blocks[first_block_id]
 
     def get_last_block(self, chromosome_id):
+        """
+        Gets the last region path in a chromosome
+        WARNING: Requires specific naming scheme (see get_first_block)
+
+        :param chromosome_id:
+        :return: Returns the last region path of given chromosome
+        """
+
         # Starts at first block, returns last block that it can
         # find by traversing
         block = self.get_first_block(chromosome_id)
@@ -109,6 +113,7 @@ class OffsetBasedGraph():
     def remove_block(self, name):
         """
         Removes a region path (block).
+
         :param name: ID of region path / block
         :return:
         """
@@ -134,7 +139,8 @@ class OffsetBasedGraph():
 
     def set_back_edges(self):
         """
-        Updates the graph with correct back edges from each block
+        Updates the graph with correct back edges from each block.
+        This method should always be called after creating the graph
         """
         self.block_edges_back = {}
         for block in self.blocks.values():
@@ -150,8 +156,12 @@ class OffsetBasedGraph():
 
     def get_main_path_linear_references(self):
         """
-        For every block, find the "parallell" position on the main path
+        This method works for a graph created from GRCh38.
+        For every region path, find the "parallell" position on the main path,
+        i.e. the linear reference on the main path corresponding to the
+        alternative loci. Stores this in block.main_path_linear_reference
         """
+
         for block in self.blocks.values():
             if "alt" in block.id:
                 # This is an alt, block: Do a db call to find position on main path
@@ -187,9 +197,21 @@ class OffsetBasedGraph():
 
 
     def get_blocks(self, lin_ref):
+        """
+        Finds all region paths that contains a linear references
+
+        :param lin_ref: The linear reference
+        :return: Returns region paths
+        """
         return [block for block in list(self.blocks.values()) if block.contains(lin_ref)]
 
     def get_intersecting_blocks(self, lin_ref):
+        """
+        Finds all region paths that intersects with a linear references
+
+        :param lin_ref: The linear reference
+        :return: Returns region paths
+        """
         return [block for block in list(self.blocks.values()) if block.intersects(lin_ref)]
 
     def get_block(self, lin_ref):
@@ -199,6 +221,14 @@ class OffsetBasedGraph():
         return filtered[0]
 
     def merge_lin_refs(self,  org_lin_ref, new_lin_ref):
+        """
+        Merges two parts of the graph into one region path. The two parts to
+        merge are the two linear references
+
+        :param org_lin_ref: Linear reference to merge
+        :param new_lin_ref: Linear reference to merge
+        :return:
+        """
         org_block = self.get_block(org_lin_ref)
         if org_block is None:
             return
@@ -321,6 +351,20 @@ class OffsetBasedGraph():
         if DEBUG: print("-", lin_seg_1, lin_seg_2)
 
     def add_block_edge(self, block_id, next_block_id):
+        """
+        Adds an edge between two blocks (region paths)
+
+        :param block_id: The block that the edge goes from
+        :param bnext_block_id: The block that the edge goes to
+
+        :Example:
+
+        >>> graph = OffsetBasedGraph()
+        >>> graph.add
+
+        """
+
+
         if block_id not in self.blocks:
             raise Exception("Edge id (%s) not in blocks: %s"
                             % (block_id, self.blocks))
@@ -332,16 +376,16 @@ class OffsetBasedGraph():
         self.block_edges[block_id].append(next_block_id)
 
     def get_subgraph(self, linear_interval, correct_alt):
-        """Warning. Modifies current graph."""
+        """. warnings also:: Modifies current graph."""
         blocks = self.get_intersecting_blocks(linear_interval)
         min_C = 4000000000
         max_C = 0
         min_block = None
         max_block = None
         for block in blocks:
-            lin_seg = filter(
+            lin_seg = list(filter(
                 lambda li: li.chromosome == linear_interval.chromosome,
-                block.linear_references.values())[0]
+                block.linear_references.values()))[0]
             if lin_seg.start < min_C:
                 min_block = block
                 min_C = lin_seg.start
@@ -355,8 +399,8 @@ class OffsetBasedGraph():
         subgraph.blocks[cur_block.id] = cur_block
         subgraph.start_block = min_block.id
 
-        min_block.linear_references.values()[0].start = linear_interval.start
-        max_block.linear_references.values()[0].end = linear_interval.end
+        list(min_block.linear_references.values())[0].start = linear_interval.start
+        list(max_block.linear_references.values())[0].end = linear_interval.end
         if min_block == max_block:
             return subgraph
         while True:
@@ -376,9 +420,9 @@ class OffsetBasedGraph():
             cur_block = self.blocks[self.block_edges[cur_block.id][0]]
 
         for block in subgraph.blocks:
-            subgraph.block_edges[block] = filter(
+            subgraph.block_edges[block] = list(filter(
                 lambda b: b in subgraph.blocks,
-                self.block_edges[block])
+                self.block_edges[block]))
 
         return subgraph
 
@@ -501,7 +545,7 @@ class OffsetBasedGraph():
             self.merge_linear_segments(lr1, lr2)
 
     def pretty_alt_loci_name(self, id):
-        raise NotImplementedError()
+        #raise NotImplementedError()
 
         """
         :return: Returns a prettier region name for an alternative loci
