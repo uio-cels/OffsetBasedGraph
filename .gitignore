@@ -2,8 +2,7 @@
 .idea
 *.pyc
 *~
-#*
-*#
+*#*
 __pycache__
 data
 build
