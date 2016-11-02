@@ -536,17 +536,12 @@ class OffsetBasedGraph():
     @classmethod
     def create_hg38_graph(cls):
 
-        raise NotImplementedError()
-
-        """
-        from DbWrapper import DbWrapper
         db = DbWrapper()
         db.get_chrom_lengths()
         chrom_sizes = db.chrom_lengths
         alt_loci_infos = db.fetch_all("SELECT name, chrom, chromStart, chromEnd, chromEnd - chromStart as length FROM altLocations where name LIKE '%alt%'")
 
         return cls.create_graph(chrom_sizes, alt_loci_infos)
-        """
 
     def include_alignments(self, alignments):
         for lr1, lr2 in alignments:
