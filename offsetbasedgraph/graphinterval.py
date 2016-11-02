@@ -16,6 +16,12 @@ class GraphInterval(object):
         graph_block_index should be sent as a parameter, and can be obtained
         by calling create_block_index()
         """
+        for key, block in graph.blocks.items():
+            if block.contains_position((chr_id, coordinate)):
+                return (key, coordinate-block.linear_references[chr_id].start)
+        else:
+            raise Exception("Did not find coordinate (%s, %s)"
+                            % (chr_id, coordinate))
         # Our coordinate can be in any of these blocks
         potential_blocks = graph.block_index[chr_id]
 
@@ -46,20 +52,26 @@ class GraphInterval(object):
             graph, chr_id, start)
         end_block, end_pos = cls.linear_coordinate_to_graph(
             graph, chr_id, end)
-        print graph.blocks[end_block]
 
         block_list.append(start_block)
         current_block = start_block
-        print graph.blocks.keys()
         while True:
-            print current_block
             if current_block == end_block:
                 break
             prev_block = current_block
-            edges = graph.block_edges[current_block]
+            if not current_block in graph.block_edges:
+                raise Exception("Did not find end block, current blocks = %s" % block_list)
+            edges = [e for e in graph.block_edges[current_block]
+                     if chr_id in graph.blocks[e].linear_references]
+            min_start = 3000000000
+            min_edge = None
             for edge in edges:
-                if chr_id in graph.blocks[edge].linear_references:
-                    current_block = edge
+                start = graph.blocks[edge].linear_references[chr_id].start
+                if start < min_start:
+                    min_start = start
+                    min_edge = edge
+
+            current_block = min_edge
 
             if current_block == prev_block:
                 raise Exception("Error while traversing block. Did not find " +\
