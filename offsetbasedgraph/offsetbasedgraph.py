@@ -450,7 +450,7 @@ class OffsetBasedGraph():
                 meta = {}
                 length = int(d[1])
                 meta[genome_id] = LinearInterval(
-                    genome_id, d[0], 0, length, "+")
+                    genome_id, d[0], 1, length, "+")
                 self._add_block(meta)
 
     def add_chromosome(self, genome_id, chromosome, chromosome_size):
@@ -459,7 +459,7 @@ class OffsetBasedGraph():
         """
         linear_references = {}
         linear_references[genome_id] = LinearInterval(
-            genome_id, chromosome, 0, chromosome_size, "+")
+            genome_id, chromosome, 1, chromosome_size, "+")
         self._add_block(linear_references)
 
     def _generate_id_from_linear_references(self, lrs):
@@ -523,7 +523,7 @@ class OffsetBasedGraph():
                 "hg38", info["chrom"], info["chromStart"], info["chromEnd"])
 
             alt_interval = LinearInterval(
-                "hg38", info["name"], 0, info["length"])
+                "hg38", info["name"], 1, info["length"])
 
             graph.merge_lin_refs(main_interval, alt_interval)
 
