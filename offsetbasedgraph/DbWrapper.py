@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import os
 import pickle
+import tempfile
 
 import pymysql
 
@@ -28,7 +29,7 @@ class DbWrapper(object):
         self.db_ucsc = self.connect_ucsc()
 
         # Create a mapper from alt loci ID to new alt loci id
-        self._create_loci_id_mapper()
+        #self._create_loci_id_mapper()
 
     def _create_loci_id_mapper(self):
         self.alt_loci_names = {}
