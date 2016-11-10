@@ -29,11 +29,6 @@ class LinearInterval(object):
             return True
 
         return False
-        """
-        if (self.start > other.start) == (self.end > other.end):
-            return False
-        return True
-        """
 
     def __add__(self, other):
         """TODO: check that they are continuous"""
@@ -48,6 +43,16 @@ class LinearInterval(object):
         interval.gene_name = name
         return interval
 
+    def __eq__(self, other):
+        if not self.chromosome == other.chromosome:
+            return False
+        if not self.start == other.start:
+            return False
+        if not self.end == other.end:
+            return False
+
+        return True
+
     def __repr__(self):
         return "Lin seg in species %s, %s [%d, %d] %s" % \
                (self.genome_id, self.chromosome,
@@ -57,4 +62,5 @@ class LinearInterval(object):
         return "%s" % (self.chromosome)
 
     def __str__(self):
-        return "%s from %d % d on chr %s" % (self.label(), self.start, self.end, self.chromosome)
+        return "%s from %d % d on chr %s" % (
+            self.label(), self.start, self.end, self.chromosome)
