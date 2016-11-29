@@ -72,8 +72,8 @@ class OffsetBasedGraph():
         :return: Returns a list of region paths (blocks) that are overlapping
         """
         main_path_interval = self.blocks[block].main_path_linear_reference
-        return list(filter(lambda name: self.blocks[name].main_path_linear_reference.intersects(main_path_interval),
-                      self.blocks.keys()))
+        return [name for name in self.blocks.keys() if
+                self.blocks[name].main_path_linear_reference.intersects(main_path_interval)]
 
     def get_first_block(self, chromosome_id):
         """
@@ -216,7 +216,7 @@ class OffsetBasedGraph():
             return None
         return filtered[0]
 
-    def merge_lin_refs(self,  org_lin_ref, new_lin_ref):
+    def merge_lin_refs(self, org_lin_ref, new_lin_ref):
         """
         Merges two parts of the graph into one region path. The two parts to
         merge are the two linear references
@@ -236,7 +236,7 @@ class OffsetBasedGraph():
             out_edges = self.block_edges[org_block.id]
 
         lin_refs = [pre_ref, post_ref, new_lin_ref, org_lin_ref]
-        blocks = [self._add_block({"hg38": lr}) for lr in lin_refs]
+        blocks = [self._add_block({lr.chromosome: lr}) for lr in lin_refs]
 
         pre_block = blocks[0]
         post_block = blocks[1]
@@ -270,6 +270,7 @@ class OffsetBasedGraph():
         for p_block in in_edges:
             self.block_edges[p_block].remove(org_block.id)
 
+
     def split_block(self, block, lin_ref):
         """
         Splits a block at the given linear reference. Returns two linear
@@ -297,6 +298,9 @@ class OffsetBasedGraph():
         )
         return splitted
 
+    def get_next_blocks(self, block):
+        return [self.blocks[bid] for bid in self.block_edges[block.id]]
+
     def merge_linear_segments(self, lin_seg_1, lin_seg_2):
         """
         Merges the graph where the two linear segments are
@@ -305,33 +309,20 @@ class OffsetBasedGraph():
         block1 = self.get_block(lin_seg_1)
         block2 = self.get_block(lin_seg_2)
         if (block1 is None or block2 is None):
-
-            if block2 is None:
-                if DEBUG: print("_-_____")
-                if DEBUG: print(self.get_intersecting_blocks(lin_seg_2))
-                if DEBUG: print("?????????????")
-            if block1 is None:
-                if DEBUG: print("+++++++++++++")
-                if DEBUG: print(self.get_intersecting_blocks(lin_seg_1))
-                if DEBUG: print("?????????????")
-
-            if DEBUG: print(lin_seg_1, block1)
-
-            if DEBUG: print(lin_seg_2, block2)
             return
         # The new block that is a merge of two linear segments
-        mid_block = self._add_block({lin_seg_1.genome_id: lin_seg_1,
-                                     lin_seg_2.genome_id + "2": lin_seg_2})
+        mid_block = self._add_block({lin_seg_1.chromosome: lin_seg_1,
+                                     lin_seg_2.chromosome: lin_seg_2})
 
         pre1, post1 = self.split_block(block1, lin_seg_1)
         pre2, post2 = self.split_block(block2, lin_seg_2)
-        pre_block1 = RegionPath(block1.id, {pre1.genome_id: pre1})
-        pre_block2 = RegionPath(block2.id, {pre2.genome_id: pre2})
+        pre_block1 = RegionPath(block1.id, {pre1.chromosome: pre1})
+        pre_block2 = RegionPath(block2.id, {pre2.chromosome: pre2})
 
         self.blocks[pre_block1.id] = pre_block1
         self.blocks[pre_block2.id] = pre_block2
-        post_block1 = self._add_block({post1.genome_id: post1})
-        post_block2 = self._add_block({post2.genome_id: post2})
+        post_block1 = self._add_block({post1.chromosome: post1})
+        post_block2 = self._add_block({post2.chromosome: post2})
         if block1.id in self.block_edges:
             self.block_edges[post_block1.id] = self.block_edges[block1.id][:]
 
@@ -345,7 +336,6 @@ class OffsetBasedGraph():
         self.add_block_edge(pre_block2.id, mid_block.id)
         self.add_block_edge(mid_block.id, post_block1.id)
         self.add_block_edge(mid_block.id, post_block2.id)
-        if DEBUG: print("-", lin_seg_1, lin_seg_2)
 
     def add_block_edge(self, block_id, next_block_id):
         """
@@ -360,8 +350,6 @@ class OffsetBasedGraph():
         >>> graph.add
 
         """
-
-
         if block_id not in self.blocks:
             raise Exception("Edge id (%s) not in blocks: %s"
                             % (block_id, self.blocks))
@@ -430,43 +418,22 @@ class OffsetBasedGraph():
                 previous_blocks.append(p_block)
         return previous_blocks
 
-    def merge_from_chain_file(self, filename, genome1_id, genome2_id):
-        segs = self._chain_file_to_linear_segments(
-            filename, genome1_id, genome2_id)
-        for seg1, seg2, in segs:
-            self.merge_linear_segments(seg1, seg2)
-
-    def add_species(self, genome_id, fn_chrom_sizes):
-        """
-        Adds blocks, one for each chromosome specified in the file
-        """
-        f = open(fn_chrom_sizes)
-        for line in f.readlines():
-            d = line.split()
-            if "_" not in d[0]:
-                meta = {}
-                length = int(d[1])
-                meta[genome_id] = LinearInterval(
-                    genome_id, d[0], 1, length, "+")
-                self._add_block(meta)
-
     def add_chromosome(self, genome_id, chromosome, chromosome_size):
         """
         Adds a whole chromosome as a linear block
         """
-        linear_references = {}
-        linear_references[genome_id] = LinearInterval(
-            genome_id, chromosome, 1, chromosome_size, "+")
+        linear_references = {
+            chromosome: LinearInterval(
+                genome_id, chromosome, 1, chromosome_size)}
         self._add_block(linear_references)
 
     def _generate_id_from_linear_references(self, lrs):
-
         suggestion = ""
         sorted_genome_ids = sorted([lr for lr in lrs])
         if len(sorted_genome_ids) > 1:
             suggestion += "merge-"
         for genome_id in sorted_genome_ids:
-            #suggestion += genome_id + "." + lrs[genome_id].chromosome + "-"
+            # suggestion += genome_id + "." + lrs[genome_id].chromosome + "-"
             # Skip non-alternative
             if len(sorted_genome_ids) == 1 or "alt" in lrs[genome_id].chromosome:
                 suggestion += lrs[genome_id].chromosome + "-"
@@ -519,7 +486,8 @@ class OffsetBasedGraph():
                 "hg38", info["chrom"], info["chromStart"], info["chromEnd"])
 
             alt_interval = LinearInterval(
-                "hg38", info["name"], info["altStart"], info["altStart"]+info["length"])
+                "hg38", info["name"], info["altStart"],
+                info["altStart"]+info["length"])
 
             graph.merge_lin_refs(main_interval, alt_interval)
 
@@ -531,5 +499,4 @@ class OffsetBasedGraph():
 
     def include_alignments(self, alignments):
         for lr1, lr2 in alignments:
-            if DEBUG: print("+", lr1, lr2)
             self.merge_linear_segments(lr1, lr2)
