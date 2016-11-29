@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
-import pickle
+from collections import defaultdict
 from .regionpath import RegionPath
 from .linearinterval import LinearInterval
 from gendatafetcher.ucscdb import DbWrapper
@@ -37,9 +37,6 @@ class OffsetBasedGraph():
         self.cur_id_counter = {}  # Number of times a base id of block
                                   # has been used
 
-        self.db = DbWrapper()
-        self.db.get_chrom_lengths()
-        self.chrom_lengths = self.db.chrom_lengths
         self.block_index = {}
         self.name = name
 
@@ -161,6 +158,8 @@ class OffsetBasedGraph():
         i.e. the linear reference on the main path corresponding to the
         alternative loci. Stores this in block.main_path_linear_reference
         """
+        # TODO: do this with info in graph
+        raise NotImplementedError()
 
         for block in self.blocks.values():
             if "alt" in block.id:
@@ -184,17 +183,13 @@ class OffsetBasedGraph():
         from these blocks.
         This dict is used when mapping linear intervals to graph intervals
         """
-        index = {}
+        self.index = defaultdict(list)
         for block_id, block in self.blocks.items():
             for linear_reference in block.linear_references.values():
-                chr_id = linear_reference.chromosome
-                if chr_id in index:
-                    index[chr_id].append(block)
-                else:
-                    index[chr_id] = [block]
+                self.index[linear_reference.chromosome].append(block)
 
-        self.block_index = index
-
+        for k, v in self.index.items():
+            v.sort(key=lambda block: block.linear_references[k].start)
 
     def get_blocks(self, lin_ref):
         """
@@ -203,7 +198,8 @@ class OffsetBasedGraph():
         :param lin_ref: The linear reference
         :return: Returns region paths
         """
-        return [block for block in list(self.blocks.values()) if block.contains(lin_ref)]
+        return [block for block in
+                list(self.blocks.values()) if block.contains(lin_ref)]
 
     def get_intersecting_blocks(self, lin_ref):
         """
@@ -212,7 +208,8 @@ class OffsetBasedGraph():
         :param lin_ref: The linear reference
         :return: Returns region paths
         """
-        return [block for block in list(self.blocks.values()) if block.intersects(lin_ref)]
+        return [block for block in
+                list(self.blocks.values()) if block.intersects(lin_ref)]
 
     def get_block(self, lin_ref):
         filtered = self.get_blocks(lin_ref)
@@ -279,7 +276,8 @@ class OffsetBasedGraph():
         Splits a block at the given linear reference. Returns two linear
         references, one before and one after lin_ref
         """
-        current_lin_refs = [lr for lr in list(block.linear_references.values()) if lr.genome_id == lin_ref.genome_id]
+        current_lin_refs = [lr for lr in list(block.linear_references.values())
+                            if lr.genome_id == lin_ref.genome_id]
         assert len(current_lin_refs) == 1
         current_lin_ref = current_lin_refs[0]
         splitted = []
@@ -517,50 +515,22 @@ class OffsetBasedGraph():
             if "_" not in chromosome:
                 graph.add_chromosome("hg38", chromosome, length)
 
-
         for info in alt_loci_infos:
             main_interval = LinearInterval(
                 "hg38", info["chrom"], info["chromStart"], info["chromEnd"])
 
             alt_interval = LinearInterval(
-                "hg38", info["name"], 1, info["length"])
+                "hg38", info["name"], info["altStart"], info["altStart"]+info["length"])
 
             graph.merge_lin_refs(main_interval, alt_interval)
 
         graph._create_block_index()
         graph.set_back_edges()
-        if not dummy_graph:
-            graph.get_main_path_linear_references()
+        # if not dummy_graph:
+        #    graph.get_main_path_linear_references()
         return graph
-
-    @classmethod
-    def create_hg38_graph(cls):
-
-        db = DbWrapper()
-        db.get_chrom_lengths()
-        chrom_sizes = db.chrom_lengths
-        alt_loci_infos = db.fetch_all("SELECT name, chrom, chromStart, chromEnd, chromEnd - chromStart as length FROM altLocations where name LIKE '%alt%'")
-
-        return cls.create_graph(chrom_sizes, alt_loci_infos)
 
     def include_alignments(self, alignments):
         for lr1, lr2 in alignments:
             if DEBUG: print("+", lr1, lr2)
             self.merge_linear_segments(lr1, lr2)
-
-    def pretty_alt_loci_name(self, id):
-        #raise NotImplementedError()
-
-        """
-        :return: Returns a prettier region name for an alternative loci
-        """
-        id = id.replace("hg38.", "")
-        id = id.replace("merge-", "")
-        if not "alt" in id:
-            return id
-        else:
-            alt_id = id.split("-")[0]
-            id = id.replace(alt_id, self.db.alt_loci_pretty_name(alt_id))
-            #id += "test: ---%s---%s**" % (alt_id, self.db.alt_loci_pretty_name(alt_id))
-
-        return id

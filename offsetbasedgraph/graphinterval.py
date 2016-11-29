@@ -1,6 +1,6 @@
 
 class GraphInterval(object):
-
+    """Used to represent intervals on a graph"""
     def __init__(self, block_list, start, end):
         self.block_list = block_list
         self.start = start
@@ -8,7 +8,24 @@ class GraphInterval(object):
 
     def __str__(self):
         return "%s: %s :%s" % (
-            self.start, " ".join([block for block in self.block_list]), self.end)
+            self.start,
+            " ".join([block for block in self.block_list]),
+            self.end)
+
+    @staticmethod
+    def from_linear_interval(graph, interval):
+        """ Asssuming graph block indexed on chromosome
+        and sorted on start coordinate
+        """
+        chrom = interval.chromosome
+        region_paths = graph.index[chrom]
+        region_paths = [rp for rp in region_paths if
+                        rp.linear_references[chrom].intersects(interval)]
+
+        start = interval.start-region_paths[0].linear_references[chrom].start
+        end = interval.end-region_paths[-1].linear_references[chrom].start
+
+        return GraphInterval(region_paths, start, end)
 
     @classmethod
     def linear_coordinate_to_graph(cls, graph, chr_id, coordinate):
@@ -36,8 +53,8 @@ class GraphInterval(object):
                 if start <= coordinate and end >= coordinate:
                     return (potential_block.id, coordinate - start)
 
-
-        raise Exception("No block found for chr_id %s, coordinate %d" % (chr_id, coordinate))
+        raise Exception("No block found for chr_id %s, coordinate %d"
+                        % (chr_id, coordinate))
 
     @classmethod
     def linear_segment_to_graph(cls, graph,  chr_id, start, end):
@@ -59,8 +76,10 @@ class GraphInterval(object):
             if current_block == end_block:
                 break
             prev_block = current_block
-            if not current_block in graph.block_edges:
-                raise Exception("Did not find end block, current blocks = %s" % block_list)
+            if current_block not in graph.block_edges:
+                raise Exception("Did not find end block, current blocks = %s" %
+                                block_list)
+
             edges = [e for e in graph.block_edges[current_block]
                      if chr_id in graph.blocks[e].linear_references]
             min_start = 3000000000
@@ -74,8 +93,10 @@ class GraphInterval(object):
             current_block = min_edge
 
             if current_block == prev_block:
-                raise Exception("Error while traversing block. Did not find " +\
-                                "next block for block %s, %s" % (current_block,edges))
+                raise Exception("Error while traversing block. Did not find " +
+                                "next block for block %s, %s" %
+                                (current_block, edges))
+
             block_list.append(current_block)
 
         return cls(block_list, start_pos, end_pos)

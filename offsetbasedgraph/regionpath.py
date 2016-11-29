@@ -27,6 +27,19 @@ class RegionPath(object):
             return True
         return False
 
+    def __eq__(self, other):
+        self_refs = self.linear_references
+        other_refs = other.linear_references
+
+        if not len(self_refs) == len(other_refs):
+            return False
+
+        for lr in self_refs:
+            if lr not in other_refs:
+                return False
+
+        return True
+
     def __str__(self):
         return " RegionPaths: " + ";".join([str(lin_ref) for lin_ref
                                             in self.linear_references.items()])
