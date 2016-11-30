@@ -3,7 +3,6 @@ from __future__ import print_function
 from collections import defaultdict
 from .regionpath import RegionPath
 from .linearinterval import LinearInterval
-from gendatafetcher.ucscdb import DbWrapper
 
 from .config import DEBUG
 
@@ -13,14 +12,6 @@ class OffsetBasedGraph():
     Class representing an offset based graph,
     by storing  a list of region paths (sometimes referred to as blocks)
     and a list of edges connecting these region paths.
-
-    :Example:
-
-    >>> graph = OffsetBasedGraph("Testgraph")
-    >>> graph.create_graph()
-    >>> print(graph.blocks)
-    >>> print(graph.block_edges)
-
     """
 
     def __init__(self, name=""):
