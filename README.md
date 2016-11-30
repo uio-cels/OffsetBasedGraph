@@ -1,4 +1,4 @@
-# Python module for offset based graphs 
+# Python module for representing offset based graphs
 This is a python package for working with and representing offset based graphs.
 
 # Installation
@@ -14,7 +14,7 @@ cd gendatafetcher
 pip3 install .
 ```
 
-Now, you should be able to run examples/example.py after cloning this repository:
+Now, you should be able to run examples/example.py:
 ```bash
 git clone git@github.com:uio-cels/OffsetBasedGraph.git
 cd OffsetBasedGraph
