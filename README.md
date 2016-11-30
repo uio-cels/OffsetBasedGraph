@@ -6,14 +6,18 @@ The package can be installed using pip, by running `pip3 install offsetbasedgrap
 
 # Example
 In order to run the example in examples/example.py, first install `gendatafetcher` by running:
->> git clone https://github.com/uio-cels/gendatafetcher
->> cd gendatafetcher
->> pip3 install .
+```bash
+git clone https://github.com/uio-cels/gendatafetcher
+cd gendatafetcher
+pip3 install .
+```
 
 Now, you should be able to run examples/example.py after cloning this repository:
->> git clone git@github.com:uio-cels/OffsetBasedGraph.git
->> cd OffsetBasedGraph
->> python3 example/example.py
+```bash
+git clone git@github.com:uio-cels/OffsetBasedGraph.git
+cd OffsetBasedGraph
+python3 example/example.py
+```
 
 # Documentation
 
