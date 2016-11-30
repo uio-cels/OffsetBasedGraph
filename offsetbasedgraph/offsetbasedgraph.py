@@ -16,16 +16,17 @@ class OffsetBasedGraph():
 
     :Example:
 
-    >>> graph = OffsetBasedGraph()
+    >>> graph = OffsetBasedGraph("Testgraph")
     >>> graph.create_graph()
     >>> print(graph.blocks)
     >>> print(graph.block_edges)
 
     """
 
-    def __init__(self, name):
+    def __init__(self, name=""):
         """
-        Initialises the offset based graph with a name. The graph will be empty
+        Initialises the offset based graph (with an optional name).
+        The graph will be empty
         at this point.
         :param name: A textual name of the graph
         :return:
@@ -178,9 +179,9 @@ class OffsetBasedGraph():
             block.main_path_linear_reference = linref
 
     def _create_block_index(self):
-        """ Creates a dictionary where indices are linear block ids (chromosome ids
-        and alt loci ids), and values are list of blocks in the graph that come
-        from these blocks.
+        """ Creates a dictionary where indices are chromosome scaffold IDs, i.e.
+        chromosome ids and alt loci ids, and values are list of blocks in
+        the graph that originally come from these scaffolds.
         This dict is used when mapping linear intervals to graph intervals
         """
         self.index = defaultdict(list)
