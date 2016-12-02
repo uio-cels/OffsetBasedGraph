@@ -52,15 +52,28 @@ class Translation(object):
         """Combine to translations"""
 
 
+class Block(object):
+    def __init__(self, length):
+        self._length = length
+
+    def length(self):
+        return self._length
+
+
 class Graph(object):
-    region_paths = {}
+    blocks = {}
     edge_list = defaultdict(list)
     reverse_edge_list = defaultdict(list)
 
     # Graph alterations
-    def __init__(self, region_paths, edge_list):
-        self.region_paths = region_paths
+    def __init__(self, blocks, edge_list):
+        self.blocks = blocks
         self.edge_list = edge_list
+        self._generate_reverse_edges()
+
+    @classmethod
+    def from_file(cls, filename):
+        pass
 
     @takes(Interval, Interval)
     def merge_intervals(self, interval_a, interval_b):
@@ -72,4 +85,7 @@ class Graph(object):
 
     @takes(Interval, Interval)
     def connect_intervals(self, interval_a, interval_b):
+        pass
+
+    def _generate_reverse_edges(self):
         pass
