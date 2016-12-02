@@ -11,6 +11,8 @@ class Position(object):
         return self.region_path_id == other.region_path_id \
                and self.offset == other.offset
 
+    def __str__(self):
+        return str(list(self.region_path_id, self.offset))
 
 class Interval(object):
     start_position = None
@@ -37,3 +39,9 @@ class Interval(object):
         eq &= self.end_position == other.end_position
         eq &= self.region_paths == other.region_paths
         return eq
+
+    def __str__(self):
+        return "%d, %d, %s" % (self.start_position,
+                               self.end_position, self.region_paths)
+
+    

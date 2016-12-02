@@ -60,7 +60,7 @@ class TestTranslation(unittest.TestCase):
                     "Translated back interval %s not equal to %s" %
                          (translated_back, interval_graph1))
 
-        
+
 
 
 
