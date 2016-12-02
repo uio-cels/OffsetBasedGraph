@@ -1,4 +1,5 @@
-from util import takes
+from .util import takes
+from .interval import Interval, Position
 
 
 class Translation(object):

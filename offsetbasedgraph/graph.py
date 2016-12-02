@@ -1,6 +1,6 @@
 from collections import defaultdict
-from offsetbasedgraph import Interval
-from util import takes
+from .interval import Interval
+from .util import takes
 
 
 class Block(object):
