@@ -52,5 +52,10 @@ class Graph(object):
         pass
 
     @staticmethod
-    def _get_reverse_edges(self, adj_list):
-        pass
+    def _get_reverse_edges(adj_list):
+        reverse_edges = defaultdict(list)
+        for block, edges in adj_list.items():
+            for edge in edges:
+                reverse_edges[edge].append(block)
+
+        return reverse_edges
