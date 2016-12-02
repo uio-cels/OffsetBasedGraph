@@ -87,5 +87,3 @@ class Graph(object):
     def connect_intervals(self, interval_a, interval_b):
         pass
 
-    def _generate_reverse_edges(self):
-        pass
