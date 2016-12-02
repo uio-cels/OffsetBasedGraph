@@ -15,7 +15,6 @@ class Block(object):
 
 
 class Graph(object):
-    region_paths = {}
     adj_list = defaultdict(list)
     reverse_adj_list = defaultdict(list)
 
@@ -38,14 +37,50 @@ class Graph(object):
         :param file_name: File name
         :return:
         """
+        pass
 
     @takes(Interval, Interval)
     def merge_intervals(self, interval_a, interval_b):
-        '''
+        """
         Merge the two intervals in the graph and return
         a translation object
-        '''
+
+        :param interval_a: One interval
+        :param interval_b: One interval
+        :returns: translation from old to new graph
+        :rtype: Translation
+
+        """
         assert interval_a.length() == interval_b.length()
+        # Create translation object
+        # # Left side:
+
+        break_points = self._get_all_block_borders(interval_a,
+                                                   interval_b)
+        offset_a = interval_a.start_position.offset
+        offset_b = interval_a.start_position.offset
+
+    def _get_all_block_borders(self, interval_a, interval_b):
+        """Return a list of block changes in both a and b
+
+        :param interval_a: 
+        :param interval_b: 
+        :returns: 
+        :rtype: 
+
+        """
+        break_points = []
+        for interval in [interval_a, interval_b]:
+            offset = -interval.start_position.offset
+            for region_path in interval.region_paths[:-1]:
+                offset += self.blocks[region_path].length()
+                break_points.append(offset)
+            offset += interval.end_position.offset
+            break_points.append(offset)
+
+        unique_points = list(set(break_points))
+        unique_points.sort()
+        return unique_points
 
     @takes(Interval, Interval)
     def connect_intervals(self, interval_a, interval_b):

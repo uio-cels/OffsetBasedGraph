@@ -1,7 +1,7 @@
 import unittest
-import numpy as np
-import dummygraph
+from . import dummygraph
 from offsetbasedgraph import Interval, Position
+
 
 class TestInterval(unittest.TestCase):
 

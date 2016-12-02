@@ -53,7 +53,7 @@ class Translation(object):
         for start, end, region_paths in zip(new_starts, new_ends, new_region_paths):
             new_interval = Interval(start, end, region_paths)
             new_intervals.append(new_interval)
-            
+
         return new_intervals
 
     @takes(Position)
