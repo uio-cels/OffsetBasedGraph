@@ -14,7 +14,7 @@ def get_translation_single_block():
     # Interval for whole of graph 2
     interval3 = Interval(Position(2, 0), Position(3, 5), [2, 3])
 
-    trans = Translation({1: interval3}, {2: interval1, 3: interval2})
+    trans = Translation({1: [interval3]}, {2: [interval1], 3: [interval2]})
 
     return graph, graph2, trans
 
@@ -60,7 +60,24 @@ class TestTranslation(unittest.TestCase):
                     "Translated back interval %s not equal to %s" %
                          (translated_back, interval_graph1))
 
-        
+    def testAddTranslation(self):
+        # Scenario: Splitting one region path two times
+        graph, graph2, trans = get_translation_single_block()
+        # Split first region path of graph2 again
+        intervalgraph3 = Interval(0, 2, [4, 5])  # Block 3 and 4 have length 5 in total
+        trans2 = Translation({2: [intervalgraph3]},
+                             {4: [Interval(0, 3, [2])],
+                              5: [Interval(3, 5, [2])]}
+                            )
+        trans = trans + trans2
+        correct_trans = Translation({1: [Interval(0, 5, [4, 5, 3])]},
+                                    {4: [Interval(0, 3, [1])],
+                                     5: [Interval(3, 5, [1])],
+                                     3: [Interval(5, 10,[1])]
+                                    })
+
+        self.assertTrue(trans, correct_trans)
+
 
 
 
