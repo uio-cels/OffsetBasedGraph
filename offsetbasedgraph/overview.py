@@ -27,6 +27,11 @@ class Interval(object):
     def length(self):
         pass
 
+    def __init__(self, start_position, end_position, region_paths):
+        self.start_position = start_position
+        self.end_position = end_position
+        self.region_paths = region_paths
+
 
 class Translation(object):
     _a_to_b = {}

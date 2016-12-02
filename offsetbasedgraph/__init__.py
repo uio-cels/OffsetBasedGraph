@@ -5,4 +5,5 @@ from .DbWrapper import DbWrapper
 from .graphinterval import GraphInterval
 from .graph import Graph
 from .interval import Interval
+from .interval import Position
 from .graph import Block
