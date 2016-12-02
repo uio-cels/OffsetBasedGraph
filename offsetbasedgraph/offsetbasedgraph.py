@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 from collections import defaultdict
+from .graphinterval import GraphInterval
 from .regionpath import RegionPath
 from .linearinterval import LinearInterval
 
@@ -216,6 +217,79 @@ class OffsetBasedGraph():
             return None
         return filtered[0]
 
+    def set_parallel(self, lin_refs):
+        graf_refs = [GraphInterval.from_linear_interval(lin_ref)
+                     for lin_ref in lin_refs]
+
+    def divide_block(self, block, offset):
+        blocks = block.split([offset])
+        self.block_edges[blocks[1].id] = self.block_edges[block.id]
+        self.block_edges[block.id] = [block.id]
+        self.blocks[blocks[0].id] = blocks[0]
+        self.blocks[blocks[1].id] = blocks[1]
+
+    def set_equal(self, lin_refs):
+        """ """
+        graph_refs = [GraphInterval.from_linear_interval(lin_ref)
+                      for lin_ref in lin_refs]
+
+        start_blocks = [graph_ref.block_list[0] for graph_ref in graph_refs]
+        end_blocks = [graph_ref.block_list[-1] for graph_ref in graph_refs]
+
+    def find_coordinate_nice(self, chrom, offset):
+        """Find the coordinate and allow overflowing
+        region paths"""
+        region_paths = self.index[chrom]
+        assert region_paths, "Did not find region path %s" % chrom
+        containing_rps = [rp for rp in region_paths
+                          if rp.contains_position(chrom, offset)]
+        if containing_rps:
+            return containing_rps[0].id, offset-containing_rps[0].linear_references[chrom].start
+
+        ds = [rp.distance_to_position(chrom, offset) for rp in region_paths]
+        first_dist = min(ds)
+        closest_rp = min(zip(region_paths, ds), key=lambda x: x[1])[0]
+        lin_ref = closest_rp.linear_references[chrom]
+
+        traversal_dict = self.block_edges
+        offset_calc = lambda block, overflow: overflow
+
+        if offset < lin_ref.start:
+            offset_calc = lambda block, overflow: block.length()- overflow
+            traversal_dict = self.block_edges_back
+
+        distance_travelled = 0
+        cur_block_id = closest_rp.id
+        while distance_travelled < first_dist:
+            next_ids = traversal_dict[cur_block_id]
+            cur_block_id = next_ids[0]
+            distance_travelled += self.blocks[cur_block_id].length()
+
+        overflow = distance_travelled - first_dist
+        new_offset = offset_calc(self.blocks[cur_block_id], overflow)
+        return cur_block_id, new_offset
+
+    def find_interval_nice(self, interval):
+        start_block_id, start_offset = self.find_coordinate_nice(
+            interval.chromosome,
+            interval.start)
+        end_block_id, end_offset = self.find_coordinate_nice(
+            interval.chromosome,
+            interval.end)
+
+        cur_block = start_block_id
+        blocks = [cur_block]
+        while cur_block != end_block_id:
+            next_blocks = self.block_edges[cur_block]
+            if interval.chromosome in next_blocks:
+                cur_block = interval.chromosome
+            else:
+                cur_block = next_blocks[0]
+            blocks.append(cur_block)
+
+        return GraphInterval(blocks, start_offset, end_offset)
+
+
     def merge_lin_refs(self, org_lin_ref, new_lin_ref):
         """
         Merges two parts of the graph into one region path. The two parts to
@@ -269,7 +343,6 @@ class OffsetBasedGraph():
 
         for p_block in in_edges:
             self.block_edges[p_block].remove(org_block.id)
-
 
     def split_block(self, block, lin_ref):
         """

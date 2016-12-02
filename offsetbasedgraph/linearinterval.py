@@ -1,4 +1,6 @@
 class LinearInterval(object):
+    """An interval on a linear reference"""
+
     def __init__(self, genome_id, chromosome, start, end, strand="+"):
         self.genome_id = genome_id
         self.chromosome = chromosome
@@ -19,6 +21,17 @@ class LinearInterval(object):
             return False
         return True
 
+    def contains_position(self, chrom, offset):
+        if not chrom == self.chromosome:
+            return False
+        return offset >= self.start and offset < self.end
+
+    def distance_to_position(self, chrom, offset):
+        assert chrom == self.chromosome
+        if self.contains_position(chrom, offset):
+            return 0
+        return min(abs(self.start-offset), abs(self.end-offset))
+
     def intersects(self, other):
         if not (self.genome_id == other.genome_id):
             return False
@@ -29,6 +42,15 @@ class LinearInterval(object):
             return True
 
         return False
+
+    def split(self, offsets):
+        assert all(offset < self.length() for offset in offsets)
+        starts = [self.start]+[self.start+offset for offset in offsets]
+        ends = [self.start+offset for offset in offsets] + [self.end]
+
+        return [LinearInterval(self.genome_id, self.chromosome,
+                               start, end, self.strand)
+                for start, end in zip(starts, ends)]
 
     def __add__(self, other):
         """TODO: check that they are continuous"""
