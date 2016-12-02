@@ -17,7 +17,7 @@ class TestInterval(unittest.TestCase):
         self.assertEqual(len(interval.region_paths), 3,
                         "Interval should have 3 region paths")
 
-    
+
 if __name__ == "__main__":
     unittest.main()
 

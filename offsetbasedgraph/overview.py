@@ -34,7 +34,7 @@ class Interval(object):
 
 
 class Translation(object):
-    _a_to_b = {}
+    _a_to_b = {}  # Region paths to interval
     _b_to_a = {}
 
     def __init__(self, translate_dict, reverse_dict):
@@ -54,7 +54,7 @@ class Translation(object):
         pass
 
     def __add__(self, other):
-        """Combine to translations"""
+        """Combine two translations"""
 
 
 class Block(object):

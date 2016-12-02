@@ -21,9 +21,23 @@ class Graph(object):
 
     # Graph alterations
     def __init__(self, blocks, adj_list):
+        """
+        Inits the graph with a list of blocks and an adjency list
+        :param blocks:
+        :param adj_list:
+        :return:
+        """
         self.blocks = blocks
         self.adj_list = adj_list
         self.reverse_adj_list = self._get_reverse_edges(adj_list)
+
+    @staticmethod
+    def from_file(file_name):
+        """
+        Reads from file and creates the graph
+        :param file_name: File name
+        :return:
+        """
 
     @takes(Interval, Interval)
     def merge_intervals(self, interval_a, interval_b):
