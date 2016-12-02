@@ -5,7 +5,7 @@ from offsetbasedgraph import Graph, Block, Interval, Position, Translation
 def simple_graph():
     blocks = {_id: block for _id, block in
               enumerate([10, 20, 30, 40])}
-    adj_list = {0: 1, 1: 2, 2: 3, 0: 4, 4: 3}
+    adj_list = {0: [1], 1: [2], 2: [3], 0: [4], 4: [3]}
     return blocks, adj_list
 
 
