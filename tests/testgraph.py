@@ -11,7 +11,7 @@ def simple_graph():
 
 def disjoint_graph():
     blocks = {_id: block for _id, block in
-              enumerate([10, 30, 20, 40])}
+              enumerate([30, 40])}
     adj_list = {}
     return Graph(blocks, adj_list)
 
@@ -38,31 +38,68 @@ class TestGraph(unittest.TestCase):
         fasit = {10: [1], 20: [1], 100: [2, 3]}
         self.assertEqual(reverse_list, fasit)
 
-    def test_merge_intervals(self):
+    def _setup_merge(self):
         graph = disjoint_graph()
         interval_a = Interval(
-            Position(1, 0),
-            Position(1, 10))
+            Position(0, 0),
+            Position(0, 10))
 
         interval_b = Interval(
-            Position(4, 0),
-            Position(4, 10))
+            Position(1, 0),
+            Position(1, 10))
+        return graph, interval_a, interval_b
+
+    def test_merge_translation(self):
+        graph, interval_a, interval_b = self._setup_merge()
         translation = graph.merge_intervals(
             interval_a,
             interval_b)
 
-        true_translation = Translation(
-            {interval_a: -1,
-             interval_b: -1},
-            {-1: [interval_a, interval_b]}
-            )
+        A = 0
+        B = 1
+        a_first = translation._a_to_b[A].region_paths[0]
+        a_last = translation._a_to_b[A].region_paths[1]
+        b_first = translation._a_to_b[B].region_paths[0]
+        b_last = translation._a_to_b[B].region_paths[1]
 
-        self.assertEqual(translation,
-                         true_translation)
+        self.assertEqual(a_first, b_first)
+        self.assertEqual(a_first.length() == interval_a.length())
+        a_to_b = {
+            A: Interval(Position(a_first, 0),
+                        Position(a_last, 20)),
+            B: Interval(Position(b_first, 0),
+                        Position(b_last, 30))
+            }
+        b_to_a = {
+            a_first: set(interval_a, interval_b),
+            a_last: set(
+                Interval(
+                    Position(A, 10),
+                    Position(A, 30)),
+                Interval(
+                    Position(B, 10),
+                    Position(B, 40))
+                )
+            }
+        self.assertEqual(
+            Translation(a_to_b, b_to_a),
+            translation)
 
-    def test_connect(self):
+        # Check graph
+        blocks = {a_first: Block(10),
+                  a_last: Block(20),
+                  b_last: Block(30)
+                  }
+        adj_list = {a_first: [a_last,  b_last]}
+        self.assert_graph_equals(
+            graph, Graph(blocks, adj_list))
+
+    def test_connect_intervals(self):
         pass
 
     def test_from_file(self):
         pass
-    
+
+
+if __name__ == "__main__":
+    unittest.main()
