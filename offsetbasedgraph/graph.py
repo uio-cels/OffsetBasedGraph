@@ -11,7 +11,7 @@ class Block(object):
         return self._length
 
     def __eq__(self, other):
-        return self.length == other.length
+        return self.length() == other.length()
 
 
 class Graph(object):
@@ -55,10 +55,10 @@ class Graph(object):
         # Create translation object
         # # Left side:
 
-        break_points = self._get_all_block_borders(interval_a,
-                                                   interval_b)
-        offset_a = interval_a.start_position.offset
-        offset_b = interval_a.start_position.offset
+        break_points = self._get_all_block_borders(
+            interval_a,
+            interval_b)
+        
 
     def _get_all_block_borders(self, interval_a, interval_b):
         """Return a list of block changes in both a and b
