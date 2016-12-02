@@ -20,3 +20,9 @@ class Interval(object):
         self.start_position = start_position
         self.end_position = end_position
         self.region_paths = region_paths
+
+    def __eq__(self, other):
+        eq = self.start_position == other.start_position
+        eq &= self.end_position == other.end_position
+        eq &= self.region_paths == other.region_paths
+        return eq

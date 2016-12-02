@@ -1,5 +1,6 @@
 from util import takes
 
+
 class Translation(object):
     _a_to_b = {}  # Region paths to interval
     _b_to_a = {}
@@ -23,3 +24,9 @@ class Translation(object):
 
     def __add__(self, other):
         """Combine two translations"""
+
+    def __eq__(self, other):
+        """Check if two translations are equal"""
+        eq = self._a_to_b == other._a_to_b
+        eq &= self._b_to_a == other._b_to_a
+        return eq
