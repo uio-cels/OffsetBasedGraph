@@ -17,7 +17,7 @@ class Graph(object):
     # Graph alterations
     def __init__(self, blocks, adj_list):
         self.blocks = blocks
-        self.adj list = adj_list
+        self.adj_list = adj_list
 
     @takes(Interval, Interval)
     def merge_intervals(self, interval_a, interval_b):
