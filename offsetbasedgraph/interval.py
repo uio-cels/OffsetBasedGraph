@@ -20,7 +20,20 @@ class Interval(object):
     def length(self):
         pass
 
-    def __init__(self, start_position, end_position, region_paths):
+    def __init__(self, start_position, end_position, region_paths=None):
         self.start_position = start_position
         self.end_position = end_position
+
+        # By default include start and end region path
+        if region_paths is None:
+            region_paths = [start_position.region_path_id]
+            if end_position.region_path_id != start_position.region_path_id:
+                region_paths.append(end_position.region_path_id)
+
         self.region_paths = region_paths
+
+    def __eq__(self, other):
+        eq = self.start_position == other.start_position
+        eq &= self.end_position == other.end_position
+        eq &= self.region_paths == other.region_paths
+        return eq
