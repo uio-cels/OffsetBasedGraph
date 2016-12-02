@@ -62,8 +62,11 @@ class TestGraph(unittest.TestCase):
         b_first = translation._a_to_b[B].region_paths[0]
         b_last = translation._a_to_b[B].region_paths[1]
 
+        # Sanity check on merge
         self.assertEqual(a_first, b_first)
         self.assertEqual(a_first.length() == interval_a.length())
+
+        # Check that translation object is correct
         a_to_b = {
             A: Interval(Position(a_first, 0),
                         Position(a_last, 20)),
@@ -93,6 +96,18 @@ class TestGraph(unittest.TestCase):
         adj_list = {a_first: [a_last,  b_last]}
         self.assert_graph_equals(
             graph, Graph(blocks, adj_list))
+
+    def test_get_all_block_borders(self):
+        blocks = {1: Block(20), 2: Block(20),
+                  11: Block(20), 12: Block(20)}
+
+        adj_list = {1: [2], 11: [12]}
+        graph = Graph(blocks, adj_list)
+
+        interval_a = Interval(Position(1, 10), Position(2, 11))
+        interval_b = Interval(Position(11, 15), Position(12, 16))
+        border_list = graph._get_all_block_borders(interval_a, interval_b)
+        self.assertEqual(border_list, [5, 10, 21])
 
     def test_connect_intervals(self):
         pass
