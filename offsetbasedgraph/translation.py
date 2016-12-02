@@ -33,6 +33,8 @@ class Translation(object):
         is returned.
         """
 
+        raise NotImplementedError
+
         """
         Algorithm:
             Translate start to new start
@@ -43,6 +45,11 @@ class Translation(object):
         new_starts = self.translate_position(interval.start_position, inverse)
         new_ends = self.translate_position(interval.end_position, inverse)
         new_region_paths = []
+
+        # TODO Fix this. Need to find all possible intervals going from
+        # the possible starts to the possible ends through all possible
+        # region paths of intervals translated from this interval's region
+        # paths.
 
         for region_path in interval.region_paths:
             # Find all region paths that this region path follows
