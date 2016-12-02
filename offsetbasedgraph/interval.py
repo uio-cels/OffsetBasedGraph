@@ -7,6 +7,10 @@ class Position(object):
         self.region_path_id = region_path_id
         self.offset = offset
 
+    def __eq__(self, other):
+        return self.region_path_id == other.region_path_id \
+               and self.offset == other.offset
+
 
 class Interval(object):
     start_position = None
