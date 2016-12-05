@@ -5,7 +5,7 @@ from .multipathinterval import GeneralMultiPathInterval
 
 class Translation(object):
 
-    def __init__(self, translate_dict, reverse_dict):
+    def __init__(self, translate_dict={}, reverse_dict={}):
         """
         Init the translation object with two dicts. Each dict has
         region path IDs as keys and a list of intervals as values.
@@ -52,8 +52,6 @@ class Translation(object):
         :return: Returns an interval. If inverse is True, a list of intervals
         is returned.
         """
-
-
         """
         Algorithm:
             Translate start to new start

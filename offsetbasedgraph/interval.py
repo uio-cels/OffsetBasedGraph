@@ -34,6 +34,13 @@ class Interval(object):
         r_sum = sum(r_lengths)
         return r_sum-self.start_position.offset+self.end_position.offset
 
+    def starts_at_rp(self):
+        return self.start_position.offset == 0
+
+    def ends_at_rp(self):
+        rp_end = self.graph.blocks[self.end_position.region_path_id].length()
+        self.end_position.offset == rp_end
+
     def split(self, offsets):
         """Split the interval at the given offsets
 
