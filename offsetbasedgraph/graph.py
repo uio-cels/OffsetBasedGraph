@@ -52,11 +52,13 @@ class Graph(object):
 
         """
         assert interval_a.length() == interval_b.length()
-        # Create translation object
-        # # Left side:
         break_points = self._get_all_block_borders(
             interval_a,
             interval_b)
+
+        sub_intervals_a = interval_a.split(break_points)
+        sub_intervals_b = interval_a.split(break_points)
+        
 
     def _get_all_block_borders(self, interval_a, interval_b):
         """Return a list of block changes in both a and b

@@ -56,5 +56,16 @@ class TestInterval(unittest.TestCase):
             ]
         self.assertEqual(splits, true_intervals)
 
+    def test_join(self):
+        graph = dummygraph.get_simple_graph()
+        interval = Interval(Position(1, 5),
+                            Position(4, 10),
+                            [1, 2, 4],
+                            graph=graph)
+        splits = interval.split([7])
+        self.assertEqual(splits[0].join(splits[1]),
+                         interval)
+
+
 if __name__ == "__main__":
     unittest.main()

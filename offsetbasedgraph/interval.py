@@ -55,7 +55,22 @@ class Interval(object):
             end_idx = region_path_idxs[end_pos.region_path_id]
             region_paths = self.region_paths[start_idx:end_idx+1]
             split_intervals.append(Interval(start_pos, end_pos, region_paths))
+
         return split_intervals
+
+    def join(self, other):
+        """Create new interval as union of self and other
+        other must start at self.end_position
+
+        :param other: Interval
+        :returns: joined interval
+        :rtype: Interval
+
+        """
+
+        assert self.end_position == other.start_position
+        region_paths = self.region_paths[:-1] + other.region_paths
+        return Interval(self.start_position, other.end_position, region_paths)
 
     def __init__(self, start_position, end_position,
                  region_paths=None, graph=None):
