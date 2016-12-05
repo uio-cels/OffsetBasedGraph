@@ -59,7 +59,10 @@ class TestGraph(unittest.TestCase):
 
     def test_split(self):
         graph = dummygraph.get_simple_graph()
-        graph._split_block(2, [5, 12])
+        splits = [5, 12]
+        trans = graph._split_block(2, splits)
+        
+        # Test graph structure
         new_id = [b for b in graph.adj_list[1] if not b == 3][0]
         new_id2 = [b for b in graph.adj_list[new_id]][0]
         new_id3 = [b for b in graph.adj_list[new_id2]][0]
@@ -75,13 +78,49 @@ class TestGraph(unittest.TestCase):
 
         self.assert_graph_equals(graph, new_blocks, new_adj_list)
 
+        # Test translation
+        new_interval = Interval(Position(new_id, 0),
+                                Position(new_id3, 8),
+                                [new_id, new_id2, new_id3])
+        old_intervals = [Interval(Position(2, 0), Position(2, 5)),
+                         Interval(Position(2, 5), Position(2, 12)),
+                         Interval(Position(2, 12), Position(2, 20))]
+
+        true_trans = Translation(
+            {2: [new_interval]},
+            {_id: [interval] for _id, interval in
+             zip([new_id, new_id2, new_id3], old_intervals)}
+            )
+
+        print(true_trans)
+        print(trans)
+        self.assertEqual(trans, true_trans)
+
     def test_join(self):
         graph = dummygraph.get_mergable_graph()
-        graph._join_blocks([2, 3])
+        trans = graph._join_blocks([2, 3])
+
+        # Test graph structure
         new_id = graph.adj_list[1][0]
         blocks = {1: Block(10), new_id: Block(20), 4: Block(15)}
         block_edges = {1: [new_id], new_id: [4]}
         self.assert_graph_equals(graph, blocks, block_edges)
+
+        # Test translation
+        new_interval = Interval(Position(new_id, 0),
+                                Position(new_id, 20))
+        old_intervals = [Interval(Position(_id, 0),
+                                  Position(_id, 20))
+                         for _id in (2, 3)]
+        true_translation = Translation(
+            {2: [new_interval],
+             3: [new_interval]},
+            {new_id: old_intervals})
+
+        self.assertEqual(
+            true_translation,
+            trans)
+
 
     def _test_merge_translation(self):
         graph, interval_a, interval_b = self._setup_merge()

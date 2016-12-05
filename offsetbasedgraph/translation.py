@@ -130,3 +130,12 @@ class Translation(object):
         eq = self._a_to_b == other._a_to_b
         eq &= self._b_to_a == other._b_to_a
         return eq
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        return str(self._b_to_a)
+        return "\n".join(["%s: %s" % (_id, ",".join(intervals))
+                          for _id, intervals in
+                          self._a_to_b.items()])
