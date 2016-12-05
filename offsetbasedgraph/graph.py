@@ -76,8 +76,7 @@ class Graph(object):
             offset += interval.end_position.offset
             break_points.append(offset)
 
-        unique_points = list(set(break_points))
-        unique_points.sort()
+        unique_points = sorted(set(break_points))
         return unique_points
 
     @takes(Interval, Interval)

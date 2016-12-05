@@ -34,6 +34,29 @@ class Interval(object):
         r_sum = sum(r_lengths)
         return r_sum-self.start_position.offset+self.end_position.offset
 
+    def split(self, offsets):
+        """Split the interval at the given offsets
+
+        :param offsets: list of int
+        :returns: list of intervals
+        :rtype: list
+
+        """
+        split_points = [self.get_position_from_offset(offset) for offset
+                        in offsets]
+        region_path_idxs = {rp: i for i, rp in enumerate(self.region_paths)}
+        split_intervals = []
+
+        starts = [self.start_position] + split_points
+        ends = split_points + [self.end_position]
+
+        for start_pos, end_pos in zip(starts, ends):
+            start_idx = region_path_idxs[start_pos.region_path_id]
+            end_idx = region_path_idxs[end_pos.region_path_id]
+            region_paths = self.region_paths[start_idx:end_idx+1]
+            split_intervals.append(Interval(start_pos, end_pos, region_paths))
+        return split_intervals
+
     def __init__(self, start_position, end_position,
                  region_paths=None, graph=None):
 
