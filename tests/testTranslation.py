@@ -53,13 +53,22 @@ class TestTranslation(unittest.TestCase):
         interval_graph1 = Interval(Position(1, 3), Position(1, 8), [1])
         interval_graph2 = Interval(Position(2, 3), Position(3, 3), [2, 3])
         translated = trans.translate_interval(interval_graph1)
-        self.assertEqual(translated, interval_graph1,
-                    "Translated interval %s not equal to %s" % (translated,
-                                                               interval_graph2))
-        translated_back = trans.translate_interval(translated, True)
-        self.assertEqual(translated_back, interval_graph1,
-                    "Translated back interval %s not equal to %s" %
-                         (translated_back, interval_graph1))
+
+        self.assertEqual(len(translated.get_single_path_intervals()), 1,
+                         "Interval should be translated to 1 other interval")
+
+        translated_intervals = translated.get_single_path_intervals()
+        t = translated_intervals[0]
+        self.assertEqual(t, interval_graph1,
+                "Translated interval %s not equal to %s" % (t, interval_graph2))
+        translated_back = trans.translate_interval(t, True)
+        t_back = translated_back.get_single_path_intervals()[0]
+
+        self.assertEqual(t_back, interval_graph1,
+                "Translated back interval %s != to %s" % (t_back, interval_graph1))
+
+    def test_translate_intervals_forth_and_back(self):
+        pass
 
     def _testAddTranslation(self):
         # Scenario: Splitting one region path two times
@@ -78,11 +87,6 @@ class TestTranslation(unittest.TestCase):
                                     })
 
         self.assertTrue(trans, correct_trans)
-
-
-
-
-
 
 
 if __name__ == "__main__":

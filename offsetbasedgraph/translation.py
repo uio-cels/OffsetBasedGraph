@@ -1,5 +1,6 @@
 from .util import takes
 from .interval import Interval, Position
+from .multipathinterval import GeneralMultiPathInterval
 
 
 class Translation(object):
@@ -46,26 +47,15 @@ class Translation(object):
         new_ends = self.translate_position(interval.end_position, inverse)
         new_region_paths = []
 
-        # TODO Fix this. Need to find all possible intervals going from
-        # the possible starts to the possible ends through all possible
-        # region paths of intervals translated from this interval's region
-        # paths.
-
         for region_path in interval.region_paths:
             # Find all region paths that this region path follows
             intervals = self._translations(region_path, inverse)
             new_region_paths.extend([i.region_paths for interv in intervals])
 
+        new_interval = GeneralMultiPathInterval(new_starts, new_ends,
+                                            new_region_paths, interval.graph)
 
-
-        """
-        new_intervals = []
-        for start, end, region_paths in zip(new_starts, new_ends, new_region_paths):
-            new_interval = Interval(start, end, region_paths)
-            new_intervals.append(new_interval)
-        """
-
-        return new_intervals
+        return new_interval
 
     @takes(Position)
     def translate_position(self, position, inverse=False):

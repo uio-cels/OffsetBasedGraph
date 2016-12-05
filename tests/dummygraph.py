@@ -6,3 +6,8 @@ def get_simple_graph():
     graph = Graph(blocks, block_edges)
     return graph
 
+
+
+def get_medium_complex_graph():
+    blocks = {1: Block(10), 2: Block(20), 3: Block(10), 4: Block(15)}
+
