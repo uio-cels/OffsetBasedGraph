@@ -53,12 +53,12 @@ class Translation(object):
         is returned.
         """
 
-
         """
         Algorithm:
             Translate start to new start
             Translate end to new end
             Find all new region paths
+            Put this into a general multipath interval
         """
 
         new_starts = self.translate_position(interval.start_position, inverse)
@@ -84,8 +84,8 @@ class Translation(object):
         :return: Returns the translated Position
         """
 
-        assert self.graph1 is not None, "Graph1 is none"
-        assert self.graph2 is not None, "Graph2 is none"
+        assert self.graph1 is not None, "Graph1 is none, cannot translate pos"
+        assert self.graph2 is not None, "Graph2 is none, cannot translate pos"
 
         # Get interval for region path. Select first region path. Count offset.
         intervals = self._translations(position.region_path_id, inverse)
@@ -109,10 +109,14 @@ class Translation(object):
             to all intervals using a.translate(inter, inverse). Replace in c
         """
 
+        new_trans = Translation(self._a_to_b, self._b_to_a)
+
         # Find new forward translation dict
         new_translate_dict = {}
         for t in self._a_to_b:
             new_translate_dict[t] = other.translate_interval(self._a_to_b[t])
+
+        new_trans._a_to_b = new_translate_dict
 
         changed = True
         while(changed):
@@ -121,11 +125,15 @@ class Translation(object):
                 # For every block=>interval, map backwards to intervals
                 new_intervals = []
                 for inter in other._b_to_a[t]:
-                    new_intervals.append(other.translate_interval(inter, True))
+                    new_intervals.extend(
+                        other.translate_interval(inter, True).get_single_path_intervals()
+                    )
                 new_intervals = set(new_intervals)
-                if new_intervals != set(other._b_to_a[t]):
+                if new_intervals != set(new_trans._b_to_a[t]):
                     changed = True  # If change, translate again
-                other._b_to_a[t] = new_intervals
+                new_trans._b_to_a[t] = new_intervals
+
+        return new_trans
 
     def __eq__(self, other):
         """Check if two translations are equal"""

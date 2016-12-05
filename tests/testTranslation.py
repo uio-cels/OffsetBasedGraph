@@ -82,14 +82,14 @@ class TestTranslation(unittest.TestCase):
                              {4: [Interval(0, 3, [2])],
                               5: [Interval(3, 5, [2])]}
                             )
-        trans = trans + trans2
+        trans3 = trans + trans2
         correct_trans = Translation({1: [Interval(0, 5, [4, 5, 3])]},
                                     {4: [Interval(0, 3, [1])],
                                      5: [Interval(3, 5, [1])],
                                      3: [Interval(5, 10,[1])]
                                     })
 
-        self.assertTrue(trans, correct_trans)
+        self.assertTrue(trans3, correct_trans)
 
 
 if __name__ == "__main__":
