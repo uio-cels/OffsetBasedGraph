@@ -12,7 +12,7 @@ class Position(object):
                and self.offset == other.offset
 
     def __str__(self):
-        return str([self.region_path_id, self.offset])
+        return "(%s:%s)" % (self.region_path_id, self.offset)
 
 
 class Interval(object):
@@ -56,7 +56,7 @@ class Interval(object):
         return eq
 
     def __str__(self):
-        return "%d, %d, %s" % (self.start_position,
+        return "%s, %s, %s" % (self.start_position,
                                self.end_position, self.region_paths)
 
     def get_position_from_offset(self, offset):
