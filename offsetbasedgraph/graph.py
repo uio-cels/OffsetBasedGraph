@@ -27,7 +27,7 @@ class Graph(object):
         :return:
         """
         self.blocks = blocks
-        self.adj_list = adj_list
+        self.adj_list = defaultdict(list, adj_list)
         self.reverse_adj_list = self._get_reverse_edges(adj_list)
 
     @staticmethod
