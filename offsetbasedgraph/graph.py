@@ -92,3 +92,12 @@ class Graph(object):
                 reverse_edges[edge].append(block)
 
         return reverse_edges
+
+    def __eq__(self, other):
+        if self.adj_list != other.adj_list:
+            return False
+
+        if self.blocks != other.blocks:
+            return False
+
+        return True

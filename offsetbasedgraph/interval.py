@@ -12,7 +12,7 @@ class Position(object):
                and self.offset == other.offset
 
     def __str__(self):
-        return str(list(self.region_path_id, self.offset))
+        return str([self.region_path_id, self.offset])
 
 
 class Interval(object):
