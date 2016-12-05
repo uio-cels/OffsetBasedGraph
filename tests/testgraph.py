@@ -1,5 +1,8 @@
 import unittest
+import dummygraph
 from offsetbasedgraph import Graph, Block, Interval, Position, Translation
+
+DEBUG = False
 
 
 def simple_graph():
@@ -19,6 +22,11 @@ def disjoint_graph():
 class TestGraph(unittest.TestCase):
 
     def assert_graph_equals(self, graph, blocks, adj_list):
+        if DEBUG:
+            print(blocks)
+            print(graph.blocks)
+            print(adj_list)
+            print(graph.adj_list)
         self.assertEqual(graph.blocks, blocks)
         self.assertEqual(graph.adj_list, adj_list)
         self.assertEqual(graph.reverse_adj_list,
@@ -49,13 +57,38 @@ class TestGraph(unittest.TestCase):
             Position(1, 10))
         return graph, interval_a, interval_b
 
-    def test_merge_translation(self):
+    def test_split(self):
+        graph = dummygraph.get_simple_graph()
+        graph._split_block(2, [5, 12])
+        new_id = [b for b in graph.adj_list[1] if not b == 3][0]
+        new_id2 = [b for b in graph.adj_list[new_id]][0]
+        new_id3 = [b for b in graph.adj_list[new_id2]][0]
+
+        new_blocks = {1: Block(10), new_id: Block(5),
+                      new_id2: Block(7), new_id3: Block(8),
+                      3: Block(10), 4: Block(15)}
+
+        new_adj_list = {1: [3, new_id], 3: [4],
+                        new_id: [new_id2],
+                        new_id2: [new_id3],
+                        new_id3: [4]}
+
+        self.assert_graph_equals(graph, new_blocks, new_adj_list)
+
+    def test_join(self):
+        graph = dummygraph.get_mergable_graph()
+        graph._join_blocks([2, 3])
+        new_id = graph.adj_list[1][0]
+        blocks = {1: Block(10), new_id: Block(20), 4: Block(15)}
+        block_edges = {1: [new_id], new_id: [4]}
+        self.assert_graph_equals(graph, blocks, block_edges)
+
+    def _test_merge_translation(self):
         graph, interval_a, interval_b = self._setup_merge()
         translation = graph.merge_intervals(
             interval_a,
             interval_b)
 
-        A = 0
         B = 1
         a_first = translation._a_to_b[A].region_paths[0]
         a_last = translation._a_to_b[A].region_paths[1]

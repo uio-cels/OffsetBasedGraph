@@ -14,6 +14,12 @@ class Block(object):
     def __eq__(self, other):
         return self.length() == other.length()
 
+    def __str__(self):
+        return "Block(%s)" % self._length
+
+    def __repr__(self):
+        return self.__str__()
+
 
 class Graph(object):
     adj_list = defaultdict(list)
@@ -105,6 +111,7 @@ class Graph(object):
         """Remove a block including edges from the graph
 
         :param block_id: block id of the block
+
         """
         del self.blocks[block_id]
         for edge in self.adj_list[block_id]:
@@ -114,6 +121,17 @@ class Graph(object):
         for edge in self.reverse_adj_list[block_id]:
             self.adj_list[edge].remove(block_id)
         del self.reverse_adj_list[block_id]
+
+    def _add_edge(self, block_a, block_b):
+        """Add edge from a to b, in both adj_list
+        and reveres_adj_list
+
+        :param block_a: from block
+        :param block_b: to block
+        """
+
+        self.adj_list[block_a].append(block_b)
+        self.reverse_adj_list[block_b].append(block_a)
 
     def _join_blocks(self, block_ids):
         """Merge the given blocks in the graph and
@@ -126,30 +144,40 @@ class Graph(object):
         """
         if not block_ids:
             return Translation()
-        lens = [len(self.blocks[_id] for _id in block_ids)]
+        lens = [self.blocks[_id].length() for _id in block_ids]
         L = lens[0]
         assert all(l == L for l in lens)
+
+        # Find all incoming and outgoing edges
         in_edges = set()
         out_edges = set()
         for block_id in block_ids:
-            in_edges.update(self.reverse_adj_list[block_id]
-                            for block_id in block_ids)
-            out_edges.update(self.adj_list[block_id]
-                             for block_id in block_ids)
+            in_edges.update(self.reverse_adj_list[block_id])
+            out_edges.update(self.adj_list[block_id])
+
+        # Add the new block
+        new_id = self._next_id()
+        self.blocks[new_id] = Block(L)
+        for block_id in out_edges:
+            self._add_edge(new_id, block_id)
+        for block_id in in_edges:
+            self._add_edge(block_id, new_id)
+
+        # Remove old blocks
         for block_id in block_ids:
             self.remove(block_id)
 
-        new_id = self._next_id()
+        # Create translation object
         translation = Translation(
-            {block_id: Interval(Position(new_id, 0), Position(new_id, L))
+            {block_id: [Interval(Position(new_id, 0), Position(new_id, L))]
              for block_id in block_ids},
             {new_id:
              [Interval(Position(block_id, 0), Position(block_id, L))
               for block_id in block_ids]})
         return translation
 
-    def _split_block(self, block_id, offset):
-        """Splits the given block at offset
+    def _split_block(self, block_id, offsets):
+        """Splits the given block at offsets
         and return translation object
 
         :param block_id: block to split
@@ -159,29 +187,31 @@ class Graph(object):
 
         """
         l = self.blocks[block_id].length()
-        if offset == 0 or offset >= l-1:
+        if not offsets:
             return Translation()
-        id_a = self._next_id()
-        id_b = self._next_id()
-        self.blocks[id_a] = Block(offset)
-        self.blocks[id_b] = Block(l-offset)
+        blocks = [Block(b-a) for a, b in zip([0]+offsets, offsets+[l])]
+        ids = [self._next_id() for _ in blocks]
+        self.blocks.update(dict(zip(ids, blocks)))
+        for id1, id2 in zip(ids[:-1], ids[1:]):
+            self._add_edge(id1, id2)
 
-        self.adj_list[id_a] = id_b
-        self.reverse_adj_list[id_b] = id_a
-
-        self.adj_list[id_b] = self.adj_list[block_id]
-        self.reverse_adj_list[id_a] = self.reveres_adj_list[block_id]
+        for e in self.adj_list[block_id]:
+            self._add_edge(ids[-1], e)
+        for e in self.reverse_adj_list[block_id]:
+            self._add_edge(e, ids[0])
 
         self.remove(block_id)
 
         return Translation(
             {block_id:
-             Interval(Position(id_a, 0), Position(id_b, l-offset))},
-            {id_a: Interval(Position(block_id, 0),
-                            Position(block_id, offset)),
-             id_b: Interval(Position(block_id, offset),
-                            Position(block_id, l))}
-            )
+             [Interval(
+                 Position(ids[0], 0),
+                 Position(ids[-1], blocks[-1].length()),
+                 ids)]},
+            {_id: [Interval(Position(block_id, offset),
+                            Position(block_id, offset+block.length()))]
+             for _id, block, offset, in zip(ids, blocks, [0]+offsets)}
+        )
 
     @takes(Interval, Interval)
     def merge_intervals(self, interval_a, interval_b, copy=True):
@@ -200,8 +230,11 @@ class Graph(object):
             interval_a,
             interval_b)
 
+        print(interval_a)
+        print(break_points)
         sub_intervals_a = interval_a.split(break_points)
         sub_intervals_b = interval_b.split(break_points)
+
         ids = (self._next_id() for _ in sub_intervals_a)
         translation = self._generate_translation(
             interval_a, interval_b,
@@ -210,16 +243,16 @@ class Graph(object):
 
         graph = self.copy() if copy else self
 
-        for pair in zip(sub_intervals_a, sub_intervals_b):
-            start_intervals = [i for i in pair if i.start_position.offset == 0]
-            in_edges = sum([self.reverse_adj_list[i.region_paths[0]]
-                            for i in start_intervals], [])
-            out_intervals = [
-                i for i in pair if
-                i.end_position.offset == self.blocks[i.end_position.region_path_id].length()]
-            out_edges = sum([self.adj_list[i.region_paths[-1]] for i in end_intervals], [])
-
-            graph
+        # for pair in zip(sub_intervals_a, sub_intervals_b):
+        #     start_intervals = [i for i in pair if i.start_position.offset == 0]
+        #     in_edges = sum([self.reverse_adj_list[i.region_paths[0]]
+        #                     for i in start_intervals], [])
+        #     out_intervals = [
+        #         i for i in pair if
+        #         i.end_position.offset == self.blocks[i.end_position.region_path_id].length()]
+        #     out_edges = sum([self.adj_list[i.region_paths[-1]] for i in end_intervals], [])
+        # 
+        #     graph
 
         return translation
 
