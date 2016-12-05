@@ -54,12 +54,16 @@ class Translation(object):
         for region_path in interval.region_paths:
             # Find all region paths that this region path follows
             intervals = self._translations(region_path, inverse)
-            new_region_paths.append(intervals)
+            new_region_paths.extend([i.region_paths for interv in intervals])
 
+
+
+        """
         new_intervals = []
         for start, end, region_paths in zip(new_starts, new_ends, new_region_paths):
             new_interval = Interval(start, end, region_paths)
             new_intervals.append(new_interval)
+        """
 
         return new_intervals
 
@@ -73,7 +77,7 @@ class Translation(object):
         """
         # Get interval for region path. Select first region path. Count offset.
         intervals = self._translations(position.region_path_id, inverse)
-        positions = [interval[0].get_position_fron_offset(position.offset)
+        positions = [interval.get_position_from_offset(position.offset)
                    for interval in intervals]
 
         return positions
