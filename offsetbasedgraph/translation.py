@@ -22,7 +22,7 @@ class Translation(object):
         self.graph1 = None
         self.graph2 = None
         if len(self._a_to_b) > 0:
-            self.graph2 = list(self._a_to_b.values())[0][0].graph  # 1 st translation, 1st interval's graph
+            self.graph2 = list(self._a_to_b.values())[0][0].graph
         if len(self._b_to_a) > 0:
             self.graph1 = list(self._b_to_a.values())[0][0].graph
 

@@ -174,6 +174,7 @@ class Graph(object):
             {new_id:
              [Interval(Position(block_id, 0), Position(block_id, L))
               for block_id in block_ids]})
+
         return translation
 
     def _split_block(self, block_id, offsets):
@@ -189,9 +190,13 @@ class Graph(object):
         l = self.blocks[block_id].length()
         if not offsets:
             return Translation()
+
+        # Add blocks
         blocks = [Block(b-a) for a, b in zip([0]+offsets, offsets+[l])]
         ids = [self._next_id() for _ in blocks]
         self.blocks.update(dict(zip(ids, blocks)))
+
+        # Add edges
         for id1, id2 in zip(ids[:-1], ids[1:]):
             self._add_edge(id1, id2)
 
@@ -202,6 +207,7 @@ class Graph(object):
 
         self.remove(block_id)
 
+        # Set translation
         return Translation(
             {block_id:
              [Interval(
@@ -242,7 +248,6 @@ class Graph(object):
             ids)
 
         graph = self.copy() if copy else self
-
         # for pair in zip(sub_intervals_a, sub_intervals_b):
         #     start_intervals = [i for i in pair if i.start_position.offset == 0]
         #     in_edges = sum([self.reverse_adj_list[i.region_paths[0]]

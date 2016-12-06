@@ -13,7 +13,7 @@ def simple_graph():
 
 
 def disjoint_graph():
-    blocks = {_id: block for _id, block in
+    blocks = {_id: Block(block) for _id, block in
               enumerate([30, 40])}
     adj_list = {}
     return Graph(blocks, adj_list)
@@ -50,11 +50,11 @@ class TestGraph(unittest.TestCase):
         graph = disjoint_graph()
         interval_a = Interval(
             Position(0, 0),
-            Position(0, 10))
+            Position(0, 10), graph=graph)
 
         interval_b = Interval(
             Position(1, 0),
-            Position(1, 10))
+            Position(1, 10), graph=graph)
         return graph, interval_a, interval_b
 
     def test_split(self):
@@ -121,18 +121,17 @@ class TestGraph(unittest.TestCase):
             true_translation,
             trans)
 
-
-    def _test_merge_translation(self):
+    def test_merge_translation(self):
         graph, interval_a, interval_b = self._setup_merge()
         translation = graph.merge_intervals(
             interval_a,
             interval_b)
-
+        A = 0
         B = 1
-        a_first = translation._a_to_b[A].region_paths[0]
-        a_last = translation._a_to_b[A].region_paths[1]
-        b_first = translation._a_to_b[B].region_paths[0]
-        b_last = translation._a_to_b[B].region_paths[1]
+        a_first = translation._a_to_b[A][0].region_paths[0]
+        a_last = translation._a_to_b[A][0].region_paths[1]
+        b_first = translation._a_to_b[B][0].region_paths[0]
+        b_last = translation._a_to_b[B][0].region_paths[1]
 
         # Sanity check on merge
         self.assertEqual(a_first, b_first)
