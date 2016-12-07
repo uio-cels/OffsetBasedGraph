@@ -106,6 +106,9 @@ class Translation(object):
             Find all new region paths
             Put this into a general multipath interval
         """
+        trans_dict = self._b_to_a if inverse else self._a_to_b
+        if not any(rp in trans_dict for rp in interval.region_paths):
+            return [interval]
 
         new_starts = self.translate_position(interval.start_position, inverse)
         # Hack: Convert to inclusive end coordinate
@@ -143,6 +146,10 @@ class Translation(object):
         # assert self.graph1 is not None, "Graph1 is none"
         # assert self.graph2 is not None, "Graph2 is none"
 
+        trans_dict = self._b_to_a if inverse else self._a_to_b
+        if position.region_path_id not in trans_dict:
+            return [position]
+
         # Get interval for region path. Select first region path. Count offset.
         intervals = self._translations(position.region_path_id, inverse)
         positions = [interval.get_position_from_offset(position.offset)
@@ -171,7 +178,8 @@ class Translation(object):
         new_translate_dict = {}
         for t in self._a_to_b:
             print(self._a_to_b[t][0])
-            new_translate_dict[t] = other.translate_interval(self._a_to_b[t][0]).get_single_path_intervals()
+            new_translate_dict[t] = other.translate_interval(
+                self._a_to_b[t][0]).get_single_path_intervals()
 
         new_trans._a_to_b = new_translate_dict
 
