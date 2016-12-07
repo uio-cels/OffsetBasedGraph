@@ -32,6 +32,51 @@ class Interval(object):
         r_sum = sum(r_lengths)
         return r_sum-self.start_position.offset+self.end_position.offset
 
+    def starts_at_rp(self):
+        return self.start_position.offset == 0
+
+    def ends_at_rp(self):
+        rp_end = self.graph.blocks[self.end_position.region_path_id].length()
+        self.end_position.offset == rp_end
+
+    def split(self, offsets):
+        """Split the interval at the given offsets
+
+        :param offsets: list of int
+        :returns: list of intervals
+        :rtype: list
+
+        """
+        split_points = [self.get_position_from_offset(offset) for offset
+                        in offsets]
+        region_path_idxs = {rp: i for i, rp in enumerate(self.region_paths)}
+        split_intervals = []
+
+        starts = [self.start_position] + split_points
+        ends = split_points + [self.end_position]
+
+        for start_pos, end_pos in zip(starts, ends):
+            start_idx = region_path_idxs[start_pos.region_path_id]
+            end_idx = region_path_idxs[end_pos.region_path_id]
+            region_paths = self.region_paths[start_idx:end_idx+1]
+            split_intervals.append(Interval(start_pos, end_pos, region_paths))
+
+        return split_intervals
+
+    def join(self, other):
+        """Create new interval as union of self and other
+        other must start at self.end_position
+
+        :param other: Interval
+        :returns: joined interval
+        :rtype: Interval
+
+        """
+
+        assert self.end_position == other.start_position
+        region_paths = self.region_paths[:-1] + other.region_paths
+        return Interval(self.start_position, other.end_position, region_paths)
+
     def __init__(self, start_position, end_position,
                  region_paths=None, graph=None):
 
@@ -74,6 +119,9 @@ class Interval(object):
         eq &= self.region_paths == other.region_paths
         return eq
 
+    def __repr__(self):
+        return self.__str__()
+
     def __str__(self):
         return "%s, %s, %s" % (self.start_position,
                                self.end_position, self.region_paths)
@@ -90,9 +138,11 @@ class Interval(object):
         :rtype: Position
 
         """
+
         assert offset <= self.length(), \
             "Offset %d is larger than total length of interval %d in interval %s" \
             % (offset, self.length(), self.__str__())
+
         total_offset = offset + self.start_position.offset
         for region_path in self.region_paths:
             rp = self.graph.blocks[region_path]

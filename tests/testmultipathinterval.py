@@ -27,6 +27,8 @@ class TestInterval(unittest.TestCase):
         start_positions = [Position(1, 2)]
         end_positions = [Position(4, 2)]
         region_paths = [1, 2, 3, 4]
+
+        # Test different middle
         multipath_interval = GeneralMultiPathInterval(
             start_positions,
             end_positions,
@@ -38,7 +40,7 @@ class TestInterval(unittest.TestCase):
             ]
         self._assertEqualsSinglePaths(multipath_interval, true_intervals)
 
-        ###
+        # Test differnt end
         multipath_interval = GeneralMultiPathInterval(
             [Position(2, 1), Position(3, 1)],
             end_positions,
@@ -49,6 +51,8 @@ class TestInterval(unittest.TestCase):
             Interval(Position(3, 1), end_positions[0], [3, 4])
             ]
         self._assertEqualsSinglePaths(multipath_interval, true_intervals)
+
+        # Test different start
         multipath_interval = GeneralMultiPathInterval(
             start_positions,
             [Position(2, 1), Position(3, 1)],

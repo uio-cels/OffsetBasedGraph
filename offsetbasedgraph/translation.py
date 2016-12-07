@@ -5,7 +5,7 @@ from .multipathinterval import GeneralMultiPathInterval
 
 class Translation(object):
 
-    def __init__(self, translate_dict, reverse_dict):
+    def __init__(self, translate_dict={}, reverse_dict={}):
         """
         Init the translation object with two dicts. Each dict has
         region path IDs as keys and a list of intervals as values.
@@ -22,7 +22,7 @@ class Translation(object):
         self.graph1 = None
         self.graph2 = None
         if len(self._a_to_b) > 0:
-            self.graph2 = list(self._a_to_b.values())[0][0].graph  # 1 st translation, 1st interval's graph
+            self.graph2 = list(self._a_to_b.values())[0][0].graph
         if len(self._b_to_a) > 0:
             self.graph1 = list(self._b_to_a.values())[0][0].graph
 
@@ -57,7 +57,6 @@ class Translation(object):
         :return: Returns an interval. If inverse is True, a list of intervals
         is returned.
         """
-
         """
         Algorithm:
             Translate start to new start
@@ -159,3 +158,12 @@ class Translation(object):
         eq = self._a_to_b == other._a_to_b
         eq &= self._b_to_a == other._b_to_a
         return eq
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        return str(self._b_to_a)
+        return "\n".join(["%s: %s" % (_id, ",".join(intervals))
+                          for _id, intervals in
+                          self._a_to_b.items()])

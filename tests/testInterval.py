@@ -41,6 +41,31 @@ class TestInterval(unittest.TestCase):
             self.assertEqual(interval.get_position_from_offset(offset),
                              position)
 
+    def test_split(self):
+        graph = dummygraph.get_simple_graph()
+        interval = Interval(Position(1, 5),
+                            Position(4, 10),
+                            [1, 2, 4],
+                            graph=graph)
+        splits = interval.split([2, 7, 27])
+        true_intervals = [
+            Interval(Position(1, 5), Position(1, 7)),
+            Interval(Position(1, 7), Position(2, 2), [1, 2]),
+            Interval(Position(2, 2), Position(4, 2), [2, 4]),
+            Interval(Position(4, 2), Position(4, 10))
+            ]
+        self.assertEqual(splits, true_intervals)
+
+    def test_join(self):
+        graph = dummygraph.get_simple_graph()
+        interval = Interval(Position(1, 5),
+                            Position(4, 10),
+                            [1, 2, 4],
+                            graph=graph)
+        splits = interval.split([7])
+        self.assertEqual(splits[0].join(splits[1]),
+                         interval)
+
 
 if __name__ == "__main__":
     unittest.main()
