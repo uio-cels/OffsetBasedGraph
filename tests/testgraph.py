@@ -121,7 +121,7 @@ class TestGraph(unittest.TestCase):
             true_translation,
             trans)
 
-    def test_merge_translation(self):
+    def _test_merge_translation(self):
         graph, interval_a, interval_b = self._setup_merge()
         translation = graph.merge_intervals(
             interval_a,
@@ -179,6 +179,32 @@ class TestGraph(unittest.TestCase):
         interval_b = Interval(Position(11, 15), Position(12, 16))
         border_list = graph._get_all_block_borders(interval_a, interval_b)
         self.assertEqual(border_list, [5, 10, 21])
+
+    def test_split_blocks_at_starts_and_ends(self):
+        graph = dummygraph.get_disjoint_graph()
+        intervals = [Interval(Position(1, 0), Position(1, 5), graph=graph),
+                     Interval(Position(2, 5), Position(2, 10), graph=graph),
+                     Interval(Position(3, 25), Position(3, 30), graph=graph)]
+
+        trans = graph._split_blocks_at_starts_and_ends(intervals)
+
+        rps1 = trans.translate_rp(1).region_paths
+        rps2 = trans.translate_rp(2).region_paths
+        rps3 = trans.translate_rp(3).region_paths
+
+        # Check that starts and ends have not been split
+        self.assertEqual(len(rps1), 2)
+        self.assertEqual(len(rps2), 3)
+        self.assertEqual(len(rps3), 2)
+
+        true_blocks = dict(zip(rps1, [Block(5), Block(5)]))
+        true_blocks.update(dict(zip(rps2, [Block(5), Block(5), Block(10)])))
+        true_blocks.update(dict(zip(rps3, [Block(25), Block(5)])))
+
+        true_adjs = {rps1[0]: [rps1[1]],
+                     rps2[0]: [rps2[1]], rps2[1]: [rps2[2]],
+                     rps3[0]: [rps3[1]]}
+        self.assert_graph_equals(graph, true_blocks, true_adjs)
 
     def test_connect_intervals(self):
         pass

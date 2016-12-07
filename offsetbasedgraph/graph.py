@@ -11,6 +11,9 @@ class Block(object):
     def length(self):
         return self._length
 
+    def to_interval(self):
+        pass
+
     def __eq__(self, other):
         return self.length() == other.length()
 
@@ -219,6 +222,54 @@ class Graph(object):
              for _id, block, offset, in zip(ids, blocks, [0]+offsets)}
         )
 
+    def _merge_clean_intervals(self, intervals):
+        """Merge intervals that all start at beginning
+        of a region path
+
+        :param intervals: 
+        :returns: 
+        :rtype: Translation
+
+        """
+        first_rps = [interval.region_paths[0] for interval in intervals]
+        first_rp_lengths = [self.blocks[rp].lenght()
+                            for rp in first_rps]
+        min_len = mein(first_rp_lengths)
+        translations = [self._split_block(rp, min_len) for
+                        rp in first_rps]
+        # new_first_intervals = [trans.translate_rp(rp) for 
+
+    def _split_blocks_at_starts_and_ends(self, intervals):
+        """
+        Splits the region paths at the starts and ends of the
+        intervals, such that all the intervals starts at the
+        beginning of the intervals
+
+        :param intervals: list(intervals)
+        :returns: full translation for all block splits
+        :rtype: Translation
+
+        """
+        full_translation = Translation()
+
+        # Split starts
+        for interval in intervals:
+            offset = interval.start_position.offset
+            if offset == 0:
+                continue
+            rp = interval.region_paths[0]
+            full_translation += self._split_block(rp, [offset])
+
+        for interval in intervals:
+            end_offset = interval.end_position.offset
+            rp = interval.end_position.region_path_id
+            L = self.blocks[rp]
+            if end_offset == L:
+                continue
+            full_translation += self.split_block(rp, [offset])
+
+        return full_translation
+
     @takes(Interval, Interval)
     def merge_intervals(self, interval_a, interval_b, copy=True):
         """
@@ -232,6 +283,8 @@ class Graph(object):
 
         """
         assert interval_a.length() == interval_b.length()
+        assert not any(rp_a in interval_b.region_paths
+                       for rp_a in interval_a.region_paths)
         break_points = self._get_all_block_borders(
             interval_a,
             interval_b)

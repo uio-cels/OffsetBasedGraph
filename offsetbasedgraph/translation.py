@@ -32,16 +32,35 @@ class Translation(object):
             self.graph2 = self.graph1
 
     def _translations(self, region_path, inverse):
-        if inverse:
-            return self._b_to_a[region_path]
-        else:
-            return self._a_to_b[region_path]
+        trans_dict = self._b_to_a if inverse else self._a_to_b
+        graph = self.graph1 if self.graph1 is not None else self.graph2
+        if region_path not in trans_dict:
+            return [Interval(
+                Position(region_path, 0),
+                Position(region_path, graph.blocks[region_path].length())
+                )]
+
+        return trans_dict[region_path]
 
     def _get_other_graph(self, inverse):
         if inverse:
             return self.graph1
         else:
             return self.graph2
+
+    def translate_rp(self, rp):
+        """Translate region path, by dict lookup
+
+        :param rp: region path id
+        :returns: translated interval
+        :rtype: Interval
+
+        """
+        if rp in self._a_to_b:
+            return self._a_to_b[rp]
+        rp_interval = Interval(Position(rp, 0),
+                               Position(rp, self.graph1.blocks[rp].length()))
+        return [rp_interval]
 
     @takes(Interval)
     def translate_interval(self, interval, inverse=False):
@@ -68,8 +87,9 @@ class Translation(object):
             intervals = self._translations(region_path, inverse)
             new_region_paths.extend([i.region_paths for i in intervals])
 
-        new_interval = GeneralMultiPathInterval(new_starts, new_ends,
-                            new_region_paths, self._get_other_graph(inverse))
+        new_interval = GeneralMultiPathInterval(
+            new_starts, new_ends,
+            new_region_paths, self._get_other_graph(inverse))
 
         return new_interval
 
@@ -81,14 +101,14 @@ class Translation(object):
         :param inverse: If True, translate back
         :return: Returns the translated Position
         """
-
-        assert self.graph1 is not None, "Graph1 is none"
-        assert self.graph2 is not None, "Graph2 is none"
+        # Why assert graph here?
+        # assert self.graph1 is not None, "Graph1 is none"
+        # assert self.graph2 is not None, "Graph2 is none"
 
         # Get interval for region path. Select first region path. Count offset.
         intervals = self._translations(position.region_path_id, inverse)
         positions = [interval.get_position_from_offset(position.offset)
-                   for interval in intervals]
+                     for interval in intervals]
 
         return positions
 

@@ -15,6 +15,12 @@ def get_mergable_graph():
     return graph
 
 
+def get_disjoint_graph():
+    blocks = {1: Block(10), 2: Block(20), 3: Block(30)}
+    block_edges = {}
+    return Graph(blocks, block_edges)
+
+
 def get_medium_complex_graph():
     blocks = {1: Block(10), 2: Block(20), 3: Block(10), 4: Block(15)}
 
