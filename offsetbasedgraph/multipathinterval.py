@@ -36,7 +36,7 @@ class GeneralMultiPathInterval(object):
         if cur_region_path in self.end_region_paths:
             yield Interval(start_position,
                            self.end_region_paths[cur_region_path],
-                           region_paths)
+                           region_paths, self.graph)
 
         next_level = (
             rp
@@ -62,5 +62,12 @@ class GeneralMultiPathInterval(object):
         Generate all single path intervals.
         :return: generator
         """
+        intervals = []
         for start_position in self.start_positions:
-            yield from self._get_single_path_intervals(start_position)
+            #yield from self._get_single_path_intervals(start_position)
+            intervals.extend(self._get_single_path_intervals(start_position))
+        return intervals
+
+    def __str__(self):
+        return "Start pos: %s\n end pos: %s\n region paths: %s\n" % \
+               (str(self.start_positions), str(self.end_positions), str(self.region_paths))

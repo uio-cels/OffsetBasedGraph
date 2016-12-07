@@ -18,6 +18,7 @@ class Block(object):
         return self.length() == other.length()
 
     def __str__(self):
+
         return "Block(%s)" % self._length
 
     def __repr__(self):
@@ -59,6 +60,12 @@ class Graph(object):
         """
         self._id += 1
         return self._id
+
+        # Debug sanity checking
+        for block in adj_list:
+            assert block in self.blocks, "Edge found from block that is not in blocks"
+            for block2 in adj_list[block]:
+                assert block2 in self.blocks, "Edge found going to non-existing block"
 
     @staticmethod
     def from_file(file_name):

@@ -31,16 +31,14 @@ class Translation(object):
         if self.graph2 is None:
             self.graph2 = self.graph1
 
-    def _translations(self, region_path, inverse):
-        trans_dict = self._b_to_a if inverse else self._a_to_b
-        graph = self.graph1 if self.graph1 is not None else self.graph2
-        if region_path not in trans_dict:
-            return [Interval(
-                Position(region_path, 0),
-                Position(region_path, graph.blocks[region_path].length())
-                )]
-
-        return trans_dict[region_path]
+    def _translations(self, rp, inverse):
+        dict = self._b_to_a if inverse else self._a_to_b
+        if rp in dict:
+            return dict[rp]
+        # Not in dict, means translate to itself (return interval covering
+        # itself)
+        g = self.graph1 if self.graph1 is not None else self.graph2
+        return [Interval(0, g.blocks[rp].length(), [rp], g)]
 
     def _get_other_graph(self, inverse):
         if inverse:
@@ -76,16 +74,26 @@ class Translation(object):
             Translate start to new start
             Translate end to new end
             Find all new region paths
+            Put this into a general multipath interval
         """
 
         new_starts = self.translate_position(interval.start_position, inverse)
+        # Hack: Convert to inclusive end coordinate
+        interval.end_position.offset -= 1
         new_ends = self.translate_position(interval.end_position, inverse)
+        # Hack: Convert back to exclusive
+        interval.end_position.offset += 1
+        for new_end in new_ends:
+            new_end.offset += 1
+
         new_region_paths = []
+
 
         for region_path in interval.region_paths:
             # Find all region paths that this region path follows
             intervals = self._translations(region_path, inverse)
-            new_region_paths.extend([i.region_paths for i in intervals])
+            for interval in intervals:
+                new_region_paths.extend(interval.region_paths)
 
         new_interval = GeneralMultiPathInterval(
             new_starts, new_ends,
@@ -127,10 +135,17 @@ class Translation(object):
             to all intervals using a.translate(inter, inverse). Replace in c
         """
 
+        new_trans = Translation(self._a_to_b, self._b_to_a)
+
         # Find new forward translation dict
         new_translate_dict = {}
         for t in self._a_to_b:
-            new_translate_dict[t] = other.translate_interval(self._a_to_b[t])
+            print(self._a_to_b[t][0])
+            new_translate_dict[t] = other.translate_interval(self._a_to_b[t][0]).get_single_path_intervals()
+
+        new_trans._a_to_b = new_translate_dict
+
+        new_b_to_a = other._b_to_a
 
         changed = True
         while(changed):
@@ -139,11 +154,17 @@ class Translation(object):
                 # For every block=>interval, map backwards to intervals
                 new_intervals = []
                 for inter in other._b_to_a[t]:
-                    new_intervals.append(other.translate_interval(inter, True))
-                new_intervals = set(new_intervals)
-                if new_intervals != set(other._b_to_a[t]):
-                    changed = True  # If change, translate again
-                other._b_to_a[t] = new_intervals
+                    new_intervals.extend(
+                        other.translate_interval(inter, True).get_single_path_intervals()
+                    )
+                old = new_b_to_a[t]
+                if all(i in old for i in new_intervals) \
+                            and all(i in new_intervals for i in old):
+                    changed = False  # If change, translate again
+                new_b_to_a[t] = new_intervals
+
+        new_trans._b_to_a = new_b_to_a
+        return new_trans
 
     def __eq__(self, other):
         """Check if two translations are equal"""
