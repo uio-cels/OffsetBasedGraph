@@ -37,7 +37,11 @@ class Translation(object):
             return dict[rp]
         # Not in dict, means translate to itself (return interval covering
         # itself)
-        g = self.graph1 if self.graph1 is not None else self.graph2
+        #g = self.graph1 if self.graph1 is not None else self.graph2
+        if self.graph1 is not None and self.graph2 is not None:
+            g = self.graph1 if inverse else self.graph2
+        else:
+            g = self.graph1 if self.graph2 is None else self.graph2
         return [Interval(0, g.blocks[rp].length(), [rp], g)]
 
     def _get_other_graph(self, inverse):
@@ -59,6 +63,32 @@ class Translation(object):
         rp_interval = Interval(Position(rp, 0),
                                Position(rp, self.graph1.blocks[rp].length()))
         return [rp_interval]
+
+    def translate_subgraph(self, subgraph):
+        """
+        Translates a graph (forward). The graph has to be a subgraph of
+        graph1 in the translation object.
+        :param subgraph: Subgraph to translate.
+        :return: Returns the translated subgraph
+        """
+
+        # Check that subgraph really is a subgraph
+        for block in subgraph.blocks:
+            assert block in self.graph1.blocks
+
+        for adj in self.graph.adj_list:
+            assert adj in self.graph1.adjency_list
+
+
+        adj = subgraph.adjency_list
+        new_adj = {}
+        blocks = subgraph.blocks
+        new_blocks = []
+
+        """
+        Algorithm:
+
+        """
 
     @takes(Interval)
     def translate_interval(self, interval, inverse=False):

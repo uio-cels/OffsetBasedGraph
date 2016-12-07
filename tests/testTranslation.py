@@ -145,6 +145,15 @@ class TestTranslation(unittest.TestCase):
 
         self.assertTrue(trans3, correct_trans)
 
+    def test_translate_subgraph(self):
+        graph1, graph2, trans = get_translation_single_block()
+        translated_graph = trans.translate_subgraph(graph1)
+        self.assertEqual(graph2, translated_graph)
+
+        graph1, graph2, trans = get_merged_translation()
+        translated_graph = trans.translate_subgraph(graph1)
+        self.assertEqual(graph2, translated_graph)
+
 
 if __name__ == "__main__":
     unittest.main()
