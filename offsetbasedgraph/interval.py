@@ -14,12 +14,10 @@ class Position(object):
     def __str__(self):
         return "(%s:%s)" % (self.region_path_id, self.offset)
 
+    def __repr__(self):
+        return self.__str__()
 
 class Interval(object):
-    start_position = None
-    end_position = None
-    region_paths = None
-    graph = None
 
     def length(self):
         """
@@ -37,8 +35,16 @@ class Interval(object):
     def __init__(self, start_position, end_position,
                  region_paths=None, graph=None):
 
-        self.start_position = start_position
-        self.end_position = end_position
+        if isinstance(start_position, int):
+            self.start_position = Position(region_paths[0], start_position)
+            print("Start pos %s" % self.start_position)
+        else:
+            self.start_position = start_position
+
+        if isinstance(end_position, int):
+            self.end_position = Position(region_paths[-1], end_position)
+        else:
+            self.end_position = end_position
 
         # By default include start and end region path
         if region_paths is None:
@@ -48,6 +54,19 @@ class Interval(object):
 
         self.region_paths = region_paths
         self.graph = graph
+
+        # Sanity check interval
+        for rp in region_paths:
+            assert rp in graph.blocks, "Region path %s not in graph" % rp
+
+        assert self.start_position.region_path_id in self.region_paths
+        assert self.end_position.region_path_id in self.region_paths
+
+        # Check offsets
+        assert self.end_position.offset <= graph.blocks[self.region_paths[-1]].length(), \
+                "Offset %d in block %d with size %d" % (self.end_position.offset,
+                                            self.region_paths[-1],
+                                            graph.blocks[self.region_paths[-1]].length())
 
     def __eq__(self, other):
         eq = self.start_position == other.start_position
@@ -59,6 +78,9 @@ class Interval(object):
         return "%s, %s, %s" % (self.start_position,
                                self.end_position, self.region_paths)
 
+    def __repr__(self):
+        return self.__str__()
+
     def get_position_from_offset(self, offset):
         """Get position of with offset counted from the start of
         the interval
@@ -68,7 +90,9 @@ class Interval(object):
         :rtype: Position
 
         """
-        assert offset < self.length()
+        assert offset <= self.length(), \
+            "Offset %d is larger than total length of interval %d in interval %s" \
+            % (offset, self.length(), self.__str__())
         total_offset = offset + self.start_position.offset
         for region_path in self.region_paths:
             rp = self.graph.blocks[region_path]

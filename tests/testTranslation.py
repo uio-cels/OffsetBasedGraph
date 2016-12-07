@@ -18,6 +18,24 @@ def get_translation_single_block():
 
     return graph, graph2, trans
 
+def get_merged_translation():
+    graph1 = Graph({1: Block(10), 2: Block(10)}, {})  # Two disjoint blocks
+    graph2 = Graph({3: Block(10)}, {})   # Simple graph with one block
+
+    # Translation: Merge from the two blocks in graph 1 into one in graph2
+    trans = Translation(
+        {
+            1: [Interval(0, 10, [3], graph2)],
+            2: [Interval(0, 10, [3], graph2)]
+        },
+        {
+            3: [Interval(0, 10, [1], graph1),
+                Interval(0, 10, [2], graph1)]
+        }
+    )
+
+    return graph1, graph2, trans
+
 
 class TestTranslation(unittest.TestCase):
 
@@ -51,18 +69,20 @@ class TestTranslation(unittest.TestCase):
                             % pos_graph1
             )
 
-    def _testSimpleTranslateInterval(self):
+    def testSimpleTranslateInterval(self):
         graph, graph2, trans = get_translation_single_block()
         interval_graph1 = Interval(Position(1, 3), Position(1, 8), [1], graph)
         interval_graph2 = Interval(Position(2, 3), Position(3, 3), [2, 3], graph2)
         translated = trans.translate_interval(interval_graph1)
+        #print("Translated to %s" % translated)
+        single_path_intervals = translated.get_single_path_intervals()
 
-        self.assertEqual(len(translated.get_single_path_intervals()), 1,
+        self.assertEqual(len(single_path_intervals), 1,
                          "Interval should be translated to 1 other interval")
 
         translated_intervals = translated.get_single_path_intervals()
         t = translated_intervals[0]
-        self.assertEqual(t, interval_graph1,
+        self.assertEqual(t, interval_graph2,
                 "Translated interval %s not equal to %s" % (t, interval_graph2))
         translated_back = trans.translate_interval(t, True)
         t_back = translated_back.get_single_path_intervals()[0]
@@ -70,23 +90,57 @@ class TestTranslation(unittest.TestCase):
         self.assertEqual(t_back, interval_graph1,
                 "Translated back interval %s != to %s" % (t_back, interval_graph1))
 
+    def test_translate_on_merged_graph(self):
+        graph1, graph2, trans = get_merged_translation()
+
+        interval1 = Interval(0, 10, [1], graph1)
+        correct_tran = Interval(0, 10, [3], graph2)
+
+        translated = trans.translate_interval(interval1).get_single_path_intervals()[0]
+        self.assertEqual(translated, correct_tran)
+
+        # translate back
+        back = trans.translate_interval(translated, True).get_single_path_intervals()
+        self.assertEqual(len(back), 2)
+
+        self.assertTrue(back[0] == interval1 or back[1] == interval1)
+
+    def test_add_translation_on_merged_graph(self):
+        graph1, graph2, trans = get_merged_translation()
+        interval1 = Interval(0, 10, [3], graph2)
+
+        # Translate back to original graph (block 1)
+
+        #graph3 = Graph({1: Block(10)}, {})
+        trans_back = Translation(
+            {3: [Interval(0, 10, [1], graph1)]},
+            {1: [Interval(0, 10, [3], graph2)]}
+        )
+
+        trans_sum = trans + trans_back
+        interval_back = trans_sum.translate_interval(interval1).get_single_path_intervals()
+        self.assertTrue(interval_back, interval1)
+
+
     def test_translate_intervals_forth_and_back(self):
         pass
 
     def testAddTranslation(self):
         # Scenario: Splitting one region path two times
         graph, graph2, trans = get_translation_single_block()
+        graph3 = Graph({4: Block(3), 5: Block(3), 3: Block(5)}, {4: [5], 5: [3]})
+
         # Split first region path of graph2 again
-        intervalgraph3 = Interval(0, 2, [4, 5])  # Block 3 and 4 have length 5 in total
+        intervalgraph3 = Interval(0, 2, [4, 5], graph3)  # Block 3 and 4 have length 5 in total
         trans2 = Translation({2: [intervalgraph3]},
-                             {4: [Interval(0, 3, [2])],
-                              5: [Interval(3, 5, [2])]}
+                             {4: [Interval(0, 3, [2], graph2)],
+                              5: [Interval(3, 5, [2], graph2)]}
                             )
         trans3 = trans + trans2
-        correct_trans = Translation({1: [Interval(0, 5, [4, 5, 3])]},
-                                    {4: [Interval(0, 3, [1])],
-                                     5: [Interval(3, 5, [1])],
-                                     3: [Interval(5, 10,[1])]
+        correct_trans = Translation({1: [Interval(0, 5, [4, 5, 3], graph3)]},
+                                    {4: [Interval(0, 3, [1], graph)],
+                                     5: [Interval(3, 5, [1], graph)],
+                                     3: [Interval(5, 10,[1], graph)]
                                     })
 
         self.assertTrue(trans3, correct_trans)

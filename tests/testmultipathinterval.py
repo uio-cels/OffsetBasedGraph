@@ -1,6 +1,6 @@
 import unittest
 import dummygraph
-from offsetbasedgraph import GeneralMultiPathInterval, Position, Interval
+from offsetbasedgraph import GeneralMultiPathInterval, Position, Interval, Graph, Block
 
 
 class TestInterval(unittest.TestCase):
@@ -12,6 +12,15 @@ class TestInterval(unittest.TestCase):
         self.assertEqual(len(single_path_intervals), len(true_intervals))
         for interval in single_path_intervals:
             self.assertTrue(interval in true_intervals)
+
+    def _test_get_single_path_intervals_case(self):
+        graph = Graph({2: Block(5), 3: Block(5)}, {2: [3]})
+        multipath_interval = GeneralMultiPathInterval(
+            [Position(2, 3)],
+            [Position(3, 3)],
+            [2, 3]
+        )
+
 
     def test_get_single_path_intervals(self):
         graph = dummygraph.get_simple_graph()
@@ -50,6 +59,7 @@ class TestInterval(unittest.TestCase):
             Interval(start_positions[0], Position(3, 1), [1, 3])
             ]
         self._assertEqualsSinglePaths(multipath_interval, true_intervals)
+
 
 
 if __name__ == "__main__":

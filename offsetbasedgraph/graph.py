@@ -13,6 +13,11 @@ class Block(object):
     def __eq__(self, other):
         return self.length() == other.length()
 
+    def __str__(self):
+        return "Block(%d)" % self.length()
+
+    def __repr__(self):
+        return self.__str__()
 
 class Graph(object):
     adj_list = defaultdict(list)
@@ -29,6 +34,12 @@ class Graph(object):
         self.blocks = blocks
         self.adj_list = defaultdict(list, adj_list)
         self.reverse_adj_list = self._get_reverse_edges(adj_list)
+
+        # Debug sanity checking
+        for block in adj_list:
+            assert block in self.blocks, "Edge found from block that is not in blocks"
+            for block2 in adj_list[block]:
+                assert block2 in self.blocks, "Edge found going to non-existing block"
 
     @staticmethod
     def from_file(file_name):
