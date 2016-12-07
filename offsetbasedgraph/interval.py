@@ -17,6 +17,7 @@ class Position(object):
     def __repr__(self):
         return self.__str__()
 
+
 class Interval(object):
 
     def length(self):
@@ -100,18 +101,21 @@ class Interval(object):
         self.region_paths = region_paths
         self.graph = graph
 
-        # Sanity check interval
-        for rp in region_paths:
-            assert rp in graph.blocks, "Region path %s not in graph" % rp
 
+        # Sanity check interval
         assert self.start_position.region_path_id in self.region_paths
         assert self.end_position.region_path_id in self.region_paths
 
+        if self.graph is None:
+            return
+        for rp in region_paths:
+            assert rp in graph.blocks, "Region path %s not in graph" % rp
+
         # Check offsets
         assert self.end_position.offset <= graph.blocks[self.region_paths[-1]].length(), \
-                "Offset %d in block %d with size %d" % (self.end_position.offset,
-                                            self.region_paths[-1],
-                                            graph.blocks[self.region_paths[-1]].length())
+            "Offset %d in block %d with size %d" % (self.end_position.offset,
+                                                    self.region_paths[-1],
+                                                    graph.blocks[self.region_paths[-1]].length())
 
     def __eq__(self, other):
         eq = self.start_position == other.start_position
