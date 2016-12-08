@@ -159,6 +159,18 @@ class Interval(object):
 
         assert False
 
+    def get_adj_list(self):
+        """
+        :return: Returns every adjency in the interval as a list
+         of tuples (from_block_id, to_block_id)
+        """
+        prev = None
+        adjs = []
+        for rp in self.region_paths:
+            if prev is not None:
+                adjs.append(prev, rp)
+        return adjs
+
 
 def interval_factory(graph):
     """Create function that initializes

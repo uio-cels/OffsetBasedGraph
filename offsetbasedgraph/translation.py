@@ -1,6 +1,7 @@
 from .util import takes
 from .interval import Interval, Position
 from .multipathinterval import GeneralMultiPathInterval
+from .graph import Graph, Block
 
 
 class Translation(object):
@@ -79,16 +80,45 @@ class Translation(object):
         for adj in self.graph.adj_list:
             assert adj in self.graph1.adjency_list
 
-
-        adj = subgraph.adjency_list
         new_adj = {}
-        blocks = subgraph.blocks
         new_blocks = []
 
         """
-        Algorithm:
-
+        Algorithm: For every interval crossing edge in subgraph, translate.
+        Add every region path in translated interval and every edge
+        Also, translate every region path and add edges and region paths found
         """
+        edge_list_add = []
+
+        # Translate all edges
+        for edge in subgraph.get_edges_as_list():
+            block1, block2 = edge
+            interval = Interval(0, subgraph.block(block2).length(), [block1, block2], subgraph)
+            translated = self.translate_interval(interval).get_single_path_intervals()
+            assert len(translated) == 0, \
+                "Only translations to one interval supported."
+            translated = translated[0]
+            edge_list_add.extend(translated.get_adj_list)  # Add these later
+
+        # Translate all blocks
+        for block in subgraph.blocks:
+            interval = Interval(0, subgraph.block(block).length(), [block], subgraph)
+            translated = self.translate_interval(interval).get_single_path_intervals()
+            assert len(translated) == 0, \
+                "Only translations to one interval supported."
+            translated = translated[0]
+            new_blocks.extend([Block(b) for b in translated.region_paths])
+            edge_list_add.extend(translated.get_adj_list)  # Add these later
+
+        # Add all edges we have found
+        for edge in edge_list_add:
+            if edge[0] in new_adj:
+                new_adj[edge[0]].append(edge[1])
+            else:
+                new_adj[edge[0]] = [edge[1]]
+
+        return Graph(new_blocks, new_adj)
+
 
     @takes(Interval)
     def translate_interval(self, interval, inverse=False):

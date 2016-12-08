@@ -76,6 +76,17 @@ class Graph(object):
         """
         pass
 
+    def get_edges_as_list(self):
+        """
+        :return: Returns edges as tuples (from, to) in a list
+        """
+        edges = []
+        for block in self.adj_list:
+            for to in self.adj_list[block]:
+                edges.append((block, to))
+
+        return edges
+
     @staticmethod
     def _generate_translation(interval_a, interval_b,
                               sub_intervals_a, sub_intervals_b, ids):
