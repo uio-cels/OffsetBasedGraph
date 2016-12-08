@@ -357,6 +357,9 @@ class Graph(object):
     def connect_intervals(self, interval_a, interval_b):
         pass
 
+    def __str__(self):
+        return "Blocks: %s\Edges: %s" % (self.blocks, self.adj_list)
+
     @staticmethod
     def _get_reverse_edges(adj_list):
         reverse_edges = defaultdict(list)
@@ -367,8 +370,17 @@ class Graph(object):
         return reverse_edges
 
     def __eq__(self, other):
-        if self.adj_list != other.adj_list:
-            return False
+
+        for adj in self.adj_list:
+            if adj in other.adj_list and self.adj_list[adj] != other.adj_list[adj]:
+                return False
+        for adj in other.adj_list:
+            if adj in self.adj_list and self.adj_list[adj] != other.adj_list[adj]:
+                return False
+
+
+        #if self.adj_list != other.adj_list:
+        #    return False
 
         if self.blocks != other.blocks:
             return False
