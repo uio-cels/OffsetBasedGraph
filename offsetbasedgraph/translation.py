@@ -60,6 +60,16 @@ class Translation(object):
                                Position(rp, self.graph1.blocks[rp].length()))
         return [rp_interval]
 
+    def translate(self, obj):
+        if isinstance(obj, Interval):
+            ret = self.translate_interval(obj)
+        elif isinstance(obj, Position):
+            ret = self.translate_position(obj)
+        else:
+            raise Exception("Cannot translate %s" % obj)
+        assert len(ret) == 1
+        return ret[0]
+
     @takes(Interval)
     def translate_interval(self, interval, inverse=False):
         """
@@ -78,7 +88,10 @@ class Translation(object):
         """
         trans_dict = self._b_to_a if inverse else self._a_to_b
         if not any(rp in trans_dict for rp in interval.region_paths):
-            return [interval]
+            return SingleMulitPathInterval(interval)
+            return GeneralMultiPathInterval(
+                [interval.start_position], [interval.end_position],
+                interval.region_paths, graph=self._get_other_graph(inverse))
 
         new_starts = self.translate_position(interval.start_position, inverse)
         # Hack: Convert to inclusive end coordinate
@@ -90,7 +103,6 @@ class Translation(object):
             new_end.offset += 1
 
         new_region_paths = []
-
 
         for region_path in interval.region_paths:
             # Find all region paths that this region path follows
