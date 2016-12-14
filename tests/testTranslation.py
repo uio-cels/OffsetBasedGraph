@@ -3,6 +3,7 @@ import numpy as np
 import dummygraph
 from offsetbasedgraph import Interval, Position, Graph, Block, Translation
 
+
 def get_translation_single_block():
     graph = Graph({1: Block(10)}, {})   # Simple graph with one block
     graph2 = Graph({2: Block(5), 3: Block(5)}, {2: [3]})
@@ -17,6 +18,7 @@ def get_translation_single_block():
     trans = Translation({1: [interval3]}, {2: [interval1], 3: [interval2]})
 
     return graph, graph2, trans
+
 
 def get_merged_translation():
     graph1 = Graph({1: Block(10), 2: Block(10)}, {})  # Two disjoint blocks

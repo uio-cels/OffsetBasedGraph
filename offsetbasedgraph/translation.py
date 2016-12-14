@@ -1,6 +1,6 @@
 from .util import takes
 from .interval import Interval, Position
-from .multipathinterval import GeneralMultiPathInterval
+from .multipathinterval import GeneralMultiPathInterval, SingleMultiPathInterval, SimpleMultipathInterval
 
 
 class Translation(object):
@@ -65,8 +65,16 @@ class Translation(object):
         return [rp_interval]
 
     def translate(self, obj):
+        """Check type of obj and translate accordingly
+        Only for use where on one-to-one translation
+
+        :param obj: Interval/Position
+        :returns: translated object
+        :rtype: Interval/Position
+
+        """
         if isinstance(obj, Interval):
-            ret = self.translate_interval(obj)
+            ret = self.translate_interval(obj).get_single_path_intervals()
         elif isinstance(obj, Position):
             ret = self.translate_position(obj)
         else:
@@ -154,11 +162,12 @@ class Translation(object):
         trans_dict = self._b_to_a if inverse else self._a_to_b
 
         if not any(rp in trans_dict for rp in interval.region_paths):
+            return SingleMultiPathInterval(interval)
             # return SingleMulitPathInterval(interval)
-            return GeneralMultiPathInterval([interval.start_position],
-                                            [interval.end_position],
-                                            interval.region_paths,
-                                            interval.graph)
+            # return GeneralMultiPathInterval([interval.start_position],
+            #                                [interval.end_position],
+            #                                interval.region_paths,
+            #                                interval.graph)
             # return [interval]
 
         new_starts = self.translate_position(interval.start_position, inverse)
@@ -172,16 +181,21 @@ class Translation(object):
                 new_end.offset += 1
 
         new_region_paths = []
-
+        is_simple = len(new_ends) == 1 and len(new_starts) == 1
         for region_path in interval.region_paths:
             # Find all region paths that this region path follows
             intervals = self._translations(region_path, inverse)
+            is_simple = is_simple and len(intervals) == 1
             for interval in intervals:
                 new_region_paths.extend(interval.region_paths)
 
-        new_interval = GeneralMultiPathInterval(
-            new_starts, new_ends,
-            new_region_paths, self._get_other_graph(inverse))
+        if is_simple:
+            new_interval = SingleMultiPathInterval(
+                Interval(new_starts[0], new_ends[0], new_region_paths))
+        else:
+            new_interval = GeneralMultiPathInterval(
+                new_starts, new_ends,
+                new_region_paths, self._get_other_graph(inverse))
 
         return new_interval
 

@@ -256,16 +256,24 @@ class Graph(object):
         translations = [self._split_block(rp, min_len) for
                         rp in first_rps]
 
-        # new_first_intervals = [trans.translate_rp(rp) for 
-
     def _get_insulated_merge_transformation(self, intervals):
         pass
 
-    def _get_inslulate_transformation(self, intervals):
+    def _get_inslulate_translation(self, intervals):
+        """Get translation for splittin the region paths
+        at the start and end of the intervals such that
+        all the intervals span complete region paths
+
+        :param intervals: 
+        :returns: 
+        :rtype: Translation
+
+        """
         # Split starts
         trans_dict = {}
         reverse_dict = {}
         starts = [i.start_position for i in intervals]
+        translation = Translation()
         for start in starts:
             if start.offset == 0:
                 continue
@@ -276,15 +284,50 @@ class Graph(object):
             trans_dict[rp] = [Interval(
                 Position(id_a, 0),
                 Position(id_b, L-offset))]
+
+            reverse_dict[id_a] = [Interval(Position(rp, 0),
+                                           Position(rp, offset))]
+
+            reverse_dict[id_b] = [Interval(Position(rp, offset),
+                                           Position(rp, L))]
+            translation += Translation(trans_dict, reverse_dict)
+
+        print("--", translation._a_to_b)
+        new_intervals = [translation.translate(i) for i in intervals]
+        ends = [i.end_position for i in new_intervals]
+
+        for end in ends:
+            rp = end.region_path_id
+            L = self.blocks[rp].length()
+            offset = end.offset
+            if offset == L:
+                continue
+            id_a, id_b = (self._next_id(), self._next_id())
+            trans_dict[rp] = [Interval(
+                Position(id_a, 0),
+                Position(id_b, L-offset)
+                )]
             reverse_dict[id_a] = [Interval(Position(rp, 0),
                                            Position(rp, offset))]
             reverse_dict[id_b] = [Interval(Position(rp, offset),
                                            Position(rp, L))]
-        
+            tmp_trans = Translation(trans_dict, reverse_dict)
+            print("TMP:", tmp_trans)
+            translation += tmp_trans
+        print("++", translation._a_to_b)
+        return translation
 
-    def get_merge_transformation(self, intervals):
-        trans = self._get_inslulate_transformation(intervals)
-        trans2 = self._get_insulated_merge_transformation(
+    def get_merge_translation(self, intervals):
+        """Get translation object for merging the
+        given intervals in the graph
+
+        :param intervals: list of intevals to merge
+        :returns: translation object
+        :rtype: Translation
+
+        """
+        trans = self._get_inslulate_translation(intervals)
+        trans2 = self._get_insulated_merge_translation(
             [trans.translate(interval) for interval in intervals])
         return trans+trans2
 
@@ -338,8 +381,6 @@ class Graph(object):
             interval_a,
             interval_b)
 
-        print(interval_a)
-        print(break_points)
         sub_intervals_a = interval_a.split(break_points)
         sub_intervals_b = interval_b.split(break_points)
 

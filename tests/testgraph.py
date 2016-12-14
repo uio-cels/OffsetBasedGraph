@@ -22,11 +22,6 @@ def disjoint_graph():
 class TestGraph(unittest.TestCase):
 
     def assert_graph_equals(self, graph, blocks, adj_list):
-        if DEBUG:
-            print(blocks)
-            print(graph.blocks)
-            print(adj_list)
-            print(graph.adj_list)
         self.assertEqual(graph.blocks, blocks)
         self.assertEqual(graph.adj_list, adj_list)
         self.assertEqual(graph.reverse_adj_list,
@@ -92,8 +87,6 @@ class TestGraph(unittest.TestCase):
              zip([new_id, new_id2, new_id3], old_intervals)}
             )
 
-        print(true_trans)
-        print(trans)
         self.assertEqual(trans, true_trans)
 
     def test_join(self):
@@ -122,7 +115,11 @@ class TestGraph(unittest.TestCase):
             trans)
 
     def test_insulate_translation(self):
-        pass
+        graph, interval_a, interval_b = self._setup_merge()
+        translation = graph._get_inslulate_translation(
+            [interval_a, interval_b])
+        a_to_b = translation._a_to_b
+        self.assertEqual(len(a_to_b), 2)
 
     def _test_merge_translation(self):
         graph, interval_a, interval_b = self._setup_merge()
@@ -183,7 +180,7 @@ class TestGraph(unittest.TestCase):
         border_list = graph._get_all_block_borders(interval_a, interval_b)
         self.assertEqual(border_list, [5, 10, 21])
 
-    def test_split_blocks_at_starts_and_ends(self):
+    def _test_split_blocks_at_starts_and_ends(self):
         graph = dummygraph.get_disjoint_graph()
         intervals = [Interval(Position(1, 0), Position(1, 5), graph=graph),
                      Interval(Position(2, 5), Position(2, 10), graph=graph),

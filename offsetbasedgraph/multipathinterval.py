@@ -2,15 +2,33 @@ from itertools import chain
 from .interval import Interval
 
 
-class SingleMultiPathInterval(object):
+class MultiPathInterval(object):
+
+    def get_single_path_intervals(self):
+        raise NotImplementedError()
+
+
+class SingleMultiPathInterval(MultiPathInterval):
     def __init__(self, interval):
         self.interval = interval
+        rps = interval.region_paths
+        if len(rps) > 1 and rps[-1] == rps[0]:
+            self.interval.region_paths = rps[:-1]
 
-    def get_all_single_path_intervals(self):
+    def get_single_path_intervals(self):
         return [self.interval]
 
 
-class GeneralMultiPathInterval(object):
+class SimpleMultipathInterval(object):
+
+    def __init__(self, intervals):
+        self._intervals = intervals
+
+    def get_single_path_intervals(self):
+        return self._intervals
+
+
+class GeneralMultiPathInterval(MultiPathInterval):
     """
     Holds a general multipath interval by representing all possible start
     positions, end positions and all possible region paths within the interval.
