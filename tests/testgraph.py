@@ -142,6 +142,9 @@ class TestGraph(unittest.TestCase):
             true_translation,
             trans)
 
+    def test_insulate_translation(self):
+        pass
+
     def _test_merge_translation(self):
         graph, interval_a, interval_b = self._setup_merge()
         translation = graph.merge_intervals(

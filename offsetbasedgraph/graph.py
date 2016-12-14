@@ -252,10 +252,41 @@ class Graph(object):
         first_rps = [interval.region_paths[0] for interval in intervals]
         first_rp_lengths = [self.blocks[rp].lenght()
                             for rp in first_rps]
-        min_len = mein(first_rp_lengths)
+        min_len = min(first_rp_lengths)
         translations = [self._split_block(rp, min_len) for
                         rp in first_rps]
+
         # new_first_intervals = [trans.translate_rp(rp) for 
+
+    def _get_insulated_merge_transformation(self, intervals):
+        pass
+
+    def _get_inslulate_transformation(self, intervals):
+        # Split starts
+        trans_dict = {}
+        reverse_dict = {}
+        starts = [i.start_position for i in intervals]
+        for start in starts:
+            if start.offset == 0:
+                continue
+            rp = start.region_path_id
+            offset = start.offset
+            id_a, id_b = (self._next_id(), self.next_id())
+            L = self.blocks[rp].length()
+            trans_dict[rp] = [Interval(
+                Position(id_a, 0),
+                Position(id_b, L-offset))]
+            reverse_dict[id_a] = [Interval(Position(rp, 0),
+                                           Position(rp, offset))]
+            reverse_dict[id_b] = [Interval(Position(rp, offset),
+                                           Position(rp, L))]
+        
+
+    def get_merge_transformation(self, intervals):
+        trans = self._get_inslulate_transformation(intervals)
+        trans2 = self._get_insulated_merge_transformation(
+            [trans.translate(interval) for interval in intervals])
+        return trans+trans2
 
     def _split_blocks_at_starts_and_ends(self, intervals):
         """

@@ -2,6 +2,14 @@ from itertools import chain
 from .interval import Interval
 
 
+class SingleMultiPathInterval(object):
+    def __init__(self, interval):
+        self.interval = interval
+
+    def get_all_single_path_intervals(self):
+        return [self.interval]
+
+
 class GeneralMultiPathInterval(object):
     """
     Holds a general multipath interval by representing all possible start
@@ -42,6 +50,7 @@ class GeneralMultiPathInterval(object):
             rp
             for rp in self.graph.adj_list[cur_region_path]
             if rp in self.region_paths)
+
         for rp in next_level:
             yield from self._find_end_region_path(
                 start_position, region_paths + [rp])
@@ -64,7 +73,7 @@ class GeneralMultiPathInterval(object):
         """
         intervals = []
         for start_position in self.start_positions:
-            #yield from self._get_single_path_intervals(start_position)
+            # yield from self._get_single_path_intervals(start_position)
             intervals.extend(self._get_single_path_intervals(start_position))
         return intervals
 

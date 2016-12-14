@@ -131,9 +131,6 @@ class Interval(object):
         return "%s, %s, %s" % (self.start_position,
                                self.end_position, self.region_paths)
 
-    def __repr__(self):
-        return self.__str__()
-
     def get_position_from_offset(self, offset):
         """Get position of with offset counted from the start of
         the interval
