@@ -444,10 +444,12 @@ class Graph(object):
     def __eq__(self, other):
 
         for adj in self.adj_list:
-            if adj in other.adj_list and self.adj_list[adj] != other.adj_list[adj]:
+            #if adj in other.adj_list and self.adj_list[adj] != other.adj_list[adj]:
+            if self.adj_list[adj] != other.adj_list[adj]:
                 return False
         for adj in other.adj_list:
-            if adj in self.adj_list and self.adj_list[adj] != other.adj_list[adj]:
+            if self.adj_list[adj] != other.adj_list[adj]:
+            #if adj in self.adj_list and self.adj_list[adj] != other.adj_list[adj]:
                 return False
 
 

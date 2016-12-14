@@ -83,7 +83,6 @@ class Interval(object):
 
         if isinstance(start_position, int):
             self.start_position = Position(region_paths[0], start_position)
-            print("Start pos %s" % self.start_position)
         else:
             self.start_position = start_position
 
