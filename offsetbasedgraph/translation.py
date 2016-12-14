@@ -192,7 +192,9 @@ class Translation(object):
 
         if is_simple:
             new_interval = SingleMultiPathInterval(
-                Interval(new_starts[0], new_ends[0], new_region_paths))
+                Interval(new_starts[0], new_ends[0], new_region_paths,
+                         graph=self._get_other_graph(inverse)))
+
         else:
             new_interval = GeneralMultiPathInterval(
                 new_starts, new_ends,

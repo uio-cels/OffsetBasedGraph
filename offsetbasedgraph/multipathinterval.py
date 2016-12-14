@@ -9,8 +9,9 @@ class MultiPathInterval(object):
 
 
 class SingleMultiPathInterval(MultiPathInterval):
-    def __init__(self, interval):
+    def __init__(self, interval, graph=None):
         self.interval = interval
+        self.graph = graph
         rps = interval.region_paths
         if len(rps) > 1 and rps[-1] == rps[0]:
             self.interval.region_paths = rps[:-1]
