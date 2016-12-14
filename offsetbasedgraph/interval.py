@@ -112,10 +112,10 @@ class Interval(object):
 
         # Check offsets
         max_offset = graph.blocks[self.region_paths[-1]].length()
-        msg = "Offset %d in block %d with size %d" % (
+        msg = "Offset %d in block %d with size %d. Interval: %s" % (
             self.end_position.offset,
             self.region_paths[-1],
-            graph.blocks[self.region_paths[-1]].length())
+            graph.blocks[self.region_paths[-1]].length(), self.__str__())
 
         assert self.end_position.offset <= max_offset, msg
 
@@ -155,6 +155,19 @@ class Interval(object):
             total_offset -= rp_length
 
         assert False
+
+    def get_adj_list(self):
+        """
+        :return: Returns every adjency in the interval as a list
+         of tuples (from_block_id, to_block_id)
+        """
+        prev = None
+        adjs = []
+        for rp in self.region_paths:
+            if prev is not None:
+                adjs.append((prev, rp))
+            prev = rp
+        return adjs
 
 
 def interval_factory(graph):

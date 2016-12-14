@@ -37,7 +37,11 @@ class Translation(object):
             return dict[rp]
         # Not in dict, means translate to itself (return interval covering
         # itself)
-        g = self.graph1 if self.graph1 is not None else self.graph2
+        # g = self.graph1 if self.graph1 is not None else self.graph2
+        if self.graph1 is not None and self.graph2 is not None:
+            g = self.graph1 if inverse else self.graph2
+        else:
+            g = self.graph1 if self.graph2 is None else self.graph2
         return [Interval(0, g.blocks[rp].length(), [rp], g)]
 
     def _get_other_graph(self, inverse):
@@ -70,6 +74,67 @@ class Translation(object):
         assert len(ret) == 1
         return ret[0]
 
+    def translate_subgraph(self, subgraph):
+        """
+        Translates a graph (forward). The graph has to be a subgraph of
+        graph1 in the translation object.
+        :param subgraph: Subgraph to translate.
+        :return: Returns the translated subgraph
+        """
+
+        # Check that subgraph really is a subgraph
+        for block in subgraph.blocks:
+            assert block in self.graph1.blocks
+
+        for adj in subgraph.adj_list:
+            assert adj in self.graph1.adjency_list
+
+        new_adj = {}
+        new_blocks = {}
+
+        from .graph import Graph, Block
+
+        """
+        Algorithm: For every interval crossing edge in subgraph, translate.
+        Add every region path in translated interval and every edge
+        Also, translate every region path and add edges and region paths found
+        """
+        edge_list_add = []
+
+        # Translate all edges
+        for edge in subgraph.get_edges_as_list():
+            block1, block2 = edge
+            interval = Interval(0, subgraph.block(block2).length(),
+                                [block1, block2], subgraph)
+            translated = self.translate_interval(interval).get_single_path_intervals()
+            assert len(translated) <= 1, \
+                "Only translations to one interval supported. %d returned" \
+                % len(translated)
+            translated = translated[0]
+            edge_list_add.extend(translated.get_adj_list)  # Add these later
+
+        # Translate all blocks
+        for block in subgraph.blocks:
+            interval = Interval(0, subgraph.blocks[block].length(),
+                                [block], subgraph)
+            translated = self.translate_interval(interval).get_single_path_intervals()
+            assert len(translated) <= 1, \
+                "Only translations to max 1 interval supported. %d returned" \
+                % (len(translated))
+            translated = translated[0]
+            for block in translated.region_paths:
+                new_blocks[block] = Block(translated.graph.blocks[block].length())
+            edge_list_add.extend(translated.get_adj_list())  # Add these later
+
+        # Add all edges we have found
+        for edge in edge_list_add:
+            if edge[0] in new_adj:
+                new_adj[edge[0]].append(edge[1])
+            else:
+                new_adj[edge[0]] = [edge[1]]
+
+        return Graph(new_blocks, new_adj)
+
     @takes(Interval)
     def translate_interval(self, interval, inverse=False):
         """
@@ -87,11 +152,14 @@ class Translation(object):
             Put this into a general multipath interval
         """
         trans_dict = self._b_to_a if inverse else self._a_to_b
+
         if not any(rp in trans_dict for rp in interval.region_paths):
-            return SingleMulitPathInterval(interval)
-            return GeneralMultiPathInterval(
-                [interval.start_position], [interval.end_position],
-                interval.region_paths, graph=self._get_other_graph(inverse))
+            # return SingleMulitPathInterval(interval)
+            return GeneralMultiPathInterval([interval.start_position],
+                                            [interval.end_position],
+                                            interval.region_paths,
+                                            interval.graph)
+            # return [interval]
 
         new_starts = self.translate_position(interval.start_position, inverse)
         # Hack: Convert to inclusive end coordinate
@@ -100,7 +168,8 @@ class Translation(object):
         # Hack: Convert back to exclusive
         interval.end_position.offset += 1
         for new_end in new_ends:
-            new_end.offset += 1
+            if new_end != interval.end_position:
+                new_end.offset += 1
 
         new_region_paths = []
 
@@ -159,9 +228,10 @@ class Translation(object):
         # Find new forward translation dict
         new_translate_dict = {}
         for t in self._a_to_b:
-            print(self._a_to_b[t][0])
-            new_translate_dict[t] = other.translate_interval(
-                self._a_to_b[t][0]).get_single_path_intervals()
+            print("Translating: %s: %s" % (t, self._a_to_b[t][0]))
+            translated = other.translate_interval(self._a_to_b[t][0])
+            print("Translated to:\n %s" % translated)
+            new_translate_dict[t] = translated.get_single_path_intervals()
 
         new_trans._a_to_b = new_translate_dict
 
@@ -179,7 +249,7 @@ class Translation(object):
                     )
                 old = new_b_to_a[t]
                 if all(i in old for i in new_intervals) \
-                            and all(i in new_intervals for i in old):
+                   and all(i in new_intervals for i in old):
                     changed = False  # If change, translate again
                 new_b_to_a[t] = new_intervals
 

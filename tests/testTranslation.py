@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 import dummygraph
-from offsetbasedgraph import Interval, Position, Graph, Translation, Block
+from offsetbasedgraph import Interval, Position, Graph, Block, Translation
 
 def get_translation_single_block():
     graph = Graph({1: Block(10)}, {})   # Simple graph with one block
@@ -128,7 +128,7 @@ class TestTranslation(unittest.TestCase):
     def testAddTranslation(self):
         # Scenario: Splitting one region path two times
         graph, graph2, trans = get_translation_single_block()
-        graph3 = Graph({4: Block(3), 5: Block(3), 3: Block(5)}, {4: [5], 5: [3]})
+        graph3 = Graph({4: Block(3), 5: Block(2), 3: Block(5)}, {4: [5], 5: [3]})
 
         # Split first region path of graph2 again
         intervalgraph3 = Interval(0, 2, [4, 5], graph3)  # Block 3 and 4 have length 5 in total
@@ -144,6 +144,18 @@ class TestTranslation(unittest.TestCase):
                                     })
 
         self.assertTrue(trans3, correct_trans)
+
+    def test_translate_subgraph(self):
+        graph1, graph2, trans = get_translation_single_block()
+        translated_graph = trans.translate_subgraph(graph1)
+
+        self.assertEqual(graph2, translated_graph)
+
+        graph1, graph2, trans = get_merged_translation()
+        translated_graph = trans.translate_subgraph(graph1)
+
+
+        self.assertEqual(graph2, translated_graph)
 
 
 if __name__ == "__main__":
