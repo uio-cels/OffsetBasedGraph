@@ -70,6 +70,7 @@ class Translation(object):
         :param subgraph: Subgraph to translate.
         :return: Returns the translated subgraph
         """
+        assert self.graph1 is not None, "Cannot translate subgraph if graph1 is None"
 
         # Check that subgraph really is a subgraph
         for block in subgraph.blocks:
@@ -216,9 +217,7 @@ class Translation(object):
         # Find new forward translation dict
         new_translate_dict = {}
         for t in self._a_to_b:
-            print("Translating: %s: %s" % (t, self._a_to_b[t][0]))
             translated = other.translate_interval(self._a_to_b[t][0])
-            print("Translated to:\n %s" % translated)
             new_translate_dict[t] = translated.get_single_path_intervals()
 
         new_trans._a_to_b = new_translate_dict
