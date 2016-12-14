@@ -83,7 +83,7 @@ class Interval(object):
 
         if isinstance(start_position, int):
             self.start_position = Position(region_paths[0], start_position)
-        ucselse:
+        else:
             self.start_position = start_position
 
         if isinstance(end_position, int):
