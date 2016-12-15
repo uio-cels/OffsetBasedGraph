@@ -276,6 +276,9 @@ class Graph(object):
         translation = Translation(graph=self)
         cur_graph = self
         i = 0
+
+        print("_______________________")
+
         for start in starts:
             print("starts", i)
             i += 1
@@ -330,10 +333,15 @@ class Graph(object):
                                            graph=cur_graph)]
             tmp_trans = Translation(trans_dict, reverse_dict, graph=cur_graph)
             cur_graph = tmp_trans.translate_subgraph(cur_graph)
+            print("_______________________")
+            print("##", cur_graph.blocks)
+            print("--", [ints for ints in trans_dict.values()])
+            print("______________________")
+
             for i_list in trans_dict.values():
                 for i in i_list:
                     i.graph = cur_graph
-
+            tmp_trans.graph2 = cur_graph
             translation += tmp_trans
         print("++", translation._a_to_b)
         return translation

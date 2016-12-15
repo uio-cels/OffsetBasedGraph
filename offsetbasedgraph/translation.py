@@ -30,7 +30,7 @@ class Translation(object):
             self.graph1 = self.graph2
         if self.graph2 is None:
             self.graph2 = self.graph1
-        if self.graph1 is None:
+        if graph is not None:
             self.graph1 = graph
 
     def _translations(self, rp, inverse=False):
@@ -100,7 +100,7 @@ class Translation(object):
             assert block in self.graph1.blocks
 
         for adj in subgraph.adj_list:
-            assert adj in self.graph1.adjency_list
+            assert adj in self.graph1.adj_list
 
         new_adj = {}
         new_blocks = {}
@@ -117,14 +117,14 @@ class Translation(object):
         # Translate all edges
         for edge in subgraph.get_edges_as_list():
             block1, block2 = edge
-            interval = Interval(0, subgraph.block(block2).length(),
+            interval = Interval(0, subgraph.blocks[block2].length(),
                                 [block1, block2], subgraph)
             translated = self.translate_interval(interval).get_single_path_intervals()
             assert len(translated) <= 1, \
                 "Only translations to one interval supported. %d returned" \
                 % len(translated)
             translated = translated[0]
-            edge_list_add.extend(translated.get_adj_list)  # Add these later
+            edge_list_add.extend(translated.get_adj_list())  # Add these later
 
         # Translate all blocks
         for block in subgraph.blocks:
@@ -242,8 +242,9 @@ class Translation(object):
             For every (region path => inter) in c, translate recursviely back
             to all intervals using a.translate(inter, inverse). Replace in c
         """
-
-        new_trans = Translation(self._a_to_b, self._b_to_a)
+        assert other.graph1 is not None
+        assert self.graph1 is not None
+        new_trans = Translation(self._a_to_b, self._b_to_a, graph=self.graph1)
         region_paths = set(self._a_to_b.keys()).union(set(other._a_to_b.keys()))
         valid_region_paths = region_paths.intersection(set(self.graph1.blocks))
 
