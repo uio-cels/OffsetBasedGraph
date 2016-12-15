@@ -33,7 +33,7 @@ class Translation(object):
         if self.graph1 is None:
             self.graph1 = graph
 
-    def _translations(self, rp, inverse):
+    def _translations(self, rp, inverse=False):
         dict = self._b_to_a if inverse else self._a_to_b
         if rp in dict:
             return dict[rp]
@@ -52,7 +52,7 @@ class Translation(object):
         else:
             return self.graph2
 
-    def translate_rp(self, rp):
+    def translate_rp(self, rp, inverse=False):
         """Translate region path, by dict lookup
 
         :param rp: region path id
@@ -62,6 +62,7 @@ class Translation(object):
         """
         if rp in self._a_to_b:
             return self._a_to_b[rp]
+
         rp_interval = Interval(Position(rp, 0),
                                Position(rp, self.graph1.blocks[rp].length()),
                                graph=self.graph1)
@@ -127,15 +128,14 @@ class Translation(object):
 
         # Translate all blocks
         for block in subgraph.blocks:
-            interval = Interval(0, subgraph.blocks[block].length(),
-                                [block], subgraph)
-            translated = self.translate_interval(interval).get_single_path_intervals()
+            translated = self._translations(block, inverse=False)
             assert len(translated) <= 1, \
                 "Only translations to max 1 interval supported. %d returned" \
                 % (len(translated))
             translated = translated[0]
-            for block in translated.region_paths:
-                new_blocks[block] = Block(translated.graph.blocks[block].length())
+            for rp in translated.region_paths:
+                new_blocks[rp] = Block(self._translations(rp, inverse=True)[0].length())
+                # translated.graph.blocks[rp].length())
             edge_list_add.extend(translated.get_adj_list())  # Add these later
 
         # Add all edges we have found
@@ -251,7 +251,7 @@ class Translation(object):
         new_translate_dict = {}
         for t in valid_region_paths:
             translated = other.translate_interval(
-                self.translate_rp(t)[0])
+                self._translations(t)[0])
             new_translate_dict[t] = translated.get_single_path_intervals()
 
         new_trans._a_to_b = new_translate_dict

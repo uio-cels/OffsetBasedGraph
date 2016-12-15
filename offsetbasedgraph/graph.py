@@ -301,7 +301,7 @@ class Graph(object):
 
             tmp_trans = Translation(trans_dict, reverse_dict, graph=cur_graph)
             cur_graph = tmp_trans.translate_subgraph(cur_graph)
-            for i_list in trans_dict.values:
+            for i_list in trans_dict.values():
                 for i in i_list:
                     i.graph = cur_graph
             translation += tmp_trans
@@ -330,7 +330,7 @@ class Graph(object):
                                            graph=cur_graph)]
             tmp_trans = Translation(trans_dict, reverse_dict, graph=cur_graph)
             cur_graph = tmp_trans.translate_subgraph(cur_graph)
-            for i_list in trans_dict.values:
+            for i_list in trans_dict.values():
                 for i in i_list:
                     i.graph = cur_graph
 
