@@ -459,7 +459,7 @@ class Graph(object):
         pass
 
     def __str__(self):
-        return "Blocks: %s\Edges: %s" % (self.blocks, self.adj_list)
+        return "Graph: \n Blocks: %s\n Edges: %s" % (self.blocks, self.adj_list)
 
     @staticmethod
     def _get_reverse_edges(adj_list):
