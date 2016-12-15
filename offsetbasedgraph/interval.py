@@ -107,7 +107,7 @@ class Interval(object):
         if self.graph is None:
             return
         for rp in region_paths:
-            assert rp in graph.blocks, "Region path %s not in graph" % rp
+            assert rp in graph.blocks, "Region path %s not in graph \n%s" % (rp, graph)
 
         # Check offsets
         max_offset = graph.blocks[self.region_paths[-1]].length()
