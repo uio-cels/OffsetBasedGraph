@@ -24,6 +24,7 @@ def get_disjoint_graph():
 def get_medium_complex_graph():
     blocks = {1: Block(10), 2: Block(20), 3: Block(10), 4: Block(15)}
 
+
 # Graphs and translations
 def get_translation_single_block():
     graph = Graph({1: Block(10)}, {})   # Simple graph with one block
@@ -39,6 +40,7 @@ def get_translation_single_block():
     trans = Translation({1: [interval3]}, {2: [interval1], 3: [interval2]})
 
     return graph, graph2, trans
+
 
 def get_merged_translation():
     graph1 = Graph({1: Block(10), 2: Block(10)}, {})  # Two disjoint blocks
@@ -57,6 +59,7 @@ def get_merged_translation():
     )
 
     return graph1, graph2, trans
+
 
 def get_merged_middle_translation():
     graph1 = Graph({1: Block(3), 2: Block(3)}, {})

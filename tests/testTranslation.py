@@ -1,8 +1,7 @@
 import unittest
-import numpy as np
 import dummygraph
-#from dummygraph import get_translation_single_block, get_merged_translation, get_merged_middle_translation
 from offsetbasedgraph import Interval, Position, Graph, Block, Translation
+
 
 class TestTranslation(unittest.TestCase):
 

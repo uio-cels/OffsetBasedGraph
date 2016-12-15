@@ -1,11 +1,11 @@
 from .util import takes
 from .interval import Interval, Position
-from .multipathinterval import GeneralMultiPathInterval
+from .multipathinterval import GeneralMultiPathInterval, SingleMultiPathInterval, SimpleMultipathInterval
 
 
 class Translation(object):
 
-    def __init__(self, translate_dict={}, reverse_dict={}):
+    def __init__(self, translate_dict={}, reverse_dict={}, graph=None):
         """
         Init the translation object with two dicts. Each dict has
         region path IDs as keys and a list of intervals as values.
@@ -30,6 +30,8 @@ class Translation(object):
             self.graph1 = self.graph2
         if self.graph2 is None:
             self.graph2 = self.graph1
+        if self.graph1 is None:
+            self.graph1 = graph
 
     def _translations(self, rp, inverse):
         dict = self._b_to_a if inverse else self._a_to_b
@@ -61,12 +63,21 @@ class Translation(object):
         if rp in self._a_to_b:
             return self._a_to_b[rp]
         rp_interval = Interval(Position(rp, 0),
-                               Position(rp, self.graph1.blocks[rp].length()))
+                               Position(rp, self.graph1.blocks[rp].length()),
+                               graph=self.graph1)
         return [rp_interval]
 
     def translate(self, obj):
+        """Check type of obj and translate accordingly
+        Only for use where on one-to-one translation
+
+        :param obj: Interval/Position
+        :returns: translated object
+        :rtype: Interval/Position
+
+        """
         if isinstance(obj, Interval):
-            ret = self.translate_interval(obj)
+            ret = self.translate_interval(obj).get_single_path_intervals()
         elif isinstance(obj, Position):
             ret = self.translate_position(obj)
         else:
@@ -155,11 +166,12 @@ class Translation(object):
         trans_dict = self._b_to_a if inverse else self._a_to_b
 
         if not any(rp in trans_dict for rp in interval.region_paths):
+            return SingleMultiPathInterval(interval)
             # return SingleMulitPathInterval(interval)
-            return GeneralMultiPathInterval([interval.start_position],
-                                            [interval.end_position],
-                                            interval.region_paths,
-                                            interval.graph)
+            # return GeneralMultiPathInterval([interval.start_position],
+            #                                [interval.end_position],
+            #                                interval.region_paths,
+            #                                interval.graph)
             # return [interval]
 
         new_starts = self.translate_position(interval.start_position, inverse)
@@ -173,16 +185,23 @@ class Translation(object):
                 new_end.offset += 1
 
         new_region_paths = []
-
+        is_simple = len(new_ends) == 1 and len(new_starts) == 1
         for region_path in interval.region_paths:
             # Find all region paths that this region path follows
             intervals = self._translations(region_path, inverse)
+            is_simple = is_simple and len(intervals) == 1
             for interval in intervals:
                 new_region_paths.extend(interval.region_paths)
 
-        new_interval = GeneralMultiPathInterval(
-            new_starts, new_ends,
-            new_region_paths, self._get_other_graph(inverse))
+        if is_simple:
+            new_interval = SingleMultiPathInterval(
+                Interval(new_starts[0], new_ends[0], new_region_paths,
+                         graph=self._get_other_graph(inverse)))
+
+        else:
+            new_interval = GeneralMultiPathInterval(
+                new_starts, new_ends,
+                new_region_paths, self._get_other_graph(inverse))
 
         return new_interval
 
@@ -225,11 +244,14 @@ class Translation(object):
         """
 
         new_trans = Translation(self._a_to_b, self._b_to_a)
+        region_paths = set(self._a_to_b.keys()).union(set(other._a_to_b.keys()))
+        valid_region_paths = region_paths.intersection(set(self.graph1.blocks))
 
         # Find new forward translation dict
         new_translate_dict = {}
-        for t in self._a_to_b:
-            translated = other.translate_interval(self._a_to_b[t][0])
+        for t in valid_region_paths:
+            translated = other.translate_interval(
+                self.translate_rp(t)[0])
             new_translate_dict[t] = translated.get_single_path_intervals()
 
         new_trans._a_to_b = new_translate_dict
