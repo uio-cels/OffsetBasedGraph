@@ -273,30 +273,45 @@ class Graph(object):
         trans_dict = {}
         reverse_dict = {}
         starts = [i.start_position for i in intervals]
-        translation = Translation()
+        translation = Translation(graph=self)
+        cur_graph = self
+        i = 0
         for start in starts:
+            print("starts", i)
+            i += 1
+            assert cur_graph is not None
             if start.offset == 0:
                 continue
             rp = start.region_path_id
             offset = start.offset
             id_a, id_b = (self._next_id(), self.next_id())
             L = self.blocks[rp].length()
+
             trans_dict[rp] = [Interval(
                 Position(id_a, 0),
                 Position(id_b, L-offset))]
 
             reverse_dict[id_a] = [Interval(Position(rp, 0),
-                                           Position(rp, offset))]
+                                           Position(rp, offset),
+                                           graph=cur_graph)]
 
             reverse_dict[id_b] = [Interval(Position(rp, offset),
-                                           Position(rp, L))]
-            translation += Translation(trans_dict, reverse_dict)
+                                           Position(rp, L),
+                                           graph=cur_graph)]
+
+            tmp_trans = Translation(trans_dict, reverse_dict, graph=cur_graph)
+            cur_graph = tmp_trans.translate_subgraph(cur_graph)
+            for i_list in trans_dict.values:
+                for i in i_list:
+                    i.graph = cur_graph
+            translation += tmp_trans
 
         print("--", translation._a_to_b)
         new_intervals = [translation.translate(i) for i in intervals]
         ends = [i.end_position for i in new_intervals]
 
         for end in ends:
+            assert cur_graph is not None
             rp = end.region_path_id
             L = self.blocks[rp].length()
             offset = end.offset
@@ -308,11 +323,17 @@ class Graph(object):
                 Position(id_b, L-offset)
                 )]
             reverse_dict[id_a] = [Interval(Position(rp, 0),
-                                           Position(rp, offset))]
+                                           Position(rp, offset),
+                                           graph=cur_graph)]
             reverse_dict[id_b] = [Interval(Position(rp, offset),
-                                           Position(rp, L))]
-            tmp_trans = Translation(trans_dict, reverse_dict)
-            print("TMP:", tmp_trans)
+                                           Position(rp, L),
+                                           graph=cur_graph)]
+            tmp_trans = Translation(trans_dict, reverse_dict, graph=cur_graph)
+            cur_graph = tmp_trans.translate_subgraph(cur_graph)
+            for i_list in trans_dict.values:
+                for i in i_list:
+                    i.graph = cur_graph
+
             translation += tmp_trans
         print("++", translation._a_to_b)
         return translation
