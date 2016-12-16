@@ -15,6 +15,19 @@ def get_mergable_graph():
     return graph
 
 
+def get_insulated_graph():
+    blocks = {1: Block(10),
+              2: Block(10), 3: Block(10), 4: Block(10),
+              5: Block(5), 6: Block(15), 7: Block(10),
+              8: Block(10)}
+
+    edges = {1: [2, 5],
+             2: [3], 3: [4], 4: [8],
+             5: [6], 6: [7], 7: [8]}
+
+    return Graph(blocks, edges)
+
+
 def get_disjoint_graph():
     blocks = {1: Block(10), 2: Block(20), 3: Block(30)}
     block_edges = {}

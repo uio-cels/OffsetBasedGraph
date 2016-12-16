@@ -256,16 +256,84 @@ class Graph(object):
         translations = [self._split_block(rp, min_len) for
                         rp in first_rps]
 
+    def get_split_translation(self, rp, offset):
+
+        id_a, id_b = (self._next_id(), self._next_id())
+        L = self.blocks[rp].length()
+        trans_dict = {}
+        reverse_dict = {}
+        trans_dict[rp] = [Interval(
+            Position(id_a, 0),
+            Position(id_b, L-offset))]
+
+        reverse_dict[id_a] = [Interval(Position(rp, 0),
+                                       Position(rp, offset),
+                                       graph=self)]
+
+        reverse_dict[id_b] = [Interval(Position(rp, offset),
+                                       Position(rp, L),
+                                       graph=self)]
+
+        trans = Translation(trans_dict, reverse_dict, graph=self)
+
+        new_graph = trans.translate_subgraph(self)
+        trans.graph2 = new_graph
+        for i_list in trans_dict.values():
+            for i in i_list:
+                i.graph = new_graph
+
+        return trans, new_graph
+
     def _get_insulated_merge_transformation(self, intervals):
-        pass
+        """Merge intervals that all start and end at region path
+        boundries
+
+        :param intervals:
+        :returns: translation and new graph
+        :rtype: (Translation, Graph)
+
+        """
+        first_rps = [i.region_paths[0] for i in intervals]
+        offset = min(self.blocks[rp].length() for rp in first_rps)
+        if offset == intervals[0].length():
+            return Translation(graph=self), self
+
+        translation = Translation(graph=self)
+        graph = self
+        for rp in first_rps:
+            print("#", rp)
+            if self.blocks[rp].length() == offset:
+                continue
+            trans, graph = graph.get_split_translation(rp, offset)
+            translation += trans
+
+        print(graph)
+        intervals = [translation.translate(i) for i in intervals]
+        first_rps = [i.region_paths[0] for i in intervals]
+
+        merge_id = graph._next_id()
+        a_to_b = {rp: [Interval(Position(merge_id, 0),
+                                Position(merge_id, offset),
+                                )]
+                  for rp in first_rps}
+        b_to_a = {merge_id: [Interval(Position(rp, 0),
+                                      Position(rp, offset),
+                                      graph=graph)]}
+
+        merge_trans = Translation(a_to_b, b_to_a, graph=graph)
+        intervals = [merge_trans.translate(i) for i in intervals]
+        full_trans = translation + merge_trans
+        new_graph = full_trans.translate_subgraph(graph)
+        trans, ng = new_graph._get_insulated_merge_translation(intervals)
+        return full_trans+trans, ng
 
     def _get_inslulate_translation(self, intervals):
         """Get translation for splittin the region paths
         at the start and end of the intervals such that
         all the intervals span complete region paths
 
-        :param intervals: 
-        :returns: 
+        :param intervals:
+        :returns:
         :rtype: Translation
 
         """
@@ -277,17 +345,13 @@ class Graph(object):
         cur_graph = self
         i = 0
 
-        print("_______________________")
-
         for start in starts:
-            print("starts", i)
             i += 1
-            assert cur_graph is not None
             if start.offset == 0:
                 continue
             rp = start.region_path_id
             offset = start.offset
-            id_a, id_b = (self._next_id(), self.next_id())
+            id_a, id_b = (self._next_id(), self._next_id())
             L = self.blocks[rp].length()
 
             trans_dict[rp] = [Interval(
@@ -309,7 +373,6 @@ class Graph(object):
                     i.graph = cur_graph
             translation += tmp_trans
 
-        print("--", translation._a_to_b)
         new_intervals = [translation.translate(i) for i in intervals]
         ends = [i.end_position for i in new_intervals]
 
@@ -333,18 +396,13 @@ class Graph(object):
                                            graph=cur_graph)]
             tmp_trans = Translation(trans_dict, reverse_dict, graph=cur_graph)
             cur_graph = tmp_trans.translate_subgraph(cur_graph)
-            print("_______________________")
-            print("##", cur_graph.blocks)
-            print("--", [ints for ints in trans_dict.values()])
-            print("______________________")
-
             for i_list in trans_dict.values():
                 for i in i_list:
                     i.graph = cur_graph
             tmp_trans.graph2 = cur_graph
             translation += tmp_trans
-        print("++", translation._a_to_b)
-        return translation
+
+        return translation, cur_graph
 
     def get_merge_translation(self, intervals):
         """Get translation object for merging the
@@ -355,10 +413,9 @@ class Graph(object):
         :rtype: Translation
 
         """
-        trans = self._get_inslulate_translation(intervals)
-        trans2 = self._get_insulated_merge_translation(
-            [trans.translate(interval) for interval in intervals])
-        return trans+trans2
+        trans, ng = self._get_inslulate_translation(intervals)
+        trans2, ng = ng._get_insulated_merge_translation(
+            trans.translate_interval for interval in intervals)
 
     def _split_blocks_at_starts_and_ends(self, intervals):
         """

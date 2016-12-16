@@ -101,22 +101,22 @@ class Interval(object):
         self.graph = graph
 
         # Sanity check interval
-        assert self.start_position.region_path_id in self.region_paths
-        assert self.end_position.region_path_id in self.region_paths
+        # assert self.start_position.region_path_id in self.region_paths
+        # assert self.end_position.region_path_id in self.region_paths
 
         if self.graph is None:
             return
-        for rp in region_paths:
-            assert rp in graph.blocks, "Region path %s not in graph \n%s" % (rp, graph)
+        # for rp in region_paths:
+        # assert rp in graph.blocks, "Region path %s not in graph \n%s" % (rp, graph)
 
         # Check offsets
-        max_offset = graph.blocks[self.region_paths[-1]].length()
-        msg = "Offset %d in block %d with size %d. Interval: %s" % (
-            self.end_position.offset,
-            self.region_paths[-1],
-            graph.blocks[self.region_paths[-1]].length(), self.__str__())
-
-        assert self.end_position.offset <= max_offset, msg
+#         max_offset = graph.blocks[self.region_paths[-1]].length()
+#         msg = "Offset %d in block %d with size %d. Interval: %s" % (
+#             self.end_position.offset,
+#             self.region_paths[-1],
+#             graph.blocks[self.region_paths[-1]].length(), self.__str__())
+# 
+#         assert self.end_position.offset <= max_offset, msg
 
     def __eq__(self, other):
         eq = self.start_position == other.start_position
@@ -131,7 +131,7 @@ class Interval(object):
         return "%s, %s, %s" % (self.start_position,
                                self.end_position, self.region_paths)
 
-    def get_position_from_offset(self, offset):
+    def get_position_from_offset(self, offset, rp_lens=None):
         """Get position of with offset counted from the start of
         the interval
 
@@ -141,14 +141,17 @@ class Interval(object):
 
         """
 
-        assert offset <= self.length(), \
-            "Offset %d is larger than total length of interval %d in interval %s" \
-            % (offset, self.length(), self.__str__())
+        # assert offset <= self.length(), \
+        #    "Offset %d is larger than total length of interval %d in interval %s" \
+        #     % (offset, self.length(), self.__str__())
 
         total_offset = offset + self.start_position.offset
-        for region_path in self.region_paths:
-            rp = self.graph.blocks[region_path]
-            rp_length = rp.length()
+        if rp_lens is None:
+            rp_lens = [self.graph.blocks[rp].length()
+                       for rp in self.region_paths]
+
+        for i, region_path in enumerate(self.region_paths):
+            rp_length = rp_lens[i]
             if rp_length > total_offset:
                 return Position(region_path, total_offset)
             total_offset -= rp_length

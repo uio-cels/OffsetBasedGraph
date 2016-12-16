@@ -71,6 +71,7 @@ class TestGraph(unittest.TestCase):
         interval_b = Interval(
             Position(1, 0),
             Position(1, 10), graph=graph)
+
         return graph, interval_a, interval_b
 
     def test_split(self):
@@ -137,10 +138,41 @@ class TestGraph(unittest.TestCase):
 
     def test_insulate_translation(self):
         graph, interval_a, interval_b = self._setup_merge()
-        translation = graph._get_inslulate_translation(
+        translation, _ = graph._get_inslulate_translation(
             [interval_a, interval_b])
         a_to_b = translation._a_to_b
         self.assertEqual(len(a_to_b), 2)
+        i_first = a_to_b[0][0]
+        new_ids = i_first.region_paths
+        self.assertEqual(i_first, Interval(
+            Position(new_ids[0], 0), Position(new_ids[1], 20)))
+        i_last = a_to_b[1][0]
+        new_ids = i_last.region_paths
+        self.assertEqual(i_last, Interval(
+            Position(new_ids[0], 0), Position(new_ids[1], 30)))
+
+    def test_insulated_translation(self):
+        graph = dummygraph.get_insulated_graph()
+        interval_a = Interval(Position(2, 0), Position(4, 10),
+                              [2, 3, 4], graph=graph)
+        interval_b = Interval(Position(5, 0), Position(7, 10),
+                              [5, 6, 7], graph=graph)
+        intervals = [interval_a, interval_b]
+        trans, new_graph = graph._get_insulated_merge_transformation(intervals)
+        # 
+        # graph, interval_a, interval_b = self._setup_merge()
+        # translation, _ = graph._get_inslulate_translation(
+        #     [interval_a, interval_b])
+        # a_to_b = translation._a_to_b
+        # self.assertEqual(len(a_to_b), 2)
+        # i_first = a_to_b[0][0]
+        # new_ids = i_first.region_paths
+        # self.assertEqual(i_first, Interval(
+        #     Position(new_ids[0], 0), Position(new_ids[1], 20)))
+        # i_last = a_to_b[1][0]
+        # new_ids = i_last.region_paths
+        # self.assertEqual(i_last, Interval(
+        #     Position(new_ids[0], 0), Position(new_ids[1], 30)))
 
     def _test_merge_translation(self):
         graph, interval_a, interval_b = self._setup_merge()

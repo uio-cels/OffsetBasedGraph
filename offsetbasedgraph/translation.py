@@ -97,7 +97,7 @@ class Translation(object):
 
         # Check that subgraph really is a subgraph
         for block in subgraph.blocks:
-            assert block in self.graph1.blocks
+            assert block in self.graph1.blocks, "%s not in %s" % (block, self.graph1.blocks)
 
         for adj in subgraph.adj_list:
             assert adj in self.graph1.adj_list
@@ -147,7 +147,7 @@ class Translation(object):
 
         return Graph(new_blocks, new_adj)
 
-    @takes(Interval)
+    # @takes(Interval)
     def translate_interval(self, interval, inverse=False):
         """
         Translate an interval between the two coordinate systems.
@@ -167,12 +167,6 @@ class Translation(object):
 
         if not any(rp in trans_dict for rp in interval.region_paths):
             return SingleMultiPathInterval(interval)
-            # return SingleMulitPathInterval(interval)
-            # return GeneralMultiPathInterval([interval.start_position],
-            #                                [interval.end_position],
-            #                                interval.region_paths,
-            #                                interval.graph)
-            # return [interval]
 
         new_starts = self.translate_position(interval.start_position, inverse)
         # Hack: Convert to inclusive end coordinate
@@ -205,7 +199,7 @@ class Translation(object):
 
         return new_interval
 
-    @takes(Position)
+    # @takes(Position)
     def translate_position(self, position, inverse=False):
         """
         Translates a position
@@ -223,8 +217,13 @@ class Translation(object):
 
         # Get interval for region path. Select first region path. Count offset.
         intervals = self._translations(position.region_path_id, inverse)
-        positions = [interval.get_position_from_offset(position.offset)
-                     for interval in intervals]
+        positions = []
+        for interval in intervals:
+            rp_lens = [self._translations(rp, inverse=not inverse)[0].length()
+                       for rp in interval.region_paths]
+            position = interval.get_position_from_offset(
+                position.offset, rp_lens)
+            positions.append(position)
 
         return positions
 
