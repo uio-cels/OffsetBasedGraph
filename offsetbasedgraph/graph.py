@@ -328,7 +328,7 @@ class Graph(object):
         return full_trans+trans, ng
 
     def _get_inslulate_translation(self, intervals):
-        """Get translation for splittin the region paths
+        """Get translation for splitting the region paths
         at the start and end of the intervals such that
         all the intervals span complete region paths
 
@@ -369,8 +369,9 @@ class Graph(object):
             tmp_trans = Translation(trans_dict, reverse_dict, graph=cur_graph)
             cur_graph = tmp_trans.translate_subgraph(cur_graph)
             for i_list in trans_dict.values():
-                for i in i_list:
-                    i.graph = cur_graph
+                for j in i_list:
+                    j.graph = cur_graph
+
             translation += tmp_trans
 
         new_intervals = [translation.translate(i) for i in intervals]
@@ -415,7 +416,169 @@ class Graph(object):
         """
         trans, ng = self._get_inslulate_translation(intervals)
         trans2, ng = ng._get_insulated_merge_translation(
-            trans.translate_interval for interval in intervals)
+            trans.translate_interval(interval) for interval in intervals)
+
+    def _update_a_b_graph(self, a_b, graph):
+        for intvs in a_b.values():
+            for interval in intvs:
+                interval.graph = graph
+
+    def get_merge_translation2(self, intervals):
+        original_graph = intervals[0].graph
+
+        # Assume same lengths for all intervals
+        length = intervals[0].length()
+        for interval in intervals[1:]:
+            assert interval.length() == length, \
+                "All intervals should have the same length (%d, %d)" % (interval.length(), length)
+
+        # Step 1: Translate graph so that all intervals starts and ends at region paths
+        trans, graph1 = self._get_inslulate_translation(intervals)
+        #self._update_a_b_graph(trans._a_to_b, graph1)
+        trans.graph2 = graph1
+        print("trans1 a to b graph")
+        self._update_a_b_graph(trans._a_to_b, graph1)  # correct, a to b interval's graph is wrong for some reason
+        print(list(trans._a_to_b.values())[0][0].graph)
+
+        print("=== Graph 1 === ")
+        print(graph1)
+
+        print("=== Trans 1 ===")
+        print(trans.graph1)
+        print(trans)
+
+        # Update intervals to be on graph1
+        new_intervals = []
+        for interval in intervals:
+            mp = trans.translate_interval(interval)
+            print("MP" , str(mp))
+            new_interval = mp.get_single_path_intervals()[0]
+            new_interval.graph = graph1
+            new_intervals.append(new_interval)
+
+        intervals = new_intervals
+        print("=== Intervals ===")
+        print(intervals[0])
+        print(intervals[1])
+
+        # Step 2: Translate each interval to one single block
+        # In next graph, each interval is replaced by one single block
+        a_b = {}
+        b_a = {}
+        new_blocks = []
+        for interval in intervals:
+            # Create one new large block
+            large_block = graph1._next_id()
+            new_blocks.append(large_block)
+
+            # Back translation from block to interval
+            b_a[large_block] = [interval]
+
+            # Find forward translations
+            prev_offset = 0
+            offset = 0
+            for rp in interval.region_paths:
+                offset += graph1.blocks[rp].length()
+                a_b[rp] = [Interval(prev_offset, offset, [large_block])]
+                prev_offset = offset
+
+        print("a_b", a_b)
+        print("b_a", b_a)
+
+        # Find new graph
+        trans2 = Translation(a_b, b_a, graph1)
+        graph2 = trans2.translate_subgraph(graph1)
+        trans2.graph2 = graph2
+
+
+        # Update graph in a_b intervals to graph2 (which is now created)
+        self._update_a_b_graph(a_b, graph2)
+
+        print("=== Graph 2 === ")
+        print(graph2)
+
+        # Step 3: Merge each block (representing one interval each) to one single block
+        new_block = graph2._next_id()
+        a_b = {}
+        b_a = {new_block: []}
+
+        for block in new_blocks:
+            a_b[block] = [Interval(0, length, [new_block])]
+            b_a[new_block].append(Interval(0, length, [block], graph2))
+
+        # Translate graph
+        trans3 = Translation(a_b, b_a, graph2)
+        graph3 = trans3.translate_subgraph(graph2)
+        self._update_a_b_graph(a_b, graph3)
+        trans3.graph2 = graph3
+
+        print("=== Graph 3 === ")
+        print(graph3)
+
+        # Step 4: Divide large middle block
+
+        starts = []
+        for interval in intervals:
+            prev_start = 0
+            for rp in interval.region_paths:
+                prev_start += interval.graph.blocks[rp].length()
+                starts.append(prev_start)
+
+        starts.sort()
+        starts = list(set(starts))[:]  # remove last, becauase end
+        print(starts)
+        # Create translation from big block to all small created from each start
+        a_b = {new_block: []}
+        b_a = {}
+        prev_start = 0
+        new_blocks = []
+        last_length = 0
+        for start in starts:
+            new_small = graph3._next_id()
+            new_blocks.append(new_small)
+            b_a[new_small] = [Interval(prev_start, start, [new_block], graph3)]
+            prev_start = start
+            last_length = start - prev_start
+
+        a_b[new_block].append(Interval(0, last_length, new_blocks))
+
+        trans4 = Translation(a_b, b_a, graph3)
+        graph4 = trans4.translate_subgraph(graph3)
+        self._update_a_b_graph(a_b, graph4)
+        trans4.graph2 = graph4
+
+        print("=== Graph 4 === ")
+        print(graph4)
+
+        print("=== trans 4 ===")
+        print(trans4)
+        print("=== trans 3 ===")
+        print(trans3)
+        final_trans = trans3 + trans4
+        print("=== Final trans 3 + 4===")
+        print(final_trans)
+        final_trans = trans2 + final_trans
+        #print(trans2.graph1)
+        #print(trans2._b_to_a)
+        print("=== Final trans ===")
+        print(final_trans)
+        print("first trans")
+        print(trans)
+        final_trans = trans + final_trans
+
+        print("=== Final! trans ===")
+        print(final_trans)
+
+        final_trans.graph1 = original_graph  # Should not be needed ?!
+
+
+        print(list(final_trans._a_to_b.values())[0][0].graph)
+        print(list(final_trans._b_to_a.values())[0][0].graph)
+
+        return graph4, final_trans
+
+
+
 
     def _split_blocks_at_starts_and_ends(self, intervals):
         """

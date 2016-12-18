@@ -56,6 +56,23 @@ class TestTranslation(unittest.TestCase):
         self.assertEqual(t_back, interval_graph1,
                 "Translated back interval %s != to %s" % (t_back, interval_graph1))
 
+    def test_translate_interval_special_case(self):
+        print("=== SPecial case === ")
+        graph = Graph({1: Block(4)}, {})
+        graph2 = Graph({2: Block(2), 3: Block(2)}, {2: [3]})
+        trans = Translation(
+                    {1: [Interval(0, 2, [2, 3], graph2)]},
+                    {2: [Interval(0, 2, [1], graph)],
+                     3: [Interval(2, 4, [1], graph)]})
+        interval = Interval(3, 4, [1], graph)
+
+        translated = trans.translate_interval(interval).get_single_path_intervals()[0]
+        correct = Interval(1, 2, [3], graph2)
+
+        self.assertEqual(correct, translated, "correct %s != %s")
+
+
+
     def test_translate_on_merged_graph(self):
         graph1, graph2, trans = dummygraph.get_merged_translation()
 

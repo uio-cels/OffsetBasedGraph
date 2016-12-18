@@ -44,7 +44,17 @@ class Translation(object):
             g = self.graph1 if inverse else self.graph2
         else:
             g = self.graph1 if self.graph2 is None else self.graph2
-        return [Interval(0, g.blocks[rp].length(), [rp], g)]
+
+        try:
+            length = g.blocks[rp].length()
+            return [Interval(0, length, [rp], g)]
+        except KeyError as e:
+            print("Keyerror when using graph: " + str(g))
+            print(inverse)
+            print(self.graph1)
+            print(self.graph2)
+            print(str(e))
+            raise
 
     def _get_other_graph(self, inverse):
         if inverse:
@@ -141,7 +151,8 @@ class Translation(object):
         # Add all edges we have found
         for edge in edge_list_add:
             if edge[0] in new_adj:
-                new_adj[edge[0]].append(edge[1])
+                if edge[1] not in new_adj[edge[0]]:
+                    new_adj[edge[0]].append(edge[1])
             else:
                 new_adj[edge[0]] = [edge[1]]
 
@@ -184,10 +195,39 @@ class Translation(object):
             # Find all region paths that this region path follows
             intervals = self._translations(region_path, inverse)
             is_simple = is_simple and len(intervals) == 1
-            for interval in intervals:
-                new_region_paths.extend(interval.region_paths)
+            for intervalt in intervals:
+                #print("Adding " + str(intervalt.region_paths))
+
+                # Find out which of these rps should be added
+                # Do not add region paths before the original interval
+                intervalt_offset = intervalt.start_position.offset
+                offset = 0
+                for rp in intervalt.region_paths:
+                    if inverse:
+                        length = intervalt.graph.blocks[rp].length()
+                    else:
+                        length = self._translations(rp, True)[0].length()
+
+                    # If first region path
+                    if interval.region_paths[0] == region_path and offset + length - intervalt_offset <= interval.start_position.offset:
+                        #print("Cont on first")
+                        #print(offset + length - intervalt_offset)
+                        #print(length)
+                        offset += length
+                        continue
+                    # If last region path
+                    elif interval.region_paths[-1] == region_path and offset >= interval.end_position.offset:
+                        offset += length
+                        continue
+                    new_region_paths.append(rp)
+
+                    offset += length
+
+                #new_region_paths.extend(intervalt.region_paths)
 
         if is_simple:
+            #print("Is simple. New region paths: ")
+            #print(new_region_paths)
             new_interval = SingleMultiPathInterval(
                 Interval(new_starts[0], new_ends[0], new_region_paths,
                          graph=self._get_other_graph(inverse)))
@@ -218,9 +258,16 @@ class Translation(object):
         # Get interval for region path. Select first region path. Count offset.
         intervals = self._translations(position.region_path_id, inverse)
         positions = []
+        print("Translating position %s, %d" % (str(position), inverse))
         for interval in intervals:
-            rp_lens = [self._translations(rp, inverse=not inverse)[0].length()
+            #if not inverse:
+            if True or (not inverse and self.graph2 is None) \
+                    or (inverse and self.graph1 is None):
+                rp_lens = [self._translations(rp, inverse=not inverse)[0].length()
                        for rp in interval.region_paths]
+            else:
+                rp_lens = [interval.graph.blocks[rp].length() for rp in interval.region_paths] #[self._get_other_graph(inverse).blocks[rp].length() for rp in interval.region_paths]
+
             position = interval.get_position_from_offset(
                 position.offset, rp_lens)
             positions.append(position)
@@ -255,26 +302,37 @@ class Translation(object):
             new_translate_dict[t] = translated.get_single_path_intervals()
 
         new_trans._a_to_b = new_translate_dict
-
-        new_b_to_a = other._b_to_a
+        import copy
+        new_b_to_a = copy.deepcopy(other._b_to_a)
 
         changed = True
         while(changed):
             changed = False
             for t in other._b_to_a:
+                print("t ", t)
                 # For every block=>interval, map backwards to intervals
                 new_intervals = []
                 for inter in other._b_to_a[t]:
                     new_intervals.extend(
-                        other.translate_interval(inter, True).get_single_path_intervals()
+                        #other.translate_interval(inter, True).get_single_path_intervals()
+                        self.translate_interval(inter, True).get_single_path_intervals()
                     )
                 old = new_b_to_a[t]
                 if all(i in old for i in new_intervals) \
                    and all(i in new_intervals for i in old):
                     changed = False  # If change, translate again
+                print("new intervals")
+                print(new_intervals)
                 new_b_to_a[t] = new_intervals
 
+        # Set b_to_a graph to graph1
+        for intvs in new_b_to_a.values():
+            for intv in intvs:
+                intv.graph = self.graph1
+
         new_trans._b_to_a = new_b_to_a
+        print("new b to a")
+        print(new_b_to_a)
         return new_trans
 
     def __eq__(self, other):
@@ -287,7 +345,7 @@ class Translation(object):
         return self.__repr__()
 
     def __repr__(self):
-        return str(self._b_to_a)
+        return "b to a: \n  " + str(self._b_to_a) + "\na to b: \n   " + str(self._a_to_b)
         return "\n".join(["%s: %s" % (_id, ",".join(intervals))
                           for _id, intervals in
                           self._a_to_b.items()])

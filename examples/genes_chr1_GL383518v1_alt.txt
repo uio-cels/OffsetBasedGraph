@@ -1,3 +1,4 @@
+name	chrom	strand	txStart	txEnd	cdsStart	cdsEnd	exonCount	exonStarts	exonEnds	proteinID	alignID
 uc061fpr.1	chr1_GL383518v1_alt	+	128	426	128	128	1	128,	426,		ENST00000583838.2
 uc061fps.1	chr1_GL383518v1_alt	+	20797	21095	20797	20797	1	20797,	21095,		ENST00000578047.2
 uc061fpt.1	chr1_GL383518v1_alt	-	42952	43054	42952	42952	1	42952,	43054,		ENST00000573630.1

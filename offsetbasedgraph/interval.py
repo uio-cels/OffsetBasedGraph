@@ -17,6 +17,9 @@ class Position(object):
     def __repr__(self):
         return self.__str__()
 
+    def __deepcopy__(self, memo):
+        return Position(self.region_path_id, self.offset)
+
 
 class Interval(object):
 
@@ -27,11 +30,16 @@ class Interval(object):
         :rtype: int
 
         """
-        r_lengths = [self.graph.blocks[rp].length()
+        try:
+            r_lengths = [self.graph.blocks[rp].length()
                      for rp in self.region_paths[:-1]]
+            r_sum = sum(r_lengths)
+            return r_sum-self.start_position.offset+self.end_position.offset
 
-        r_sum = sum(r_lengths)
-        return r_sum-self.start_position.offset+self.end_position.offset
+        except KeyError as e:
+            print("Error on interval %s on graph %s" % (str(self), str(self.graph)))
+            print(str(e))
+            raise
 
     def starts_at_rp(self):
         return self.start_position.offset == 0
@@ -77,6 +85,9 @@ class Interval(object):
         assert self.end_position == other.start_position
         region_paths = self.region_paths[:-1] + other.region_paths
         return Interval(self.start_position, other.end_position, region_paths)
+
+    def __deepcopy__(self, memo):
+        return Interval(self.start_position, self.end_position, self.region_paths, self.graph)
 
     def __init__(self, start_position, end_position,
                  region_paths=None, graph=None):
