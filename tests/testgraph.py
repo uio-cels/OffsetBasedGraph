@@ -222,16 +222,24 @@ class TestGraph(unittest.TestCase):
             graph, Graph(blocks, adj_list))
 
     def test_merge_translations2(self):
-        graph = Graph({1: Block(3), 2: Block(2), 3: Block(2), 4:  Block(3)}, {1: [2], 3: [4]})
+        graph = Graph({1: Block(3), 2: Block(2), 3: Block(2),
+                       4: Block(3), 5: Block(1)},
+                      {1: [2, 5], 3: [4]}, )
         interval1 = Interval(1, 1, [1, 2], graph)
         interval2 = Interval(1, 2, [3, 4], graph)
         new_graph, trans = graph.get_merge_translation2([interval1, interval2])
-        return
-        translated_interval1 = trans.translate_interval(interval1).get_single_path_intervals()[0]
-        translated_interval2 = trans.translate_interval(interval2).get_single_path_intervals()[0]
-        self.assertEqual(translated_interval1, translated_interval2)
-
-
+        new_graph = trans.translate_subgraph(graph)
+        print(trans)
+        print(new_graph)
+        a = trans._a_to_b[1][0].region_paths
+        b = trans._a_to_b[3][0].region_paths
+        c = trans._a_to_b[2][0].region_paths
+        d = trans._a_to_b[4][0].region_paths
+        all_blocks = a+b+c+d+[5]
+        blocks = {block_id: Block(1) for block_id in all_blocks}
+        edges = {a[0]: [a[1]], b[0]: [b[1]], a[1]: [a[2]],
+                 a[2]: [c[0], 5], c[0]: [c[1], d[2]]}
+        self.assert_graph_equals(new_graph, blocks, edges)
 
     def test_get_all_block_borders(self):
         blocks = {1: Block(20), 2: Block(20),
