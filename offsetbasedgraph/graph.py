@@ -438,7 +438,7 @@ class Graph(object):
         trans.graph2 = graph1
         print("trans1 a to b graph")
         self._update_a_b_graph(trans._a_to_b, graph1)  # correct, a to b interval's graph is wrong for some reason
-        print(list(trans._a_to_b.values())[0][0].graph)
+        #print(list(trans._a_to_b.values())[0][0].graph)
 
         print("=== Graph 1 === ")
         print(graph1)
@@ -496,6 +496,7 @@ class Graph(object):
 
         print("=== Graph 2 === ")
         print(graph2)
+        print(trans2)
 
         # Step 3: Merge each block (representing one interval each) to one single block
         new_block = graph2._next_id()
@@ -514,6 +515,7 @@ class Graph(object):
 
         print("=== Graph 3 === ")
         print(graph3)
+        print(trans3)
 
         # Step 4: Divide large middle block
 
@@ -537,8 +539,8 @@ class Graph(object):
             new_small = graph3._next_id()
             new_blocks.append(new_small)
             b_a[new_small] = [Interval(prev_start, start, [new_block], graph3)]
-            prev_start = start
             last_length = start - prev_start
+            prev_start = start
 
         a_b[new_block].append(Interval(0, last_length, new_blocks))
 

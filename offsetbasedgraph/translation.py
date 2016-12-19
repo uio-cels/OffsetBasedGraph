@@ -129,6 +129,7 @@ class Translation(object):
             block1, block2 = edge
             interval = Interval(0, subgraph.blocks[block2].length(),
                                 [block1, block2], subgraph)
+            #print("Translating interval: " + str(interval))
             translated = self.translate_interval(interval).get_single_path_intervals()
             assert len(translated) <= 1, \
                 "Only translations to one interval supported. %d returned" \
@@ -258,8 +259,9 @@ class Translation(object):
         # Get interval for region path. Select first region path. Count offset.
         intervals = self._translations(position.region_path_id, inverse)
         positions = []
-        print("Translating position %s, %d" % (str(position), inverse))
+        #print("Translating position %s, %d, region path: %d" % (str(position), inverse, position.region_path_id))
         for interval in intervals:
+            #print("Got region paths: " + str(interval.region_paths))
             #if not inverse:
             if True or (not inverse and self.graph2 is None) \
                     or (inverse and self.graph1 is None):
@@ -321,8 +323,8 @@ class Translation(object):
                 if all(i in old for i in new_intervals) \
                    and all(i in new_intervals for i in old):
                     changed = False  # If change, translate again
-                print("new intervals")
-                print(new_intervals)
+                #print("new intervals")
+                #print(new_intervals)
                 new_b_to_a[t] = new_intervals
 
         # Set b_to_a graph to graph1

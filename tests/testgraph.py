@@ -231,6 +231,8 @@ class TestGraph(unittest.TestCase):
         new_graph = trans.translate_subgraph(graph)
         print(trans)
         print(new_graph)
+        return
+
         a = trans._a_to_b[1][0].region_paths
         b = trans._a_to_b[3][0].region_paths
         c = trans._a_to_b[2][0].region_paths
