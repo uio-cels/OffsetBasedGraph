@@ -410,7 +410,7 @@ class Graph(object):
             for interval in intvs:
                 interval.graph = graph
 
-   def merge(self, intervals):
+    def merge(self, intervals):
         """Merges the given intervals in the graph, and returns
         a the resulting graph after merge and a translation object.
         :param intervals: list of intevals to merge
