@@ -405,25 +405,18 @@ class Graph(object):
 
         return translation, cur_graph
 
-    def get_merge_translation(self, intervals):
-        """Get translation object for merging the
-        given intervals in the graph
-
-        :param intervals: list of intevals to merge
-        :returns: translation object
-        :rtype: Translation
-
-        """
-        trans, ng = self._get_inslulate_translation(intervals)
-        trans2, ng = ng._get_insulated_merge_translation(
-            trans.translate_interval(interval) for interval in intervals)
-
     def _update_a_b_graph(self, a_b, graph):
         for intvs in a_b.values():
             for interval in intvs:
                 interval.graph = graph
 
-    def get_merge_translation2(self, intervals):
+   def merge(self, intervals):
+        """Merges the given intervals in the graph, and returns
+        a the resulting graph after merge and a translation object.
+        :param intervals: list of intevals to merge
+        :returns: translation object, resulting graph
+        :rtype: Graph, Translation
+        """
         original_graph = intervals[0].graph
 
         # Assume same lengths for all intervals

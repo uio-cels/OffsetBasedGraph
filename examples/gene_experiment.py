@@ -9,6 +9,7 @@ $ python3 gene_experiment.py grch38.chrom.sizes grch38_alt_loci.txt genes_chr1_G
 import sys
 import csv
 from offsetbasedgraph import Graph, Block
+from genutils import flanks
 
 def create_initial_grch38_graph(chrom_sizes_fn):
     """
@@ -33,12 +34,30 @@ def connect_without_flanks(graph, alt_loci_fn):
     :return: Returns the new graph
     """
     f = open(alt_loci_fn)
+    new_graph = graph
+    final_trans = None
     for line in f.readlines():
         l = line.split()
         alt_locus_id = l[0]
         main_chr = l[1]
         start = int(l[2])
         end = int(l[3])
+
+        intervals = flanks.get_flanks(alt_locus_id, main_chr, start, end)
+        if final_trans is not None:
+            intervals = [final_trans.translate_interval(i) for i in intervals]
+
+        new_graph, trans = new_graph.merge(intervals[0:2])
+        if final_trans is None:
+            final_trans = trans
+        else:
+            final_trans += trans
+
+        new_graph, trans = new_graph.merge(intervals[2:4])
+        final_trans += trans
+
+    return new_graph, final_trans
+
 
 
 def parse_genes_file(genes_fn):
