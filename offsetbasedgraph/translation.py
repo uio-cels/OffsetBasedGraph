@@ -44,7 +44,6 @@ class Translation(object):
             g = self.graph1 if inverse else self.graph2
         else:
             g = self.graph1 if self.graph2 is None else self.graph2
-
         try:
             length = g.blocks[rp].length()
             return [Interval(0, length, [rp], g)]
@@ -96,6 +95,14 @@ class Translation(object):
         assert len(ret) == 1
         return ret[0]
 
+    def _assert_is_valid(self):
+        rps = []
+        for intervals in self._a_to_b.values():
+            for interval in intervals:
+                rps.extend(interval.region_paths)
+        for rp in rps:
+            assert rp in self._b_to_a, "%s not in %s" % (rp, self._b_to_a)
+
     def translate_subgraph(self, subgraph):
         """
         Translates a graph (forward). The graph has to be a subgraph of
@@ -104,6 +111,8 @@ class Translation(object):
         :return: Returns the translated subgraph
         """
         assert self.graph1 is not None, "Cannot translate subgraph if graph1 is None"
+        set(self.graph1.blocks.keys())
+
 
         # Check that subgraph really is a subgraph
         for block in subgraph.blocks:
@@ -260,11 +269,11 @@ class Translation(object):
         positions = []
         print("Translating position %s, %d" % (str(position), inverse))
         for interval in intervals:
-            #if not inverse:
+            # if not inverse:
             if True or (not inverse and self.graph2 is None) \
                     or (inverse and self.graph1 is None):
                 rp_lens = [self._translations(rp, inverse=not inverse)[0].length()
-                       for rp in interval.region_paths]
+                           for rp in interval.region_paths]
             else:
                 rp_lens = [interval.graph.blocks[rp].length() for rp in interval.region_paths] #[self._get_other_graph(inverse).blocks[rp].length() for rp in interval.region_paths]
 
@@ -333,6 +342,7 @@ class Translation(object):
         new_trans._b_to_a = new_b_to_a
         print("new b to a")
         print(new_b_to_a)
+        new_trans._assert_is_valid()
         return new_trans
 
     def __eq__(self, other):
