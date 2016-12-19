@@ -42,8 +42,9 @@ def connect_without_flanks(graph, alt_loci_fn):
         main_chr = l[1]
         start = int(l[2])
         end = int(l[3])
+        length = int(l[4])
 
-        intervals = flanks.get_flanks(alt_locus_id, main_chr, start, end)
+        intervals = flanks.get_flanks(alt_locus_id, length, main_chr, start, end)
         if final_trans is not None:
             intervals = [final_trans.translate_interval(i) for i in intervals]
 
