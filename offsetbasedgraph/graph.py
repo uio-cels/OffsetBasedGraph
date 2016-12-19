@@ -436,30 +436,17 @@ class Graph(object):
         trans, graph1 = self._get_inslulate_translation(intervals)
         #self._update_a_b_graph(trans._a_to_b, graph1)
         trans.graph2 = graph1
-        print("trans1 a to b graph")
         self._update_a_b_graph(trans._a_to_b, graph1)  # correct, a to b interval's graph is wrong for some reason
-        #print(list(trans._a_to_b.values())[0][0].graph)
-
-        print("=== Graph 1 === ")
-        print(graph1)
-
-        print("=== Trans 1 ===")
-        print(trans.graph1)
-        print(trans)
 
         # Update intervals to be on graph1
         new_intervals = []
         for interval in intervals:
             mp = trans.translate_interval(interval)
-            print("MP" , str(mp))
             new_interval = mp.get_single_path_intervals()[0]
             new_interval.graph = graph1
             new_intervals.append(new_interval)
 
         intervals = new_intervals
-        print("=== Intervals ===")
-        print(intervals[0])
-        print(intervals[1])
 
         # Step 2: Translate each interval to one single block
         # In next graph, each interval is replaced by one single block
@@ -482,9 +469,6 @@ class Graph(object):
                 a_b[rp] = [Interval(prev_offset, offset, [large_block])]
                 prev_offset = offset
 
-        print("a_b", a_b)
-        print("b_a", b_a)
-
         # Find new graph
         trans2 = Translation(a_b, b_a, graph1)
         graph2 = trans2.translate_subgraph(graph1)
@@ -493,10 +477,6 @@ class Graph(object):
 
         # Update graph in a_b intervals to graph2 (which is now created)
         self._update_a_b_graph(a_b, graph2)
-
-        print("=== Graph 2 === ")
-        print(graph2)
-        print(trans2)
 
         # Step 3: Merge each block (representing one interval each) to one single block
         new_block = graph2._next_id()
@@ -513,12 +493,7 @@ class Graph(object):
         self._update_a_b_graph(a_b, graph3)
         trans3.graph2 = graph3
 
-        print("=== Graph 3 === ")
-        print(graph3)
-        print(trans3)
-
         # Step 4: Divide large middle block
-
         starts = []
         for interval in intervals:
             prev_start = 0
@@ -527,8 +502,7 @@ class Graph(object):
                 starts.append(prev_start)
 
         starts.sort()
-        starts = list(set(starts))[:]  # remove last, becauase end
-        print(starts)
+        starts = list(set(starts))
         # Create translation from big block to all small created from each start
         a_b = {new_block: []}
         b_a = {}
@@ -549,33 +523,10 @@ class Graph(object):
         self._update_a_b_graph(a_b, graph4)
         trans4.graph2 = graph4
 
-        print("=== Graph 4 === ")
-        print(graph4)
-
-        print("=== trans 4 ===")
-        print(trans4)
-        print("=== trans 3 ===")
-        print(trans3)
         final_trans = trans3 + trans4
-        print("=== Final trans 3 + 4===")
-        print(final_trans)
         final_trans = trans2 + final_trans
-        #print(trans2.graph1)
-        #print(trans2._b_to_a)
-        print("=== Final trans ===")
-        print(final_trans)
-        print("first trans")
-        print(trans)
         final_trans = trans + final_trans
-
-        print("=== Final! trans ===")
-        print(final_trans)
-
         final_trans.graph1 = original_graph  # Should not be needed ?!
-
-
-        print(list(final_trans._a_to_b.values())[0][0].graph)
-        print(list(final_trans._b_to_a.values())[0][0].graph)
 
         return final_trans.translate_subgraph(self), final_trans
 
