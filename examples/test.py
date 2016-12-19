@@ -1,4 +1,11 @@
 
+sizes = {}
+f = open("grch38.chrom.sizes")
+for line in f.readlines():
+    l = line.split()
+    sizes[l[0]] = int(l[1])
+
+
 
 f = open("grch38_alternative_loci.txt")
 lines_out = []
@@ -13,9 +20,10 @@ for line in f.readlines():
     chr = l[1]
     start = l[2]
     stop = l[3]
-    id = "chr" + chr + "_" + l[5].replace(".", "v")
+    id = "chr" + chr + "_" + l[5].replace(".", "v") + "_alt"
+    size = sizes[id]
 
-    lines_out.append("%s    chr%s  %s  %s\n" % (id, chr, start, stop))
+    lines_out.append("%s    chr%s  %s  %s %d\n" % (id, chr, start, stop, size))
 
 f.close()
 f2 = open("grch38_alt_loci.txt", "w")

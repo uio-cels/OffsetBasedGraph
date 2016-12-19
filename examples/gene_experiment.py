@@ -83,7 +83,7 @@ if __name__ == "__main__":
             """)
     else:
         graph = create_initial_grch38_graph(sys.argv[1])
-        graph = connect_grch38_graph(sys.argv[2])
+        graph = connect_without_flanks(graph, sys.argv[2])
         genes = parse_genes_file(sys.argv[3])
         print(genes)
 
