@@ -11,6 +11,16 @@ import csv
 from offsetbasedgraph import Graph, Block
 from genutils import flanks
 
+
+def convert_to_numeric_graph(graph):
+    b_to_a = dict(zip(enumerate(graph.blocks.keys())))
+    a_to_b = {v: k for k, v in b_to_a.items()}
+    trans = Translation(a_to_b, b_to_a)
+    new_graph = trans.translate_subgraph(graph)
+    trans.graph2 = new_graph
+    return new_graph, translation
+
+
 def create_initial_grch38_graph(chrom_sizes_fn):
     """
     Creates an initial grch38 graph with no connected blocks
@@ -20,9 +30,35 @@ def create_initial_grch38_graph(chrom_sizes_fn):
     blocks = {}
     with open(chrom_sizes_fn, 'r') as csvfile:
         chroms = csv.reader(csvfile, delimiter='\t')
-        for chrom in chroms:
+        for i, chrom in enumerate(chroms):
             blocks[chrom[0]] = int(chrom[1])
+
     return Graph(blocks, {})
+
+
+def convert_to_text_graph(graph, name_translation, numeric_translation):
+    new_dict = {}
+
+    # Set ids for rps in trans dict
+    for i, key in enumerate(numeric_translation._b_to_a):
+        rps = []
+        for interval in numeric_translation._b_to_a[key]:
+            rps.extend(interval.region_paths)
+
+        new_id = sum((name_translation[rp] for rp in rps), str(i))
+        new_dict[key] = new_id
+
+    # Set ids for rps not in trans dict
+    for n_id in name_translation._b_to_a:
+        if n_id not in numeric_translation._a_to_b:
+            new_dict[n_id] = name_translation._b_to_a[n_id]
+
+    a_to_b = new_dict
+    b_to_a = {v: k for k, v in a_to_b.items()}
+    trans = Translation(a_to_b, b_to_a)
+    new_graph = trans.translate_subgraph(graph)
+    trans.graph2 = new_graph
+    return new_graph, trans
 
 
 def connect_without_flanks(graph, alt_loci_fn):
@@ -60,7 +96,6 @@ def connect_without_flanks(graph, alt_loci_fn):
     return new_graph, final_trans
 
 
-
 def parse_genes_file(genes_fn):
     """
     Parses a file containing genes (on the format of UCSC), and returns a list of dicts
@@ -84,7 +119,12 @@ if __name__ == "__main__":
             """)
     else:
         graph = create_initial_grch38_graph(sys.argv[1])
-        graph = connect_without_flanks(graph, sys.argv[2])
+        numeric_graph, name_translation = convert_to_numeric_graph(graph)
+        new_numeric_graph, numeric_translation = connect_without_flanks(
+            numeric_graph, sys.argv[2])
+        name_graph, new_name_translation = convert_to_text_graph(
+            new_numeric_graph, name_translation, numeric_translation)
+        final_translation = name_translation + numeric_translation + new_name_translation
         genes = parse_genes_file(sys.argv[3])
         print(genes)
 
