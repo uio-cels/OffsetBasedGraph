@@ -577,9 +577,7 @@ class Graph(object):
         print(list(final_trans._a_to_b.values())[0][0].graph)
         print(list(final_trans._b_to_a.values())[0][0].graph)
 
-        return graph4, final_trans
-
-
+        return final_trans.translate_subgraph(self), final_trans
 
 
     def _split_blocks_at_starts_and_ends(self, intervals):

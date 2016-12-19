@@ -228,7 +228,6 @@ class TestGraph(unittest.TestCase):
         interval1 = Interval(1, 1, [1, 2], graph)
         interval2 = Interval(1, 2, [3, 4], graph)
         new_graph, trans = graph.get_merge_translation2([interval1, interval2])
-        new_graph = trans.translate_subgraph(graph)
         print(trans)
         print(new_graph)
 
