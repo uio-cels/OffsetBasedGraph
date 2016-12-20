@@ -8,17 +8,17 @@ $ python3 gene_experiment.py grch38.chrom.sizes grch38_alt_loci.txt genes_chr1_G
 
 import sys
 import csv
-from offsetbasedgraph import Graph, Block
+from offsetbasedgraph import Graph, Block, Translation
 from genutils import flanks
 
 
 def convert_to_numeric_graph(graph):
-    b_to_a = dict(zip(enumerate(graph.blocks.keys())))
-    a_to_b = {v: k for k, v in b_to_a.items()}
-    trans = Translation(a_to_b, b_to_a)
+    a_to_b = {k: i for i, k in enumerate(graph.blocks.keys())}
+    print("###", a_to_b)
+    trans = Translation.make_name_translation(a_to_b, graph)
     new_graph = trans.translate_subgraph(graph)
     trans.graph2 = new_graph
-    return new_graph, translation
+    return new_graph, trans
 
 
 def create_initial_grch38_graph(chrom_sizes_fn):
@@ -51,11 +51,11 @@ def convert_to_text_graph(graph, name_translation, numeric_translation):
     # Set ids for rps not in trans dict
     for n_id in name_translation._b_to_a:
         if n_id not in numeric_translation._a_to_b:
-            new_dict[n_id] = name_translation._b_to_a[n_id]
+            new_dict[n_id] = name_translation._b_to_a[n_id][0]
 
     a_to_b = new_dict
-    b_to_a = {v: k for k, v in a_to_b.items()}
-    trans = Translation(a_to_b, b_to_a)
+    # b_to_a = {v[0]: [k] for k, v in a_to_b.items()}
+    trans = Translation.make_name_translation(a_to_b, graph)
     new_graph = trans.translate_subgraph(graph)
     trans.graph2 = new_graph
     return new_graph, trans
