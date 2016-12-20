@@ -31,7 +31,7 @@ def create_initial_grch38_graph(chrom_sizes_fn):
     with open(chrom_sizes_fn, 'r') as csvfile:
         chroms = csv.reader(csvfile, delimiter='\t')
         for i, chrom in enumerate(chroms):
-            blocks[chrom[0]] = int(chrom[1])
+            blocks[chrom[0]] = Block(int(chrom[1]))
 
     return Graph(blocks, {})
 

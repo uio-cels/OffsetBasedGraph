@@ -36,11 +36,11 @@ class Translation(object):
     @classmethod
     def make_name_translation(cls, trans_dict, graph):
         rev_dict = {v: [Interval(Position(k, 0),
-                                 Position(k, graph.blocks[k]))]
+                                 Position(k, graph.blocks[k].length()))]
                     for k, v in trans_dict.items()}
 
         interval_dict = {k: [Interval(Position(v, 0),
-                                      Position(v, graph.blocks[k]))]
+                                      Position(v, graph.blocks[k].length()))]
                          for k, v in trans_dict.items()}
 
         return cls(interval_dict, rev_dict, graph)
