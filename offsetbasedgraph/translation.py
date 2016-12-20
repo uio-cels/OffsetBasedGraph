@@ -3,39 +3,6 @@ from .interval import Interval, Position
 from .multipathinterval import GeneralMultiPathInterval, SingleMultiPathInterval, SimpleMultipathInterval
 
 
-class NameTranslation(object):
-    def __init__(self, translate_dict, graph1=None, graph2=None):
-        self._a_to_b = translate_dict
-        self._b_to_a = {v: k for k, v in translate_dict}
-        self.graph1 = graph1
-        self.graph2 = graph2
-
-    def _name_add(self, other):
-        new_a_to_b = {k: other._a_to_b[v] for k, v in self._a_to_b.items()}
-        new_b_to_a = {k: self._b_to_a[v] for k, v in other._b_to_a.items()}
-
-    def __radd__(self, other):
-        pass
-
-    def __add__(self, other):
-        if isinstance(other, NameTranslation):
-            return self._name_add(other)
-        if not isinstance(other, Translation):
-            return NotImplementedError()
-
-        new_a_to_b = {self._b_to_a[k]: v for k, v in other._a_to_b.items()}
-        new_b_to_a = {k: [Interval(i.start_position, i.end_position,
-                                   [self._b_to_a[rp] for rp in i.region_paths],
-                                   graph=i.graph)
-                          for i in v]
-                      for k, v in other._b_to_a.items()}
-
-        new_trans = Translation(new_a_to_b, new_b_to_a,
-                                graph1=self.graph1,
-                                graph2=other.graph2)
-        return new_trans
-                                
-
 class Translation(object):
 
     def __init__(self, translate_dict={}, reverse_dict={}, graph=None):
