@@ -337,6 +337,8 @@ class Graph(object):
         :rtype: Translation
 
         """
+        for i in intervals:
+            self.assert_interval_in_graph(i)
         # Split starts
         trans_dict = {}
         reverse_dict = {}
@@ -347,6 +349,7 @@ class Graph(object):
 
         for start in starts:
             i += 1
+            print(i)
             if start.offset == 0:
                 continue
             rp = start.region_path_id
@@ -374,13 +377,16 @@ class Graph(object):
 
             translation += tmp_trans
 
-        new_intervals = [translation.translate(i) for i in intervals]
-        ends = [i.end_position for i in new_intervals]
+        new_intervals = [translation.translate(interval)
+                         for interval in intervals]
+        ends = [interval.end_position for interval in new_intervals]
 
         for end in ends:
+            print("End: ", end)
             assert cur_graph is not None
+            assert end.region_path_id in cur_graph.blocks
             rp = end.region_path_id
-            L = self.blocks[rp].length()
+            L = cur_graph.blocks[rp].length()
             offset = end.offset
             if offset == L:
                 continue
@@ -392,9 +398,11 @@ class Graph(object):
             reverse_dict[id_a] = [Interval(Position(rp, 0),
                                            Position(rp, offset),
                                            graph=cur_graph)]
+
             reverse_dict[id_b] = [Interval(Position(rp, offset),
                                            Position(rp, L),
                                            graph=cur_graph)]
+
             tmp_trans = Translation(trans_dict, reverse_dict, graph=cur_graph)
             cur_graph = tmp_trans.translate_subgraph(cur_graph)
             for i_list in trans_dict.values():
@@ -410,6 +418,17 @@ class Graph(object):
             for interval in intvs:
                 interval.graph = graph
 
+    def assert_position_in_graph(self, position, exclusive=False):
+        assert position.region_path_id in self.blocks
+        block = self.blocks[position.region_path_id]
+        assert position.offset < block.length() + int(exclusive)
+
+    def assert_interval_in_graph(self, interval):
+        for rp in interval.region_paths:
+            assert rp in self.blocks, "%s not in %s" % (rp, self.blocks.keys())
+        self.assert_position_in_graph(interval.start_position)
+        self.assert_position_in_graph(interval.end_position, exclusive=True)
+
     def merge(self, intervals):
         """Merges the given intervals in the graph, and returns
         a the resulting graph after merge and a translation object.
@@ -417,8 +436,8 @@ class Graph(object):
         :returns: translation object, resulting graph
         :rtype: Graph, Translation
         """
+        [self.assert_interval_in_graph(i) for i in intervals]
         original_graph = intervals[0].graph
-
         # Assume same lengths for all intervals
         length = intervals[0].length()
         for interval in intervals[1:]:
@@ -467,7 +486,6 @@ class Graph(object):
         graph2 = trans2.translate_subgraph(graph1)
         trans2.graph2 = graph2
 
-
         # Update graph in a_b intervals to graph2 (which is now created)
         self._update_a_b_graph(a_b, graph2)
 
@@ -496,6 +514,7 @@ class Graph(object):
 
         starts.sort()
         starts = list(set(starts))
+
         # Create translation from big block to all small created from each start
         a_b = {new_block: []}
         b_a = {}

@@ -56,16 +56,8 @@ class Translation(object):
             g = self.graph1 if inverse else self.graph2
         else:
             g = self.graph1 if self.graph2 is None else self.graph2
-        try:
-            length = g.blocks[rp].length()
-            return [Interval(0, length, [rp], g)]
-        except KeyError as e:
-            print("Keyerror when using graph: " + str(g))
-            print(inverse)
-            print(self.graph1)
-            print(self.graph2)
-            print(str(e))
-            raise
+        length = g.blocks[rp].length()
+        return [Interval(0, length, [rp], g)]
 
     def _get_other_graph(self, inverse):
         if inverse:
