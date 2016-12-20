@@ -14,7 +14,6 @@ from genutils import flanks
 
 def convert_to_numeric_graph(graph):
     a_to_b = {k: i for i, k in enumerate(graph.blocks.keys())}
-    print("###", a_to_b)
     trans = Translation.make_name_translation(a_to_b, graph)
     new_graph = trans.translate_subgraph(graph)
     trans.graph2 = new_graph
@@ -61,7 +60,7 @@ def convert_to_text_graph(graph, name_translation, numeric_translation):
     return new_graph, trans
 
 
-def connect_without_flanks(graph, alt_loci_fn):
+def connect_without_flanks(graph, alt_loci_fn, name_translation):
     """
     Connects the alternative loci in the given file to the grch38 graph,
     without flanks.
@@ -71,8 +70,9 @@ def connect_without_flanks(graph, alt_loci_fn):
     """
     f = open(alt_loci_fn)
     new_graph = graph
-    final_trans = None
+    final_trans = name_translation
     for line in f.readlines():
+        print(line)
         l = line.split()
         alt_locus_id = l[0]
         main_chr = l[1]
@@ -82,7 +82,7 @@ def connect_without_flanks(graph, alt_loci_fn):
 
         intervals = flanks.get_flanks(alt_locus_id, length, main_chr, start, end)
         if final_trans is not None:
-            intervals = [final_trans.translate_interval(i) for i in intervals]
+            intervals = [final_trans.translate(i) for i in intervals]
 
         new_graph, trans = new_graph.merge(intervals[0:2])
         if final_trans is None:
@@ -121,7 +121,7 @@ if __name__ == "__main__":
         graph = create_initial_grch38_graph(sys.argv[1])
         numeric_graph, name_translation = convert_to_numeric_graph(graph)
         new_numeric_graph, numeric_translation = connect_without_flanks(
-            numeric_graph, sys.argv[2])
+            numeric_graph, sys.argv[2], name_translation)
         name_graph, new_name_translation = convert_to_text_graph(
             new_numeric_graph, name_translation, numeric_translation)
         final_translation = name_translation + numeric_translation + new_name_translation
