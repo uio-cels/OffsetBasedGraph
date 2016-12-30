@@ -377,10 +377,12 @@ class Graph(object):
 
             translation += tmp_trans
 
+        # Translate intervals to new graph
         new_intervals = [translation.translate(interval)
                          for interval in intervals]
         ends = [interval.end_position for interval in new_intervals]
 
+        # Split end of intervals in new graph
         for end in ends:
             print("End: ", end)
             assert cur_graph is not None
