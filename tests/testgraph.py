@@ -136,7 +136,7 @@ class TestGraph(unittest.TestCase):
             true_translation,
             trans)
 
-    def test_insulate_translation(self):
+    def _test_insulate_translation(self):
         graph, interval_a, interval_b = self._setup_merge()
         translation, _ = graph._get_inslulate_translation(
             [interval_a, interval_b])
@@ -175,6 +175,7 @@ class TestGraph(unittest.TestCase):
         #     Position(new_ids[0], 0), Position(new_ids[1], 30)))
 
     def _test_merge_translation(self):
+        # Not in use any more!
         graph, interval_a, interval_b = self._setup_merge()
         translation = graph.merge_intervals(
             interval_a,
@@ -221,15 +222,18 @@ class TestGraph(unittest.TestCase):
         self.assert_graph_equals(
             graph, Graph(blocks, adj_list))
 
-    def test_merge_translations2(self):
+    def _test_merge_translations2(self):
         graph = Graph({1: Block(3), 2: Block(2), 3: Block(2),
                        4: Block(3), 5: Block(1)},
-                      {1: [2, 5], 3: [4]}, )
+                      {1: [2, 5], 3: [4]} )
+        #graph = Graph({1: Block(3), 2: Block(2), 3: Block(2),
+        #               4: Block(3)},
+        #              {1: [2], 3: [4]})
         interval1 = Interval(1, 1, [1, 2], graph)
         interval2 = Interval(1, 2, [3, 4], graph)
         new_graph, trans = graph.merge([interval1, interval2])
-        print(trans)
-        print(new_graph)
+        #print(trans)
+        #print(new_graph)
 
         a = trans._a_to_b[1][0].region_paths
         b = trans._a_to_b[3][0].region_paths
@@ -278,6 +282,42 @@ class TestGraph(unittest.TestCase):
                      rps2[0]: [rps2[1]], rps2[1]: [rps2[2]],
                      rps3[0]: [rps3[1]]}
         self.assert_graph_equals(graph, true_blocks, true_adjs)
+
+    def _test_merge_start_block(self):
+        """
+        Special case where one interval starts at block
+        :return:
+        """
+        # Real case from grch38
+        # graph = Graph({0: Block(185285), 1: Block(248956422), 2: Block(182439)}, {})
+        # intervals = [Interval(Position(1, 144488705), Position(1, 144555943), [1], graph),
+        #             Interval(Position(0, 0), Position(0, 67238), [0], graph)]
+
+        graph = Graph({0: Block(2), 1: Block(4)}, {})
+        intervals = [Interval(Position(1, 1), Position(1, 2), [1], graph),
+                     Interval(Position(0, 0), Position(0, 1), [0], graph)]
+
+        new_graph, trans = graph.merge(intervals)
+
+    def _test_merge_end_block(self):
+        graph = Graph({0: Block(2), 1: Block(4)}, {})
+        intervals = [Interval(Position(1, 1), Position(1, 2), [1], graph),
+                     Interval(Position(0, 1), Position(0, 2), [0], graph)]
+
+        new_graph, trans = graph.merge(intervals)
+        print("test_merge_end_block_graph:")
+        print(new_graph)
+        print(trans)
+
+    def test_merge_two_end_block2(self):
+        print("test end block 2")
+        graph = Graph({8: Block(118047), 1: Block(182439), 3: Block(144488705), 12: Block(67238), 6: Block(104400479)},
+                      {3: [12], 12: [8, 6]})
+
+        intervals = [Interval(Position(6, 117843), Position(6, 118838), [6], graph),
+                     Interval(Position(8, 117052), Position(8, 118047), [8], graph)]
+        new_graph, trans = graph.merge(intervals)
+        print(new_graph)
 
     def test_connect_intervals(self):
         pass

@@ -36,16 +36,23 @@ class Translation(object):
         if graph is not None:
             self.graph1 = graph
 
-        if self.graph2 is not None:
-            print("Created translation having graph2")
-            print(self._a_to_b)
-        else:
-            print("Graph2 is none")
+        #if self.graph2 is not None:
+            #print("Created translation having graph2")
+            #print(self._a_to_b)
+        #else:
+            #print("Graph2 is none")
 
     @classmethod
     def make_name_translation(cls, trans_dict, graph):
+        """
+        Creates a copied version of trans_dict where region path have name IDs
+        :param trans_dict:
+        :param graph:
+        :return: Returns a new translation object
+        """
         rev_dict = {v: [Interval(Position(k, 0),
-                                 Position(k, graph.blocks[k].length()))]
+                                 Position(k, graph.blocks[k].length()),
+                                 [k], graph)]
                     for k, v in trans_dict.items()}
 
         interval_dict = {k: [Interval(Position(v, 0),
@@ -57,7 +64,9 @@ class Translation(object):
     def _translations(self, rp, inverse=False):
         dict = self._b_to_a if inverse else self._a_to_b
         if rp in dict:
-            return dict[rp]
+            intervals = dict[rp]
+            #print("in dict, returning %s" % (intervals))
+            return intervals
         # Not in dict, means translate to itself (return interval covering
         # itself)
         # g = self.graph1 if self.graph1 is not None else self.graph2
@@ -235,6 +244,7 @@ class Translation(object):
                 offset = 0
                 for rp in intervalt.region_paths:
                     if inverse:
+                        assert intervalt.graph is not None, "interval %s has graph None" % (intervalt)
                         length = intervalt.graph.blocks[rp].length()
                     else:
                         length = self._translations(rp, True)[0].length()
@@ -293,8 +303,10 @@ class Translation(object):
         for interval in intervals:
             if True or (not inverse and self.graph2 is None) \
                     or (inverse and self.graph1 is None):
+                #print("Finding rp lens for interval %s" % interval)
                 rp_lens = [self._translations(rp, inverse=not inverse)[0].length()
                            for rp in interval.region_paths]
+                #print("Found %s" % rp_lens)
             else:
                 rp_lens = [interval.graph.blocks[rp].length() for rp in interval.region_paths] #[self._get_other_graph(inverse).blocks[rp].length() for rp in interval.region_paths]
 
@@ -384,8 +396,6 @@ class Translation(object):
                 intv.graph = self.graph1
 
         new_trans._b_to_a = new_b_to_a
-        print("new b to a")
-        print(new_b_to_a)
         new_trans._assert_is_valid()
         return new_trans
 

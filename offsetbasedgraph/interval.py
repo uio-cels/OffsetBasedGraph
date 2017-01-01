@@ -142,7 +142,7 @@ class Interval(object):
         graph = "Graph"
         if self.graph is None:
             graph = "None graph"
-        return "%s, %s, %s, %s" % (self.start_position,
+        return "Interval(%s, %s, %s, %s)" % (self.start_position,
                             self.end_position, self.region_paths,
                             graph)
 
@@ -162,14 +162,27 @@ class Interval(object):
 
         total_offset = offset + self.start_position.offset
         if rp_lens is None:
+            print("Finding rp_lens")
             rp_lens = [self.graph.blocks[rp].length()
                        for rp in self.region_paths]
 
+        #if len(rp_lens) == 1:
+        #    return Position()
+
+
         for i, region_path in enumerate(self.region_paths):
+            #print("Inside")
+            #print(self.graph)
+            #print(region_path)
             rp_length = rp_lens[i]
+            #print(rp_length)
             if rp_length > total_offset:
                 return Position(region_path, total_offset)
             total_offset -= rp_length
+
+
+        print("Tried to get offset %d from interval %s" % (offset, self))
+        print(rp_lens)
 
         assert False
 
