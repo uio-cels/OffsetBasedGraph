@@ -139,8 +139,12 @@ class Interval(object):
         return self.__str__()
 
     def __str__(self):
-        return "%s, %s, %s" % (self.start_position,
-                               self.end_position, self.region_paths)
+        graph = "Graph"
+        if self.graph is None:
+            graph = "None graph"
+        return "%s, %s, %s, %s" % (self.start_position,
+                            self.end_position, self.region_paths,
+                            graph)
 
     def get_position_from_offset(self, offset, rp_lens=None):
         """Get position of with offset counted from the start of

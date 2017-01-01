@@ -26,12 +26,21 @@ class Translation(object):
         if len(self._b_to_a) > 0:
             self.graph1 = list(self._b_to_a.values())[0][0].graph
 
+        # Why this? Removed temporarily
+        """
         if self.graph1 is None:
             self.graph1 = self.graph2
         if self.graph2 is None:
             self.graph2 = self.graph1
+        """
         if graph is not None:
             self.graph1 = graph
+
+        if self.graph2 is not None:
+            print("Created translation having graph2")
+            print(self._a_to_b)
+        else:
+            print("Graph2 is none")
 
     @classmethod
     def make_name_translation(cls, trans_dict, graph):
@@ -56,6 +65,17 @@ class Translation(object):
             g = self.graph1 if inverse else self.graph2
         else:
             g = self.graph1 if self.graph2 is None else self.graph2
+
+        assert(g is not None)
+        if rp not in g.blocks:
+            print(inverse)
+            if g == self.graph1:
+                print("Chose graph 1")
+            elif g == self.graph2:
+                print("Chose graph 2")
+
+            raise Exception("Region path %d is not in graph" % rp)
+
         length = g.blocks[rp].length()
         return [Interval(0, length, [rp], g)]
 

@@ -80,16 +80,22 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
         end = int(l[3])
         length = int(l[4])
 
-        intervals = flanks.get_flanks(alt_locus_id, length, main_chr, start, end)
+        intervals = flanks.get_flanks(alt_locus_id, length, main_chr, start-1, end)
+        print(intervals)
         if final_trans is not None:
             intervals = [final_trans.translate(i) for i in intervals]
 
+        print("Intervals")
+        [print(i) for i in intervals]
+
+        # Merge start flank of alt locus with main
         new_graph, trans = new_graph.merge(intervals[0:2])
         if final_trans is None:
             final_trans = trans
         else:
             final_trans += trans
 
+        # Merge end flank of alt locus with main
         new_graph, trans = new_graph.merge(intervals[2:4])
         final_trans += trans
 

@@ -355,6 +355,7 @@ class Graph(object):
             rp = start.region_path_id
             offset = start.offset
             id_a, id_b = (self._next_id(), self._next_id())
+            #print("New ids: %d, %d" % (id_a, id_b))
             L = self.blocks[rp].length()
 
             trans_dict[rp] = [Interval(
@@ -377,10 +378,26 @@ class Graph(object):
 
             translation += tmp_trans
 
+        # NB: Is this correct?
+        # Update translations forward intervals graph's
+        for intervals in translation._a_to_b.values():
+            for interval in intervals:
+                interval.graph = cur_graph
+
+        assert id_a in cur_graph.blocks
+        assert id_b in cur_graph.blocks
+
         # Translate intervals to new graph
         new_intervals = [translation.translate(interval)
                          for interval in intervals]
         ends = [interval.end_position for interval in new_intervals]
+
+        # Update interval's graph
+        for interval in new_intervals:
+            interval.graph = cur_graph
+
+        #print("=== NEW GRAPH ===")
+        #print(new_intervals[0].graph)
 
         # Split end of intervals in new graph
         for end in ends:
@@ -397,6 +414,16 @@ class Graph(object):
                 Position(id_a, 0),
                 Position(id_b, L-offset)
                 )]
+
+            # Remove graph from trans dict's intervals (because there are old pointers to old graphs)
+            for intervals in trans_dict.values():
+                for interval in intervals:
+                    interval.graph = None
+
+            print(" == trans dict ==")
+            print(trans_dict)
+
+
             reverse_dict[id_a] = [Interval(Position(rp, 0),
                                            Position(rp, offset),
                                            graph=cur_graph)]
@@ -406,14 +433,32 @@ class Graph(object):
                                            graph=cur_graph)]
 
             tmp_trans = Translation(trans_dict, reverse_dict, graph=cur_graph)
+            print("Translating cur_graph")
+            print("New ids: %d, %d" % (id_a, id_b))
+            #print(cur_graph)
             cur_graph = tmp_trans.translate_subgraph(cur_graph)
+
+            # update graph2 in tmp_trans
             for i_list in trans_dict.values():
                 for i in i_list:
                     i.graph = cur_graph
             tmp_trans.graph2 = cur_graph
+
+            # Asssert translations now have all intervals needed
+            self._assert_translation_intervals_has_graphs(translation)
+
             translation += tmp_trans
 
         return translation, cur_graph
+
+    def _assert_translation_intervals_has_graphs(self, translation):
+        for intervals in translation._a_to_b.values():
+            for interval in intervals:
+                assert interval.graph is not None
+
+        for intervals in translation._b_to_a.values():
+            for interval in intervals:
+                assert interval.graph is not None
 
     def _update_a_b_graph(self, a_b, graph):
         for intvs in a_b.values():
