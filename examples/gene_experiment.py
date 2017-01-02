@@ -82,6 +82,8 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
     new_graph = graph
     orig_graph = graph.copy()
     final_trans = name_translation
+    print("=== Final trans graph1  ===")
+    print(final_trans.graph1)
     #final_trans = Translation(graph=graph)
     for line in f.readlines():
         print("== Iteration ==")
@@ -107,6 +109,8 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
         print("=== Trans from merging ===")
         print(trans)
 
+        print("=== Graph after start merge ===")
+        print(new_graph)
         # update forward translation interval's graphs:
         for trans_intervals in trans._a_to_b.values():
             for trans_interval in trans_intervals:
@@ -120,6 +124,8 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
         """
 
         final_trans += trans
+        print("=== Final trans after start merge ===")
+        print(final_trans)
         final_trans.graph2 = new_graph
 
 
@@ -127,12 +133,6 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
         for trans_intervals in final_trans._a_to_b.values():
             for trans_interval in trans_intervals:
                 trans_interval.graph = new_graph
-
-        # update backward intervals
-        for trans_intervals in final_trans._b_to_a.values():
-            for trans_interval in trans_intervals:
-                trans_interval.graph = orig_graph
-
 
         #final_trans.graph2 = trans.graph2
 
@@ -147,6 +147,7 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
         print(merge_intervals)
         prev_graph = new_graph
         new_graph, trans = new_graph.merge(merge_intervals)
+        trans.graph2 = new_graph
 
         print(" === Graph after end interval merge ===")
         print(new_graph)
@@ -159,16 +160,23 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
             for trans_interval in trans_intervals:
                 trans_interval.graph = new_graph
 
-        # update backward intervals
-        for trans_intervals in trans._b_to_a.values():
-            for trans_interval in trans_intervals:
-                trans_interval.graph = prev_graph
-
         print("=== trans to add ===")
+        print(trans)
+        #print(trans.graph1)
+        #print(trans.graph2)
+        print(new_graph)
+        print("=== trans to add to ===")
         print(final_trans)
-        print(final_trans)
+
+        print("=== Final trans graph1  ===")
+        assert final_trans.graph1 == list(final_trans._b_to_a.values())[-1][0].graph
+        assert final_trans.graph2 == list(final_trans._a_to_b.values())[-1][0].graph
+        assert trans.graph2 == list(trans._a_to_b.values())[-1][0].graph
+        assert trans.graph1 == list(trans._b_to_a.values())[-1][0].graph
 
         final_trans += trans
+
+
 
     return new_graph, final_trans
 

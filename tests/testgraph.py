@@ -136,7 +136,7 @@ class TestGraph(unittest.TestCase):
             true_translation,
             trans)
 
-    def _test_insulate_translation(self):
+    def test_insulate_translation(self):
         graph, interval_a, interval_b = self._setup_merge()
         translation, _ = graph._get_inslulate_translation(
             [interval_a, interval_b])
@@ -222,7 +222,7 @@ class TestGraph(unittest.TestCase):
         self.assert_graph_equals(
             graph, Graph(blocks, adj_list))
 
-    def _test_merge_translations2(self):
+    def test_merge_translations2(self):
         graph = Graph({1: Block(3), 2: Block(2), 3: Block(2),
                        4: Block(3), 5: Block(1)},
                       {1: [2, 5], 3: [4]} )
@@ -283,7 +283,7 @@ class TestGraph(unittest.TestCase):
                      rps3[0]: [rps3[1]]}
         self.assert_graph_equals(graph, true_blocks, true_adjs)
 
-    def _test_merge_start_block(self):
+    def test_merge_start_block(self):
         """
         Special case where one interval starts at block
         :return:
@@ -299,7 +299,7 @@ class TestGraph(unittest.TestCase):
 
         new_graph, trans = graph.merge(intervals)
 
-    def _test_merge_end_block(self):
+    def test_merge_end_block(self):
         graph = Graph({0: Block(2), 1: Block(4)}, {})
         intervals = [Interval(Position(1, 1), Position(1, 2), [1], graph),
                      Interval(Position(0, 1), Position(0, 2), [0], graph)]

@@ -89,6 +89,9 @@ class Interval(object):
     def __deepcopy__(self, memo):
         return Interval(self.start_position, self.end_position, self.region_paths, self.graph)
 
+    def copy(self):
+        return Interval(self.start_position, self.end_position, self.region_paths, self.graph)
+
     def __init__(self, start_position, end_position,
                  region_paths=None, graph=None):
 
@@ -142,7 +145,7 @@ class Interval(object):
         graph = "Graph"
         if self.graph is None:
             graph = "None graph"
-        return "Interval(%s, %s, %s, %s)" % (self.start_position,
+        return "Intv(%s, %s, %s, %s)" % (self.start_position,
                             self.end_position, self.region_paths,
                             graph)
 

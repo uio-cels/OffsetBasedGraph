@@ -219,6 +219,7 @@ class Translation(object):
         if not any(rp in trans_dict for rp in interval.region_paths):
             return SingleMultiPathInterval(interval)
 
+        print("Translating interval %s, %d" % (interval, inverse))
         new_starts = self.translate_position(interval.start_position, inverse)
         # Hack: Convert to inclusive end coordinate
         interval.end_position.offset -= 1
@@ -244,7 +245,10 @@ class Translation(object):
                 offset = 0
                 for rp in intervalt.region_paths:
                     if inverse:
+                        print("Interval region paths: %s" % intervalt.region_paths)
                         assert intervalt.graph is not None, "interval %s has graph None" % (intervalt)
+                        assert rp in intervalt.graph.blocks, \
+                                "region path %s in interval %s does not exist in graph %s" % (rp, intervalt, intervalt.graph)
                         length = intervalt.graph.blocks[rp].length()
                     else:
                         length = self._translations(rp, True)[0].length()
@@ -301,18 +305,20 @@ class Translation(object):
         positions = []
         #print("Translating position %s, %d, region path: %d" % (str(position), inverse, position.region_path_id))
         for interval in intervals:
+            print("    interval %s" % interval)
             if True or (not inverse and self.graph2 is None) \
                     or (inverse and self.graph1 is None):
                 #print("Finding rp lens for interval %s" % interval)
                 rp_lens = [self._translations(rp, inverse=not inverse)[0].length()
                            for rp in interval.region_paths]
-                #print("Found %s" % rp_lens)
+                print("Found %s" % rp_lens)
             else:
                 rp_lens = [interval.graph.blocks[rp].length() for rp in interval.region_paths] #[self._get_other_graph(inverse).blocks[rp].length() for rp in interval.region_paths]
 
-            position = interval.get_position_from_offset(
+            found_pos = interval.get_position_from_offset(
                 position.offset, rp_lens)
-            positions.append(position)
+            print("Translated to %s" % found_pos)
+            positions.append(found_pos)
 
         return positions
 
@@ -339,6 +345,38 @@ class Translation(object):
         """
         assert other.graph1 is not None
         assert self.graph1 is not None
+
+        # Maybe not necessary, but makes things simpler to require this:
+        assert self.graph2 is not None
+        # self.graph2 should be the same as other.graph1
+        assert self.graph2 == other.graph1, \
+                "The translation added does not have graph1 identical to first translation's graph2"
+
+        # Assert intervals have correct graphs
+        for intervals in self._a_to_b.values():
+            for interval in intervals:
+                assert interval.graph == self.graph2, \
+                    "first translation object has interval %s with graph different than graph2" % (interval)
+
+        for intervals in self._b_to_a.values():
+            for interval in intervals:
+                #print("Checking interval %s" % interval)
+                assert interval.graph == self.graph1, \
+                    "interval %s has graph %s \n!=\n %s \nTranslation: %s" % (interval, interval.graph, self.graph1, self)
+
+        for intervals in other._b_to_a.values():
+            for interval in intervals:
+                assert interval.graph == other.graph1, \
+                    "%s \n != \n %s" % (interval.graph, other.graph1)
+                assert interval.graph == self.graph2
+        """
+        if list(other._b_to_a.values())[0][0].graph is not None and other.graph2 is not None:
+            for intervals in other._a_to_b.values():
+                for interval in intervals:
+                    assert interval.graph == other.graph2, \
+                        "%s \n != \n %s" % (interval.graph, other.graph2)
+        """
+
         new_trans = Translation(self._a_to_b, self._b_to_a, graph=self.graph1)
         region_paths = set(self._a_to_b.keys()).union(set(other._a_to_b.keys()))
         valid_region_paths = region_paths.intersection(set(self.graph1.blocks))
@@ -348,7 +386,7 @@ class Translation(object):
         for t in valid_region_paths:
             translated = other.translate_interval(
                 self._translations(t)[0])
-            new_translate_dict[t] = translated.get_single_path_intervals()
+            new_translate_dict[t] = [i.copy() for i in translated.get_single_path_intervals()]
         new_trans._a_to_b = new_translate_dict
         import copy
 
@@ -361,8 +399,14 @@ class Translation(object):
         for t in valid_i_region_paths:
             translated = []
             for inter in other._translations(t, inverse=True):
+                print("Translating back %s" % inter)
+                for translated_inter in self.translate_interval(inter, inverse=True).get_single_path_intervals():
+                    translated.append(translated_inter.copy())
+
+                """
                 translated.extend(
                     self.translate_interval(inter, inverse=True).get_single_path_intervals())
+                """
             new_translate_dict[t] = translated
         new_b_to_a = new_translate_dict
         # new_trans._a_to_b = new_translate_dict
@@ -391,12 +435,19 @@ class Translation(object):
  #                new_b_to_a[t] = new_intervals
  #
         # Set b_to_a graph to graph1
+        copied_graph = self.graph1.copy()
         for intvs in new_b_to_a.values():
             for intv in intvs:
-                intv.graph = self.graph1
+                intv.graph = copied_graph
+
+        new_trans.graph1 = copied_graph
 
         new_trans._b_to_a = new_b_to_a
         new_trans._assert_is_valid()
+
+        # Important that intervals graphs match trans graph
+        assert(new_trans.graph1 == list(new_trans._b_to_a.values())[0][0].graph)
+
         return new_trans
 
     def __eq__(self, other):
