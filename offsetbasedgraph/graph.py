@@ -547,8 +547,9 @@ class Graph(object):
                 prev_start += interval.graph.blocks[rp].length()
                 starts.append(prev_start)
 
-        starts.sort()
         starts = list(set(starts))
+        starts.sort()
+
 
         # Create translation from big block to all small created from each start
         a_b = {new_block: []}
