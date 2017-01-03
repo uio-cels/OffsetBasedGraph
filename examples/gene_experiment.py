@@ -87,6 +87,9 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
     final_trans.graph2 = graph
     print("=== Final trans graph1  ===")
     for line in f.readlines():
+        if line.startswith("#"):
+            print("Skipping line")
+            continue
         print("== Iteration ==")
         print(line)
         l = line.split()
