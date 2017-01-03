@@ -89,6 +89,9 @@ class Interval(object):
     def __deepcopy__(self, memo):
         return Interval(self.start_position, self.end_position, self.region_paths, self.graph)
 
+    def copy(self):
+        return Interval(self.start_position, self.end_position, self.region_paths, self.graph)
+
     def __init__(self, start_position, end_position,
                  region_paths=None, graph=None):
 
@@ -139,8 +142,12 @@ class Interval(object):
         return self.__str__()
 
     def __str__(self):
-        return "%s, %s, %s" % (self.start_position,
-                               self.end_position, self.region_paths)
+        graph = "Graph"
+        if self.graph is None:
+            graph = "None graph"
+        return "Intv(%s, %s, %s, %s)" % (self.start_position,
+                            self.end_position, self.region_paths,
+                            graph)
 
     def get_position_from_offset(self, offset, rp_lens=None):
         """Get position of with offset counted from the start of
@@ -158,14 +165,27 @@ class Interval(object):
 
         total_offset = offset + self.start_position.offset
         if rp_lens is None:
+            print("Finding rp_lens")
             rp_lens = [self.graph.blocks[rp].length()
                        for rp in self.region_paths]
 
+        #if len(rp_lens) == 1:
+        #    return Position()
+
+
         for i, region_path in enumerate(self.region_paths):
+            #print("Inside")
+            #print(self.graph)
+            #print(region_path)
             rp_length = rp_lens[i]
+            #print(rp_length)
             if rp_length > total_offset:
                 return Position(region_path, total_offset)
             total_offset -= rp_length
+
+
+        print("Tried to get offset %d from interval %s" % (offset, self))
+        print(rp_lens)
 
         assert False
 

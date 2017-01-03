@@ -4,6 +4,9 @@ Creates a graph from GRCh38, represents genes on this graph and outputs some inf
 Usage example:
 $ python3 gene_experiment.py grch38.chrom.sizes grch38_alt_loci.txt genes_chr1_GL383518v1_alt.txt
 
+With only two alt loci:
+python3 gene_experiment.py grch38.chrom.sizes-small grch38_alt_loci_small.txt genes_chr1_GL383518v1_alt.txt
+
 """
 
 import sys
@@ -17,6 +20,13 @@ def convert_to_numeric_graph(graph):
     trans = Translation.make_name_translation(a_to_b, graph)
     new_graph = trans.translate_subgraph(graph)
     trans.graph2 = new_graph
+
+    # ?:
+    for intervals in trans._a_to_b.values():
+        for interval in intervals:
+            interval.graph = new_graph
+
+
     return new_graph, trans
 
 
@@ -70,8 +80,13 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
     """
     f = open(alt_loci_fn)
     new_graph = graph
+    orig_graph = graph.copy()
     final_trans = name_translation
+    print("=== Final trans graph1  ===")
+    print(final_trans.graph1)
+    #final_trans = Translation(graph=graph)
     for line in f.readlines():
+        print("== Iteration ==")
         print(line)
         l = line.split()
         alt_locus_id = l[0]
@@ -80,20 +95,88 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
         end = int(l[3])
         length = int(l[4])
 
-        intervals = flanks.get_flanks(alt_locus_id, length, main_chr, start, end)
-        if final_trans is not None:
-            intervals = [final_trans.translate(i) for i in intervals]
-            print(intervals)
-        print("Merge")
-        print(new_graph)
-        new_graph, trans = new_graph.merge(intervals[0:2])
-        if final_trans is None:
-            final_trans = trans
-        else:
-            final_trans += trans
+        intervals = flanks.get_flanks(alt_locus_id, length, main_chr, start-1, end)
+        print(intervals)
+        #if final_trans is not None:
 
-        new_graph, trans = new_graph.merge(intervals[2:4])
+        # Merge start flank of alt locus with main
+        merge_intervals = intervals[0:2]
+        merge_intervals = [final_trans.translate(i) for i in merge_intervals]
+        for intv in merge_intervals:
+            intv.graph = new_graph
+        prev_graph = new_graph
+        new_graph, trans = new_graph.merge(merge_intervals)
+        print("=== Trans from merging ===")
+        print(trans)
+
+        print("=== Graph after start merge ===")
+        print(new_graph)
+        # update forward translation interval's graphs:
+        for trans_intervals in trans._a_to_b.values():
+            for trans_interval in trans_intervals:
+                trans_interval.graph = new_graph
+
+        """
+        # update backward intervals
+        for trans_intervals in trans._b_to_a.values():
+            for trans_interval in trans_intervals:
+                trans_interval.graph = prev_graph
+        """
+
         final_trans += trans
+        print("=== Final trans after start merge ===")
+        print(final_trans)
+        final_trans.graph2 = new_graph
+
+
+        # update forward translation interval's graphs:
+        for trans_intervals in final_trans._a_to_b.values():
+            for trans_interval in trans_intervals:
+                trans_interval.graph = new_graph
+
+        #final_trans.graph2 = trans.graph2
+
+        # Merge end flank of alt locus with main
+
+        merge_intervals = intervals[2:4]
+        merge_intervals = [final_trans.translate(i) for i in merge_intervals]
+        for intv in merge_intervals:
+            intv.graph = new_graph
+
+        print(" ==== End intervals to merge ===")
+        print(merge_intervals)
+        prev_graph = new_graph
+        new_graph, trans = new_graph.merge(merge_intervals)
+        trans.graph2 = new_graph
+
+        print(" === Graph after end interval merge ===")
+        print(new_graph)
+
+        print(" === trans after end interval merge ===")
+        print(trans)
+
+        # update forward translation interval's graphs:
+        for trans_intervals in trans._a_to_b.values():
+            for trans_interval in trans_intervals:
+                trans_interval.graph = new_graph
+
+        print("=== trans to add ===")
+        print(trans)
+        #print(trans.graph1)
+        #print(trans.graph2)
+        print(new_graph)
+        print("=== trans to add to ===")
+        print(final_trans)
+
+        print("=== Final trans graph1  ===")
+        assert final_trans.graph1 == list(final_trans._b_to_a.values())[-1][0].graph
+        assert final_trans.graph2 == list(final_trans._a_to_b.values())[-1][0].graph
+        assert trans.graph2 == list(trans._a_to_b.values())[-1][0].graph
+        assert trans.graph1 == list(trans._b_to_a.values())[-1][0].graph
+
+        final_trans += trans
+
+
 
     return new_graph, final_trans
 
@@ -117,13 +200,25 @@ if __name__ == "__main__":
     if len(sys.argv) != 4:
         print("""
             Usage: gene_experiment.py chrom_sizes_file alt_loci_file gene_file \n
-            Example: python3 gene_experiment.py grch38.chrom.sizes grch38_alt_loci.txt genes_chr1_GL383518v1_alt.txt
+            Example: python3 gene_experiment.py grch38.chrom.sizes grch38_alt_loci.txt genes_chr1_GL383518v1_alt.txt\n
+            Smaller example: python3 gene_experiment.py grch38.chrom.sizes-small grch38_alt_loci_small.txt genes_chr1_GL383518v1_alt.txt
             """)
     else:
         graph = create_initial_grch38_graph(sys.argv[1])
+
+        print("=== First graph===")
+        print(graph)
         numeric_graph, name_translation = convert_to_numeric_graph(graph)
+
+        print("=== Numeric graph ===")
+        print(numeric_graph)
+        print(name_translation)
+
+        print("=== Connecting ===")
         new_numeric_graph, numeric_translation = connect_without_flanks(
             numeric_graph, sys.argv[2], name_translation)
+
+
         name_graph, new_name_translation = convert_to_text_graph(
             new_numeric_graph, name_translation, numeric_translation)
         final_translation = name_translation + numeric_translation + new_name_translation
