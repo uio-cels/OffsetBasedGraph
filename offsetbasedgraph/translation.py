@@ -221,7 +221,6 @@ class Translation(object):
         if not any(rp in trans_dict for rp in interval.region_paths):
             return SingleMultiPathInterval(interval)
 
-        print("Translating interval %s, %d" % (interval, inverse))
         new_starts = self.translate_position(interval.start_position, inverse)
         # Hack: Convert to inclusive end coordinate
         interval.end_position.offset -= 1
@@ -247,7 +246,6 @@ class Translation(object):
                 offset = 0
                 for rp in intervalt.region_paths:
                     if inverse:
-                        print("Interval region paths: %s" % intervalt.region_paths)
                         assert intervalt.graph is not None, "interval %s has graph None" % (intervalt)
                         assert rp in intervalt.graph.blocks, \
                                 "region path %s in interval %s does not exist in graph %s" % (rp, intervalt, intervalt.graph)
@@ -307,19 +305,16 @@ class Translation(object):
         positions = []
         #print("Translating position %s, %d, region path: %d" % (str(position), inverse, position.region_path_id))
         for interval in intervals:
-            print("    interval %s" % interval)
             if True or (not inverse and self.graph2 is None) \
                     or (inverse and self.graph1 is None):
                 #print("Finding rp lens for interval %s" % interval)
                 rp_lens = [self._translations(rp, inverse=not inverse)[0].length()
                            for rp in interval.region_paths]
-                print("Found %s" % rp_lens)
             else:
                 rp_lens = [interval.graph.blocks[rp].length() for rp in interval.region_paths] #[self._get_other_graph(inverse).blocks[rp].length() for rp in interval.region_paths]
 
             found_pos = interval.get_position_from_offset(
                 position.offset, rp_lens)
-            print("Translated to %s" % found_pos)
             positions.append(found_pos)
 
         return positions
@@ -401,7 +396,6 @@ class Translation(object):
         for t in valid_i_region_paths:
             translated = []
             for inter in other._translations(t, inverse=True):
-                print("Translating back %s" % inter)
                 for translated_inter in self.translate_interval(inter, inverse=True).get_single_path_intervals():
                     translated.append(translated_inter.copy())
 
@@ -449,6 +443,15 @@ class Translation(object):
 
         # Important that intervals graphs match trans graph
         assert(new_trans.graph1 == list(new_trans._b_to_a.values())[0][0].graph)
+
+        # Find graph2 for new_trans
+        graph2 = new_trans.translate_subgraph(new_trans.graph1)
+        new_trans.graph2 = graph2
+
+        # Update a_b intervals
+        for intvs in new_trans._a_to_b.values():
+            for intv in intvs:
+                intv.graph = graph2
 
         return new_trans
 

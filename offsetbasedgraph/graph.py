@@ -349,15 +349,11 @@ class Graph(object):
 
         for start in starts:
             i += 1
-            #print(i)
-            #print("start: %s" % start)
             if start.offset == 0:
-                #print("continue")
                 continue
             rp = start.region_path_id
             offset = start.offset
             id_a, id_b = (self._next_id(), self._next_id())
-            #print("New ids: %d, %d" % (id_a, id_b))
             L = self.blocks[rp].length()
             prev_graph = cur_graph.copy()
 
@@ -377,42 +373,22 @@ class Graph(object):
 
             tmp_trans = Translation(trans_dict, reverse_dict, graph=cur_graph)
             cur_graph = tmp_trans.translate_subgraph(cur_graph)
-            for i_list in trans_dict.values():
-                for j in i_list:
-                    j.graph = cur_graph
+            self._update_a_b_graph(trans_dict, cur_graph)
 
             translation += tmp_trans
-            translation.graph2 = cur_graph
-            self._update_a_b_graph(translation._a_to_b, cur_graph)
 
-        # NB: Is this correct?
-        # Update translations forward intervals graph's
-        for ints in translation._a_to_b.values():
-            for interval in ints:
-                interval.graph = cur_graph
-
-        #print(id_a)
-        #print(id_b)
         if id_a is not None and id_b is not None:
             assert id_a in cur_graph.blocks
             assert id_b in cur_graph.blocks
-
-        #print("=== Cur graph after start split ===")
-        #print(cur_graph)
-        #print(translation)
 
         # Translate intervals to new graph
         new_intervals = [translation.translate(interval)
                          for interval in intervals]
         ends = [interval.end_position for interval in new_intervals]
 
-        # Update interval's graph
+        # Update interval's graph. Is this necessary? Should be done in translate interval
         for interval in new_intervals:
             interval.graph = cur_graph
-
-        #print("=== NEW GRAPH ===")
-        #print(new_intervals[0].graph)
-
 
         back_graph_end = cur_graph.copy()
         end_translations = Translation(graph=cur_graph)
@@ -426,11 +402,9 @@ class Graph(object):
             L = cur_graph.blocks[rp].length()
             offset = end.offset
             if offset == L:
-                #print("Continue")
                 continue
+
             id_a, id_b = (self._next_id(), self._next_id())
-            #print("New ids in end: %d, %d" % (id_a, id_b))
-            #print("translation for rp %d" % (rp))
 
             trans_dict = {}
             reverse_dict = {}
@@ -438,11 +412,6 @@ class Graph(object):
                 Position(id_a, 0),
                 Position(id_b, L-offset)
                 )]
-
-            # Remove graph from trans dict's intervals (because there are old pointers to old graphs)
-            for intervals in trans_dict.values():
-                for interval in intervals:
-                    interval.graph = None
 
             prev_graph = cur_graph.copy()
             reverse_dict[id_a] = [Interval(Position(rp, 0),
@@ -457,33 +426,16 @@ class Graph(object):
             cur_graph = tmp_trans.translate_subgraph(cur_graph)
 
             self._update_a_b_graph(tmp_trans._a_to_b, cur_graph.copy())
-            #self._update_a_b_graph(tmp_trans._b_to_a, prev_graph)
 
             tmp_trans.graph2 = cur_graph.copy()
 
             # Asssert translations now have all intervals needed
             self._assert_translation_intervals_has_graphs(translation)
-            print("Adding =======")
-
-            print("=== prev graph ===")
-            print(prev_graph)
-            print("=== other graph 1 ===")
-            print(tmp_trans.graph1)
-            print("=== b to a graph ===")
-            print(list(tmp_trans._b_to_a.values())[-1][0].graph)
 
             end_translations += tmp_trans
 
-            end_translations.graph2 = cur_graph.copy()
-            self._update_a_b_graph(end_translations._a_to_b, cur_graph.copy())
 
         translation += end_translations
-
-        #print("=== Cur graph after ends split ===")
-        #print(cur_graph)
-        #print("=== final trans after end split ===")
-        #print(translation)
-
 
         return translation, cur_graph
 
@@ -519,11 +471,6 @@ class Graph(object):
         :returns: translation object, resulting graph
         :rtype: Graph, Translation
         """
-        print("MERGING")
-        print(self)
-        print()
-        print("==== intervals to merge ===")
-        [print(interval) for interval in intervals]
 
         [self.assert_interval_in_graph(i) for i in intervals]
         original_graph = intervals[0].graph
@@ -535,14 +482,6 @@ class Graph(object):
 
         # Step 1: Translate graph so that all intervals starts and ends at region paths
         trans, graph1 = self._get_inslulate_translation(intervals)
-        """
-        print("=== Original ===")
-        print(self)
-        print("=== Graph 1 ===")
-        print(graph1)
-        print(trans)
-        """
-        #self._update_a_b_graph(trans._a_to_b, graph1)
         trans.graph2 = graph1
         self._update_a_b_graph(trans._a_to_b, graph1)  # correct, a to b interval's graph is wrong for some reason
 
@@ -579,8 +518,6 @@ class Graph(object):
 
         # Find new graph
         trans2 = Translation(a_b, b_a, graph1)
-        #print("== Trans 2 ==")
-        #print(trans2)
         graph2 = trans2.translate_subgraph(graph1)
         trans2.graph2 = graph2
 
