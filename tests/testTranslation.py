@@ -71,8 +71,6 @@ class TestTranslation(unittest.TestCase):
 
         self.assertEqual(correct, translated, "correct %s != %s")
 
-
-
     def test_translate_on_merged_graph(self):
         graph1, graph2, trans = dummygraph.get_merged_translation()
 
@@ -103,7 +101,6 @@ class TestTranslation(unittest.TestCase):
         trans_sum = trans + trans_back
         interval_back = trans_sum.translate_interval(interval1).get_single_path_intervals()
         self.assertTrue(interval_back, interval1)
-
 
     def test_translate_intervals_forth_and_back(self):
         pass
@@ -144,8 +141,31 @@ class TestTranslation(unittest.TestCase):
         translated_graph = trans.translate_subgraph(graph1)
         self.assertEqual(graph2, translated_graph)
 
+    def test_empty_start(self):
+        pass  # TODO
 
+    def test_name_translation(self):
+        graph = dummygraph.get_name_graph()
+        a_to_b = {k: i for i, k in enumerate(graph.blocks.keys())}
+        trans = Translation.make_name_translation(a_to_b, graph)
+        for k, v in a_to_b.items():
+            self.assertEqual(trans._b_to_a[v][0].region_paths[0],
+                             k)
+
+        num_graph = trans.translate_subgraph(graph)
+        trans.graph2 = num_graph
+        intervals = [Interval(5, 15, ["A"]),
+                     Interval(0, 10, ["B"])]
+
+        for interval in intervals:
+            self.assertEqual(
+                trans.translate(interval),
+                Interval(interval.start_position.offset,
+                         interval.end_position.offset,
+                         [a_to_b[rp] for rp in interval.region_paths]))
+
+        num_graph2, num_trans = num_graph.merge(
+            [trans.translate(interval) for interval in intervals])
 
 if __name__ == "__main__":
     unittest.main()
-
