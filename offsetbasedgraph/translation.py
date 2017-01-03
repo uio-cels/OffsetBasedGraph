@@ -244,7 +244,6 @@ class Translation(object):
                 offset = 0
                 for rp in intervalt.region_paths:
                     if inverse:
-                        print("Interval region paths: %s" % intervalt.region_paths)
                         assert intervalt.graph is not None, "interval %s has graph None" % (intervalt)
                         assert rp in intervalt.graph.blocks, \
                                 "region path %s in interval %s does not exist in graph %s" % (rp, intervalt, intervalt.graph)
