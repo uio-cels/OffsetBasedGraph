@@ -96,6 +96,7 @@ class Interval(object):
                  region_paths=None, graph=None):
 
         if isinstance(start_position, int):
+            assert region_paths, "No region paths given and start_position is int %s, %s, %s" % (start_position, end_position, region_paths)
             self.start_position = Position(region_paths[0], start_position)
         else:
             self.start_position = start_position
