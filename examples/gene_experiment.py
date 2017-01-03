@@ -83,7 +83,9 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
         intervals = flanks.get_flanks(alt_locus_id, length, main_chr, start, end)
         if final_trans is not None:
             intervals = [final_trans.translate(i) for i in intervals]
-
+            print(intervals)
+        print("Merge")
+        print(new_graph)
         new_graph, trans = new_graph.merge(intervals[0:2])
         if final_trans is None:
             final_trans = trans
