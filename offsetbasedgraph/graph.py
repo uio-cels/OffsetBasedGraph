@@ -377,19 +377,18 @@ class Graph(object):
 
             tmp_trans = Translation(trans_dict, reverse_dict, graph=cur_graph)
             cur_graph = tmp_trans.translate_subgraph(cur_graph)
-            for i_list in trans_dict.values():
-                for j in i_list:
-                    j.graph = cur_graph
+            self._update_a_b_graph(trans_dict, cur_graph)
 
             translation += tmp_trans
-            translation.graph2 = cur_graph
-            self._update_a_b_graph(translation._a_to_b, cur_graph)
+            #translation.graph2 = cur_graph
+            #self._update_a_b_graph(translation._a_to_b, cur_graph)
 
         # NB: Is this correct?
         # Update translations forward intervals graph's
-        for ints in translation._a_to_b.values():
-            for interval in ints:
-                interval.graph = cur_graph
+
+        #for ints in translation._a_to_b.values():
+        #    for interval in ints:
+        #        interval.graph = cur_graph
 
         #print(id_a)
         #print(id_b)
@@ -406,13 +405,9 @@ class Graph(object):
                          for interval in intervals]
         ends = [interval.end_position for interval in new_intervals]
 
-        # Update interval's graph
+        # Update interval's graph. Is this necessary? Should be done in translate interval
         for interval in new_intervals:
             interval.graph = cur_graph
-
-        #print("=== NEW GRAPH ===")
-        #print(new_intervals[0].graph)
-
 
         back_graph_end = cur_graph.copy()
         end_translations = Translation(graph=cur_graph)
@@ -440,9 +435,9 @@ class Graph(object):
                 )]
 
             # Remove graph from trans dict's intervals (because there are old pointers to old graphs)
-            for intervals in trans_dict.values():
-                for interval in intervals:
-                    interval.graph = None
+            #for intervals in trans_dict.values():
+            #    for interval in intervals:
+            #        interval.graph = None
 
             prev_graph = cur_graph.copy()
             reverse_dict[id_a] = [Interval(Position(rp, 0),
@@ -474,8 +469,8 @@ class Graph(object):
 
             end_translations += tmp_trans
 
-            end_translations.graph2 = cur_graph.copy()
-            self._update_a_b_graph(end_translations._a_to_b, cur_graph.copy())
+            #end_translations.graph2 = cur_graph.copy()
+            #self._update_a_b_graph(end_translations._a_to_b, cur_graph.copy())
 
         translation += end_translations
 

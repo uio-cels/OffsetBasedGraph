@@ -112,9 +112,9 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
         print("=== Graph after start merge ===")
         print(new_graph)
         # update forward translation interval's graphs:
-        for trans_intervals in trans._a_to_b.values():
-            for trans_interval in trans_intervals:
-                trans_interval.graph = new_graph
+        #for trans_intervals in trans._a_to_b.values():
+        #    for trans_interval in trans_intervals:
+        #        trans_interval.graph = new_graph
 
         """
         # update backward intervals
@@ -126,13 +126,13 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
         final_trans += trans
         print("=== Final trans after start merge ===")
         print(final_trans)
-        final_trans.graph2 = new_graph
+        #final_trans.graph2 = new_graph
 
 
         # update forward translation interval's graphs:
-        for trans_intervals in final_trans._a_to_b.values():
-            for trans_interval in trans_intervals:
-                trans_interval.graph = new_graph
+        #for trans_intervals in final_trans._a_to_b.values():
+        #    for trans_interval in trans_intervals:
+        #        trans_interval.graph = new_graph
 
         #final_trans.graph2 = trans.graph2
 
@@ -147,7 +147,7 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
         print(merge_intervals)
         prev_graph = new_graph
         new_graph, trans = new_graph.merge(merge_intervals)
-        trans.graph2 = new_graph
+        #trans.graph2 = new_graph
 
         print(" === Graph after end interval merge ===")
         print(new_graph)
@@ -156,9 +156,9 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
         print(trans)
 
         # update forward translation interval's graphs:
-        for trans_intervals in trans._a_to_b.values():
-            for trans_interval in trans_intervals:
-                trans_interval.graph = new_graph
+        #for trans_intervals in trans._a_to_b.values():
+        #    for trans_interval in trans_intervals:
+        #        trans_interval.graph = new_graph
 
         print("=== trans to add ===")
         print(trans)
