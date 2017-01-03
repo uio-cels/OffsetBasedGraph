@@ -569,7 +569,6 @@ class Graph(object):
         graph4 = trans4.translate_subgraph(graph3)
         self._update_a_b_graph(a_b, graph4)
         trans4.graph2 = graph4
-
         final_trans = trans3 + trans4
         final_trans = trans2 + final_trans
         final_trans = trans + final_trans
