@@ -26,7 +26,6 @@ def convert_to_numeric_graph(graph):
         for interval in intervals:
             interval.graph = new_graph
 
-
     return new_graph, trans
 
 
@@ -46,23 +45,31 @@ def create_initial_grch38_graph(chrom_sizes_fn):
 
 
 def convert_to_text_graph(graph, name_translation, numeric_translation):
+    for key in numeric_translation._b_to_a.keys():
+        assert key in graph.blocks, "%s not in %s" % (key, graph)
     new_dict = {}
 
+    print("->", numeric_translation._a_to_b)
+    print("<-", numeric_translation._b_to_a)
     # Set ids for rps in trans dict
     for i, key in enumerate(numeric_translation._b_to_a):
         rps = []
+
+        # Get all region paths mapping to key
         for interval in numeric_translation._b_to_a[key]:
             rps.extend(interval.region_paths)
 
-        new_id = sum((name_translation[rp] for rp in rps), str(i))
+        new_id = str(i) + "".join(rps)
+
         new_dict[key] = new_id
 
     # Set ids for rps not in trans dict
     for n_id in name_translation._b_to_a:
         if n_id not in numeric_translation._a_to_b:
-            new_dict[n_id] = name_translation._b_to_a[n_id][0]
+            new_dict[n_id] = name_translation._b_to_a[n_id][0].region_paths[0]
 
     a_to_b = new_dict
+    print("-->", a_to_b)
     # b_to_a = {v[0]: [k] for k, v in a_to_b.items()}
     trans = Translation.make_name_translation(a_to_b, graph)
     new_graph = trans.translate_subgraph(graph)

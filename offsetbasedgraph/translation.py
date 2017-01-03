@@ -50,6 +50,8 @@ class Translation(object):
         :param graph:
         :return: Returns a new translation object
         """
+        for k in trans_dict.keys():
+            assert k in graph.blocks, "%s not in %s" % (k, graph)
         rev_dict = {v: [Interval(Position(k, 0),
                                  Position(k, graph.blocks[k].length()),
                                  [k], graph)]
