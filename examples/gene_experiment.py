@@ -85,7 +85,6 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
     orig_graph = graph.copy()
     final_trans = Translation(graph=graph)
     final_trans.graph2 = graph
-    print("=== Final trans graph1  ===")
     for line in f.readlines():
         if line.startswith("#"):
             print("Skipping line")
@@ -100,40 +99,51 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
         length = int(l[4])
 
         intervals = flanks.get_flanks(alt_locus_id, length, main_chr, start-1, end)
-        print(intervals)
         #if final_trans is not None:
-
+        #print("=== Flanking intervals ===")
+        #print(intervals)
         # Merge start flank of alt locus with main
         merge_intervals = intervals[0:2]
-        merge_intervals = [final_trans.translate(name_translation.translate(i))
-                           for i in merge_intervals]
-        for intv in merge_intervals:
-            intv.graph = new_graph
-        prev_graph = new_graph
-        new_graph, trans = new_graph.merge(merge_intervals)
+        if merge_intervals[0].length() > 0:
+            print("Merging start")
+            merge_intervals = [name_translation.translate(i) for i in merge_intervals]
+            #print("=== Intervals after name translation ===")
+            #print(merge_intervals)
+            merge_intervals = [final_trans.translate(i) for i in merge_intervals]
+            #print("=== Merge intervals after final_trans===")
+            #print(merge_intervals)
+            #print("=== Current graph ===")
+            #print(final_trans.graph2)
+            for intv in merge_intervals:
+                intv.graph = new_graph
+            prev_graph = new_graph
+            new_graph, trans = new_graph.merge(merge_intervals)
 
-        final_trans += trans
+            final_trans += trans
 
         #final_trans.graph2 = trans.graph2
 
         # Merge end flank of alt locus with main
 
         merge_intervals = intervals[2:4]
-        merge_intervals = [final_trans.translate(name_translation.translate(i))
-                           for i in merge_intervals]
-        for intv in merge_intervals:
-            intv.graph = new_graph
+        if merge_intervals[0].length() > 0:
+            print("Merging end")
+            merge_intervals = [final_trans.translate(name_translation.translate(i))
+                               for i in merge_intervals]
+            for intv in merge_intervals:
+                intv.graph = new_graph
 
-        prev_graph = new_graph
-        new_graph, trans = new_graph.merge(merge_intervals)
+            prev_graph = new_graph
+            new_graph, trans = new_graph.merge(merge_intervals)
 
-        assert final_trans.graph1 == list(final_trans._b_to_a.values())[-1][0].graph
-        assert final_trans.graph2 == list(final_trans._a_to_b.values())[-1][0].graph
-        assert trans.graph2 == list(trans._a_to_b.values())[-1][0].graph
-        assert trans.graph1 == list(trans._b_to_a.values())[-1][0].graph
+            assert final_trans.graph1 == list(final_trans._b_to_a.values())[-1][0].graph
+            assert final_trans.graph2 == list(final_trans._a_to_b.values())[-1][0].graph
+            assert trans.graph2 == list(trans._a_to_b.values())[-1][0].graph
+            assert trans.graph1 == list(trans._b_to_a.values())[-1][0].graph
+            assert trans.graph1 == final_trans.graph2, \
+                print("%s \n \n %s" % (trans.graph1, final_trans.graph2))
 
-        final_trans += trans
-
+            final_trans += trans
 
 
     return new_graph, final_trans
@@ -165,12 +175,12 @@ if __name__ == "__main__":
         graph = create_initial_grch38_graph(sys.argv[1])
 
         print("=== First graph===")
-        print(graph)
+        #print(graph)
         numeric_graph, name_translation = convert_to_numeric_graph(graph)
 
         print("=== Numeric graph ===")
-        print(numeric_graph)
-        print(name_translation)
+        #print(numeric_graph)
+        #print(name_translation)
 
         print("=== Connecting ===")
         new_numeric_graph, numeric_translation = connect_without_flanks(
