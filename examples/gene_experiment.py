@@ -136,15 +136,16 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
             prev_graph = new_graph
             new_graph, trans = new_graph.merge(merge_intervals)
 
-            assert final_trans.graph1 == list(final_trans._b_to_a.values())[-1][0].graph
-            assert final_trans.graph2 == list(final_trans._a_to_b.values())[-1][0].graph
-            assert trans.graph2 == list(trans._a_to_b.values())[-1][0].graph
-            assert trans.graph1 == list(trans._b_to_a.values())[-1][0].graph
+            #assert final_trans.graph1 == list(final_trans._b_to_a.values())[-1][0].graph
+            #assert final_trans.graph2 == list(final_trans._a_to_b.values())[-1][0].graph
+            #assert trans.graph2 == list(trans._a_to_b.values())[-1][0].graph
+            #assert trans.graph1 == list(trans._b_to_a.values())[-1][0].graph
             assert trans.graph1 == final_trans.graph2, \
                 print("%s \n \n %s" % (trans.graph1, final_trans.graph2))
 
             final_trans += trans
 
+    f.close()
 
     return new_graph, final_trans
 
