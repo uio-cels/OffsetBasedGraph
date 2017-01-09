@@ -219,7 +219,7 @@ class Translation(object):
         trans_dict = self._b_to_a if inverse else self._a_to_b
 
         if not any(rp in trans_dict for rp in interval.region_paths):
-            return SingleMultiPathInterval(interval)
+            return SingleMultiPathInterval(interval, self._get_other_graph(inverse))
 
         new_starts = self.translate_position(interval.start_position, inverse)
         # Hack: Convert to inclusive end coordinate

@@ -20,7 +20,7 @@ class Block(object):
 
     def __str__(self):
 
-        return "Block(%s)" % self._length
+        return "B(%s)" % self._length
 
     def __repr__(self):
         return self.__str__()
@@ -681,6 +681,9 @@ class Graph(object):
 
     def __str__(self):
         return "Graph: \n Blocks: %s\n Edges: %s" % (self.blocks, self.adj_list)
+
+    def __repr__(self):
+        return self.__str__()
 
     @staticmethod
     def _get_reverse_edges(adj_list):
