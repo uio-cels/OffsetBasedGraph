@@ -285,6 +285,51 @@ class Graph(object):
 
         return trans, new_graph
 
+    def connect_postitions(self, position_a, position_b):
+        """FIXME! briefly describe function
+
+        :param position_a: 
+        :param position_b: 
+        :returns: 
+        :rtype: 
+
+        """
+        rp_a = position_a.region_path_id
+        rp_b = position_b.region_path_id
+        offset_a = position_a.offset
+        offset_b = position_b.offset
+        l_a = self.blocks[rp_a].length()
+        l_b = self.blocks[rp_b].length()
+        a_to_b = {}
+        b_to_a = {}
+        rp_out = rp_a
+        rp_in = rp_b
+
+        if offset_a < l_a:
+            idf = self._next_id()
+            idl = self._next_id()
+            rp_in = idl
+            a_to_b[rp_a] = [Interval(0, l_a-offset_a-1,
+                                     [idf, idl])]
+            b_to_a[idf] = [Interval(0, offset_a+1, [rp_a])]
+            b_to_a[idl] = [Interval(offset_a+1, l_a, [rp_a])]
+
+        if offset_b > 0:
+            idf = self._next_id()
+            rp_in = idf
+            idl = self._next_id()
+            a_to_b = self[rp_b] = [Interval(0, l_b-offset_b,
+                                            [idf, idl])]
+            b_to_a[idf] = [Interval(0, offset_b, [rp_b])]
+            b_to_a[idl] = [Interval(offset_b, l_b, [rp_b])]
+
+        trans = Translation(a_to_b, b_to_a, graph=self)
+        n_graph = trans.translate_subgraph(self)
+        n_graph.adj_list[rp_out].append(rp_in)
+        n_graph.reverse_adj_list[rp_in].append(rp_out)
+        trans.graph2 = n_graph
+        return n_graph, trans
+
     def _get_insulated_merge_transformation(self, intervals):
         """Merge intervals that all start and end at region path
         boundries
