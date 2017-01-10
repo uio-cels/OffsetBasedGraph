@@ -133,7 +133,9 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
             print(trans.graph1)
             print(trans.graph2)
             final_trans += trans
-            final_trans.graph2 = new_graph
+            final_trans.graph2 = new_graph.copy()
+            print("=== Final trans graph2 ==")
+            print(final_trans.graph2)
             final_trans.graph2._update_a_b_graph(final_trans._a_to_b, new_graph)
             print("No start flank")
         #final_trans.graph2 = trans.graph2
