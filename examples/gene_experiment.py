@@ -105,36 +105,46 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
         print('\n'.join([str(i) for i in intervals]))
         # Merge start flank of alt locus with main
         merge_intervals = intervals[0:2]
+        merge_intervals = [name_translation.translate(i) for i in merge_intervals]
+        merge_intervals = [final_trans.translate(i) for i in merge_intervals]
+        for intv in merge_intervals:
+            intv.graph = new_graph
         if merge_intervals[0].length() > 0:
             n_flanks += 1
             #print("Merging start")
-            merge_intervals = [name_translation.translate(i) for i in merge_intervals]
             #print("=== Intervals after name translation ===")
             #print(merge_intervals)
-            merge_intervals = [final_trans.translate(i) for i in merge_intervals]
             #print("=== Merge intervals after final_trans===")
             #print(merge_intervals)
             #print("=== Current graph ===")
             #print(final_trans.graph2)
-            for intv in merge_intervals:
-                intv.graph = new_graph
             prev_graph = new_graph
             new_graph, trans = new_graph.merge(merge_intervals)
 
             final_trans += trans
         else:
+            # Only connect by edge
+            new_graph, trans = new_graph.connect_postitions(
+                            new_graph.prev_position(merge_intervals[0].start_position),
+                            merge_intervals[1].start_position
+            )
+            print("=== Trans start flank ===")
+            print(trans)
+            print(trans.graph1)
+            print(trans.graph2)
+            final_trans += trans
             print("No start flank")
         #final_trans.graph2 = trans.graph2
 
         # Merge end flank of alt locus with main
 
         merge_intervals = intervals[2:4]
+        merge_intervals = [final_trans.translate(name_translation.translate(i))
+                           for i in merge_intervals]
+        for intv in merge_intervals:
+            intv.graph = new_graph
         if merge_intervals[0].length() > 0:
             #print("Merging end")
-            merge_intervals = [final_trans.translate(name_translation.translate(i))
-                               for i in merge_intervals]
-            for intv in merge_intervals:
-                intv.graph = new_graph
 
             prev_graph = new_graph
             new_graph, trans = new_graph.merge(merge_intervals)
@@ -147,7 +157,14 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
                 print("%s \n \n %s" % (trans.graph1, final_trans.graph2))
 
             final_trans += trans
-
+        else:
+            # Only connect by edge
+            new_graph, trans = new_graph.connect_postitions(
+                            merge_intervals[1].start_position,
+                            new_graph.next_position(merge_intervals[0].start_position)
+            )
+            final_trans += trans
+            print("No end flank")
         #print("=== Graph after iteration ====")
         #print(new_graph)
     f.close()

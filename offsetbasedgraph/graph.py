@@ -328,7 +328,40 @@ class Graph(object):
         n_graph.adj_list[rp_out].append(rp_in)
         n_graph.reverse_adj_list[rp_in].append(rp_out)
         trans.graph2 = n_graph
+        self._update_a_b_graph(trans._a_to_b, n_graph)
+        self._update_a_b_graph(trans._b_to_a, self)
         return n_graph, trans
+
+    def prev_position(self, pos):
+        """
+        :param pos: Position
+        :return: Returns the previous position in graph
+        """
+        if pos.offset > 0:
+            return Position(pos.region_path_id, pos.offset - 1)
+        else:
+            # Find previous region path
+            prev = None
+            for b in self.blocks:
+                if pos.region_path_id in self.adj_list[b]:
+                    prev = b
+                    break
+            if prev is None:
+                raise Exception("Found no previous pos for position %s" % pos)
+
+            return Position(b, self.graph.blocks[b].length() - 1)
+
+    def next_position(self, pos):
+        """
+        :param pos: Position
+        :return: Returns the previous position in graph
+        """
+        if pos.offset < self.blocks[pos.region_path_id].length():
+            return Position(pos.region_path_id, pos.offset + 1)
+        else:
+            # Find next region path
+            next = self.adj_list[pos.region_path_id]
+            return Position(next, 0)
 
     def _get_insulated_merge_transformation(self, intervals):
         """Merge intervals that all start and end at region path
