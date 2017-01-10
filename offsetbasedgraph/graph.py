@@ -328,7 +328,40 @@ class Graph(object):
         n_graph.adj_list[rp_out].append(rp_in)
         n_graph.reverse_adj_list[rp_in].append(rp_out)
         trans.graph2 = n_graph
+        self._update_a_b_graph(trans._a_to_b, n_graph)
+        self._update_a_b_graph(trans._b_to_a, self)
         return n_graph, trans
+
+    def prev_position(self, pos):
+        """
+        :param pos: Position
+        :return: Returns the previous position in graph
+        """
+        if pos.offset > 0:
+            return Position(pos.region_path_id, pos.offset - 1)
+        else:
+            # Find previous region path
+            prev = None
+            for b in self.blocks:
+                if pos.region_path_id in self.adj_list[b]:
+                    prev = b
+                    break
+            if prev is None:
+                raise Exception("Found no previous pos for position %s" % pos)
+
+            return Position(b, self.graph.blocks[b].length() - 1)
+
+    def next_position(self, pos):
+        """
+        :param pos: Position
+        :return: Returns the previous position in graph
+        """
+        if pos.offset < self.blocks[pos.region_path_id].length():
+            return Position(pos.region_path_id, pos.offset + 1)
+        else:
+            # Find next region path
+            next = self.adj_list[pos.region_path_id]
+            return Position(next, 0)
 
     def _get_insulated_merge_transformation(self, intervals):
         """Merge intervals that all start and end at region path
@@ -744,12 +777,12 @@ class Graph(object):
         for adj in self.adj_list:
             #if adj in other.adj_list and self.adj_list[adj] != other.adj_list[adj]:
             if set(self.adj_list[adj]) != set(other.adj_list[adj]):
-                print("Different adj list for key %d" % (adj))
+                #print("Different adj list for key %d" % (adj))
                 return False
         for adj in other.adj_list:
             if set(self.adj_list[adj]) != set(other.adj_list[adj]):
             #if adj in self.adj_list and self.adj_list[adj] != other.adj_list[adj]:
-                print("Different adj list 2")
+                #print("Different adj list 2")
                 return False
 
 
@@ -761,3 +794,51 @@ class Graph(object):
             return False
 
         return True
+
+    def n_edges_in(self, block):
+        """
+        Finds and returns the number of edges going in to a block
+        :param block:
+        :return: Returns the number of edges
+        """
+        n = 0
+        for b in self.blocks:
+            if block in self.adj_list[b]:
+                n += 1
+        return n
+
+    def has_identical_structure(self, other):
+        """
+        Checks if this graph has identical
+        structure (edges and blocks) to other graph.
+        Size of region paths is ignores (and can be different).
+        :param other: Graph to compare with
+        :return: True if identical, otherwise False
+        """
+
+        if len(self.blocks) != len(other.blocks):
+            return False
+
+        # For every block, check that there exists
+        # a block in other graph with the same number of
+        # edges in and out
+        other_blocks = list(other.blocks.keys()).copy()
+        for b in self.blocks:
+            match = False
+            for ob in other_blocks:
+                sim_out = len(self.adj_list[b]) == len(other.adj_list[ob])
+                sim_in = self.n_edges_in(b) == other.n_edges_in(ob)
+                if sim_out and sim_in:
+                    # Remove from list to check, and check next (break)
+                    other_blocks.remove(ob)
+                    match = True
+            if not match:
+                # No match for block b, return False
+                return False
+
+        return True
+
+
+
+
+
