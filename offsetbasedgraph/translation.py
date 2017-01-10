@@ -346,7 +346,7 @@ class Translation(object):
         # Maybe not necessary, but makes things simpler to require this:
         assert self.graph2 is not None
         # self.graph2 should be the same as other.graph1
-        assert self.graph2 == other.graph1, \
+        assert self.graph2.blocks == other.graph1.blocks, \
                 """The translation added does not have graph1
                 identical to first translation's graph
                 %s\n!=\n%s""" % (self.graph2, other.graph1)
@@ -354,7 +354,7 @@ class Translation(object):
         # Assert intervals have correct graphs
         for intervals in self._a_to_b.values():
             for interval in intervals:
-                assert interval.graph == self.graph2, \
+                assert interval.graph.blocks == self.graph2.blocks, \
                     "first translation object has interval %s with graph different than graph2" % (interval)
 
         for intervals in self._b_to_a.values():
@@ -367,7 +367,7 @@ class Translation(object):
             for interval in intervals:
                 assert interval.graph == other.graph1, \
                     "%s \n != \n %s" % (interval.graph, other.graph1)
-                assert interval.graph == self.graph2
+                assert interval.graph.blocks == self.graph2.blocks
         """
         if list(other._b_to_a.values())[0][0].graph is not None and other.graph2 is not None:
             for intervals in other._a_to_b.values():
