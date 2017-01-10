@@ -325,6 +325,61 @@ class TestGraph(unittest.TestCase):
     def test_from_file(self):
         pass
 
+    def test_has_identical_structure(self):
+        # Case 1
+        g1 = Graph(
+            {
+                1: Block(1),
+                2: Block(10)
+            },
+            {
+                1: [2]
+            }
+        )
+
+        g2 = Graph(
+            {
+                5: Block(10),
+                2: Block(1)
+            },
+            {
+                5: [2]
+            }
+        )
+
+        self.assertTrue(g1.has_identical_structure(g2))
+
+        # Case 2
+        g1 = Graph(
+            {
+                1: Block(1),
+                2: Block(1),
+                3: Block(1),
+                4: Block(1)
+            },
+            {
+                1: [2, 3],
+                3: [4],
+                2: [4]
+            }
+        )
+
+        g2 = Graph(
+            {
+                10: Block(2),
+                20: Block(2),
+                30: Block(2),
+                40: Block(2)
+            },
+            {
+                10: [20, 30],
+                30: [40],
+                20: [40]
+            }
+        )
+
+        self.assertTrue(g1.has_identical_structure(g2))
+
 
 if __name__ == "__main__":
     unittest.main()

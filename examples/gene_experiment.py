@@ -81,6 +81,7 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
     :return: Returns the new graph
     """
     f = open(alt_loci_fn)
+    n_flanks = 0
     new_graph = graph
     orig_graph = graph.copy()
     final_trans = Translation(graph=graph)
@@ -100,12 +101,13 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
 
         intervals = flanks.get_flanks(alt_locus_id, length, main_chr, start-1, end)
         #if final_trans is not None:
-        #print("=== Flanking intervals ===")
-        #print(intervals)
+        print("=== Flanking intervals ===")
+        print('\n'.join([str(i) for i in intervals]))
         # Merge start flank of alt locus with main
         merge_intervals = intervals[0:2]
         if merge_intervals[0].length() > 0:
-            print("Merging start")
+            n_flanks += 1
+            #print("Merging start")
             merge_intervals = [name_translation.translate(i) for i in merge_intervals]
             #print("=== Intervals after name translation ===")
             #print(merge_intervals)
@@ -120,14 +122,15 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
             new_graph, trans = new_graph.merge(merge_intervals)
 
             final_trans += trans
-
+        else:
+            print("No start flank")
         #final_trans.graph2 = trans.graph2
 
         # Merge end flank of alt locus with main
 
         merge_intervals = intervals[2:4]
         if merge_intervals[0].length() > 0:
-            print("Merging end")
+            #print("Merging end")
             merge_intervals = [final_trans.translate(name_translation.translate(i))
                                for i in merge_intervals]
             for intv in merge_intervals:
@@ -145,8 +148,10 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
 
             final_trans += trans
 
+        #print("=== Graph after iteration ====")
+        #print(new_graph)
     f.close()
-
+    print("NUMBER OF FLANKS: %d" % n_flanks)
     return new_graph, final_trans
 
 
