@@ -286,12 +286,13 @@ class Graph(object):
         return new_graph, trans
 
     def connect_postitions(self, position_a, position_b):
-        """FIXME! briefly describe function
-
-        :param position_a: 
-        :param position_b: 
-        :returns: 
-        :rtype: 
+        """Connect position_a to position_b with an edge
+        and split the region paths if necessary.
+        Create translation object and new graph
+        :param position_a: Position
+        :param position_b: Position
+        :returns: New graph and Translation object
+        :rtype: Graph, Translation
 
         """
         rp_a = position_a.region_path_id
