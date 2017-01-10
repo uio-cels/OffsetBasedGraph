@@ -283,7 +283,7 @@ class Graph(object):
             for i in i_list:
                 i.graph = new_graph
 
-        return trans, new_graph
+        return new_graph, trans
 
     def connect_postitions(self, position_a, position_b):
         """FIXME! briefly describe function
@@ -308,7 +308,7 @@ class Graph(object):
         if offset_a < l_a:
             idf = self._next_id()
             idl = self._next_id()
-            rp_in = idl
+            rp_out = idf
             a_to_b[rp_a] = [Interval(0, l_a-offset_a-1,
                                      [idf, idl])]
             b_to_a[idf] = [Interval(0, offset_a+1, [rp_a])]
@@ -316,10 +316,9 @@ class Graph(object):
 
         if offset_b > 0:
             idf = self._next_id()
-            rp_in = idf
             idl = self._next_id()
-            a_to_b = self[rp_b] = [Interval(0, l_b-offset_b,
-                                            [idf, idl])]
+            rp_in = idl
+            a_to_b[rp_b] = [Interval(0, l_b-offset_b, [idf, idl])]
             b_to_a[idf] = [Interval(0, offset_b, [rp_b])]
             b_to_a[idl] = [Interval(offset_b, l_b, [rp_b])]
 

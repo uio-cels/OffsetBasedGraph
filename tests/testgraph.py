@@ -245,6 +245,21 @@ class TestGraph(unittest.TestCase):
                  a[2]: [c[0], 5], c[0]: [c[1], d[2]]}
         self.assert_graph_equals(new_graph, blocks, edges)
 
+    def test_connect_positions(self):
+        graph = dummygraph.get_disjoint_graph()
+        pos_a = Position(1, 4)
+        pos_b = Position(2, 10)
+        n_g, trans = graph.connect_postitions(pos_a, pos_b)
+        a, b = trans.translate(Interval(0, 10, [1])).region_paths
+        c, d = trans.translate(Interval(0, 20, [2])).region_paths
+
+        blocks = {a: Block(5), b: Block(5), c: Block(10), d: Block(10),
+                  3: Block(30)}
+
+        adj_list = {a: [b, d], c: [d]}
+        t_g = Graph(blocks, adj_list)
+        self.assertEquals(n_g, t_g)
+
     def test_get_all_block_borders(self):
         blocks = {1: Block(20), 2: Block(20),
                   11: Block(20), 12: Block(20)}
