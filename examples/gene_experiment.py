@@ -90,7 +90,7 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
         if line.startswith("#"):
             print("Skipping line")
             continue
-        print("== Iteration ==")
+        print("================= Iteration ==")
         print(line)
         l = line.split()
         alt_locus_id = l[0]
@@ -133,6 +133,8 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
             print(trans.graph1)
             print(trans.graph2)
             final_trans += trans
+            final_trans.graph2 = new_graph
+            final_trans.graph2._update_a_b_graph(final_trans._a_to_b, new_graph)
             print("No start flank")
         #final_trans.graph2 = trans.graph2
 
@@ -154,7 +156,7 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
             #assert trans.graph2 == list(trans._a_to_b.values())[-1][0].graph
             #assert trans.graph1 == list(trans._b_to_a.values())[-1][0].graph
             assert trans.graph1 == final_trans.graph2, \
-                print("%s \n \n %s" % (trans.graph1, final_trans.graph2))
+                print("%s \n != \n %s" % (trans.graph1, final_trans.graph2))
 
             final_trans += trans
         else:

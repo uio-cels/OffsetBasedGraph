@@ -347,7 +347,9 @@ class Translation(object):
         assert self.graph2 is not None
         # self.graph2 should be the same as other.graph1
         assert self.graph2 == other.graph1, \
-                "The translation added does not have graph1 identical to first translation's graph2"
+                """The translation added does not have graph1
+                identical to first translation's graph
+                %s\n!=\n%s""" % (self.graph2, other.graph1)
 
         # Assert intervals have correct graphs
         for intervals in self._a_to_b.values():

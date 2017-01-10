@@ -776,12 +776,12 @@ class Graph(object):
         for adj in self.adj_list:
             #if adj in other.adj_list and self.adj_list[adj] != other.adj_list[adj]:
             if set(self.adj_list[adj]) != set(other.adj_list[adj]):
-                print("Different adj list for key %d" % (adj))
+                #print("Different adj list for key %d" % (adj))
                 return False
         for adj in other.adj_list:
             if set(self.adj_list[adj]) != set(other.adj_list[adj]):
             #if adj in self.adj_list and self.adj_list[adj] != other.adj_list[adj]:
-                print("Different adj list 2")
+                #print("Different adj list 2")
                 return False
 
 
