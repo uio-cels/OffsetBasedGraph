@@ -39,50 +39,148 @@ class testExamples(unittest.TestCase):
                 4: [5],
                 5: [6],
                 6: [7],
-                9: [4],
+                9: [5],
                 8: [6]
             }
         )
 
+
+        print("=== new numeric graph ===")
+        print(new_numeric_graph)
         self.assertTrue(correct_graph_structure.has_identical_structure(new_numeric_graph))
 
-        """
-        # Find first region path
-        ngraph = new_numeric_graph
-        first = None
-        for rp in ngraph.blocks:
-            for other_rp in ngraph.blocks:
-                if other_rp != rp and rp in ngraph.adj_list[other_rp]:
-                    continue
-                first = rp
-                break
+    def test_merge_flanks_2x(self):
 
-        self.assertEqual(len(ngraph.blocks), 9)
+        # Merge flanks of two alt loci
+        g = Graph({1: Block(8), 2: Block(3), 3: Block(5)}, {})
 
-        print(ngraph)
+        # MERGE FIRST ALT LOCUS
+        intervals = [
+                        Interval(2, 3, [1], g),
+                        Interval(0, 1, [2], g),
+                        Interval(4, 5, [1], g),
+                        Interval(2, 3, [2], g)
+                    ]
 
-        assert first is not None
-        print("First" , first)
+        import examples.gene_experiment as e
+        final_trans = Translation({}, {}, graph=g)
+        final_trans.graph2 = g
+        name_trans = Translation({}, {}, graph=g)
+        new_graph, trans = e.merge_flanks(intervals, final_trans, g, name_trans)
 
-        self.assertEqual(len(ngraph.adj_list[first]), 2)
-        next_main = ngraph.adj_list[first][0]
-        next_alt = ngraph.adj_list[first][1]
+        correct_structure = Graph(
+            {
+                1: Block(1),
+                2: Block(1),
+                3: Block(1),
+                4: Block(1),
+                5: Block(1),
+                6: Block(1),
+                7: Block(1),
+            },
+            {
+                1: [2],
+                2: [3, 6],
+                3: [4],
+                6: [4],
+                4: [5]
+            }
+        )
+        self.assertTrue(new_graph.has_identical_structure(correct_structure))
 
-        if len(ngraph.adj_list[next_main]) == 1:
-            # swap
-            next_main = ngraph.adj_list[first][1]
-            next_alt = ngraph.adj_list[first][0]
+        # MERGE SECOND ALT LOCUS
+        intervals = [
+            Interval(1, 3, [1], g),
+            Interval(0, 2, [3], g),
+            Interval(5, 6, [1], g),
+            Interval(4, 5, [3], g)
+        ]
+        new_graph, trans = e.merge_flanks(intervals, trans, new_graph, name_trans)
 
-        self.assertEqual(len(ngraph.adj_list[next_main]), 2)
-        self.assertEqual(len(ngraph.adj_list[next_alt]), 1)
+        correct_structure = Graph(
+            {
+                1: Block(1),
+                2: Block(1),
+                3: Block(1),
+                4: Block(1),
+                5: Block(1),
+                6: Block(1),
+                7: Block(1),
+                8: Block(1),
+                9: Block(1),
+            },
+            {
+                1: [2],
+                2: [3],
+                3: [8, 4, 9],
+                4: [5],
+                5: [6],
+                6: [7],
+                8: [5],
+                9: [6]
+            }
+        )
+        self.assertTrue(new_graph.has_identical_structure(correct_structure))
 
-        # Check path from next main
-        self.assertEqual()
+    def test_merge_flanks_2x_case2(self):
+
+        # Merge flanks of two alt loci
+        g = Graph({1: Block(8), 2: Block(3), 3: Block(5)}, {})
+
+        # MERGE FIRST ALT LOCUS
+        intervals = [
+                        Interval(2, 3, [1], g),
+                        Interval(0, 1, [2], g),
+                        Interval(4, 5, [1], g),
+                        Interval(2, 3, [2], g)
+                    ]
+
+        import examples.gene_experiment as e
+        final_trans = Translation({}, {}, graph=g)
+        final_trans.graph2 = g
+        name_trans = Translation({}, {}, graph=g)
+        new_graph, trans = e.merge_flanks(intervals, final_trans, g, name_trans)
 
 
-        next = ngraph.adj_list[first][0]
-        self.assertEqual(len(ngraph.adj_list[next]), 2)
-        """
+        # MERGE SECOND ALT LOCUS
+        intervals = [
+            Interval(2, 4, [1], g),
+            Interval(0, 2, [3], g),
+            Interval(5, 6, [1], g),
+            Interval(4, 5, [3], g)
+        ]
+        new_graph, trans = e.merge_flanks(intervals, trans, new_graph, name_trans)
+
+        correct_structure = Graph(
+            {
+                1: Block(1),
+                2: Block(1),
+                3: Block(1),
+                4: Block(1),
+                5: Block(1),
+                6: Block(1),
+                7: Block(1),
+                8: Block(1)
+            },
+            {
+                1: [2],
+                2: [3, 7],
+                3: [8, 4],
+                4: [5],
+                5: [6],
+                7: [4],
+                8: [5]
+            }
+        )
+
+        print(new_graph)
+        self.assertTrue(new_graph.has_identical_structure(correct_structure))
+
+
+
+
+
+
 
 if __name__ == "__main__":
     unittest.main()

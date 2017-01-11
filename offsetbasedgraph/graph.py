@@ -817,6 +817,7 @@ class Graph(object):
         """
 
         if len(self.blocks) != len(other.blocks):
+            print("Different number of blocks")
             return False
 
         # For every block, check that there exists
@@ -824,17 +825,23 @@ class Graph(object):
         # edges in and out
         other_blocks = list(other.blocks.keys()).copy()
         for b in self.blocks:
+            #print("Checking %d" % b)
             match = False
             for ob in other_blocks:
+                #print("   Checking %d" % ob)
                 sim_out = len(self.adj_list[b]) == len(other.adj_list[ob])
                 sim_in = self.n_edges_in(b) == other.n_edges_in(ob)
                 if sim_out and sim_in:
                     # Remove from list to check, and check next (break)
                     other_blocks.remove(ob)
+                    #print("      Match!")
                     match = True
+                    break
             if not match:
                 # No match for block b, return False
+                #print("No match for block %d" % (b))
                 return False
+
 
         return True
 

@@ -72,6 +72,92 @@ def convert_to_text_graph(graph, name_translation, numeric_translation):
     return new_graph, trans
 
 
+def merge_flanks(intervals, final_trans, new_graph, name_translation):
+    """
+    Merges the start and end flanks represented in intervals on the given graph
+    :param intervals: List of start and end flanks to merge [start, start, end, end]
+    Intervals should be on first graph (i.e. name_translation.graph1)
+    :param final_trans: Trans that will be updated
+    :param new_graph: Current graph
+    :param name_translation: Translation from human readable names to numeric IDs. Can be an empty translation
+    :return: Returns the new graph and translation as a tuple
+    """
+    #if final_trans is not None:
+    print("=== Flanking intervals ===")
+    print(intervals)
+    print('\n'.join([str(i) for i in intervals]))
+    # Merge start flank of alt locus with main
+    merge_intervals = intervals[0:2]
+    merge_intervals = [name_translation.translate(i) for i in merge_intervals]
+    merge_intervals = [final_trans.translate(i) for i in merge_intervals]
+    for intv in merge_intervals:
+        intv.graph = new_graph
+    if merge_intervals[0].length() > 0:
+        #n_flanks += 1
+        #print("Merging start")
+        #print("=== Intervals after name translation ===")
+        #print(merge_intervals)
+        #print("=== Merge intervals after final_trans===")
+        #print(merge_intervals)
+        #print("=== Current graph ===")
+        #print(final_trans.graph2)
+        prev_graph = new_graph
+        new_graph, trans = new_graph.merge(merge_intervals)
+
+        final_trans += trans
+    else:
+        # Only connect by edge
+        new_graph, trans = new_graph.connect_postitions(
+                        new_graph.prev_position(merge_intervals[0].start_position),
+                        merge_intervals[1].start_position
+        )
+        print("=== Trans start flank ===")
+        print(trans)
+        print(trans.graph1)
+        print(trans.graph2)
+        final_trans += trans
+        final_trans.graph2 = new_graph.copy()
+        print("=== Final trans graph2 ==")
+        print(final_trans.graph2)
+        final_trans.graph2._update_a_b_graph(final_trans._a_to_b, new_graph)
+        print("No start flank")
+    #final_trans.graph2 = trans.graph2
+
+    # Merge end flank of alt locus with main
+
+    merge_intervals = intervals[2:4]
+    merge_intervals = [final_trans.translate(name_translation.translate(i))
+                       for i in merge_intervals]
+    for intv in merge_intervals:
+        intv.graph = new_graph
+    if merge_intervals[0].length() > 0:
+        #print("Merging end")
+
+        prev_graph = new_graph
+        new_graph, trans = new_graph.merge(merge_intervals)
+
+        #assert final_trans.graph1 == list(final_trans._b_to_a.values())[-1][0].graph
+        #assert final_trans.graph2 == list(final_trans._a_to_b.values())[-1][0].graph
+        #assert trans.graph2 == list(trans._a_to_b.values())[-1][0].graph
+        #assert trans.graph1 == list(trans._b_to_a.values())[-1][0].graph
+        assert trans.graph1 == final_trans.graph2, \
+            print("%s \n != \n %s" % (trans.graph1, final_trans.graph2))
+
+        final_trans += trans
+    else:
+        # Only connect by edge
+        new_graph, trans = new_graph.connect_postitions(
+                        merge_intervals[1].start_position,
+                        new_graph.next_position(merge_intervals[0].start_position)
+        )
+        final_trans += trans
+        print("No end flank")
+
+    #print("=== Graph after iteration ====")
+    #print(new_graph)
+    return new_graph, final_trans
+
+
 def connect_without_flanks(graph, alt_loci_fn, name_translation):
     """
     Connects the alternative loci in the given file to the grch38 graph,
@@ -100,77 +186,8 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
         length = int(l[4])
 
         intervals = flanks.get_flanks(alt_locus_id, length, main_chr, start-1, end)
-        #if final_trans is not None:
-        print("=== Flanking intervals ===")
-        print('\n'.join([str(i) for i in intervals]))
-        # Merge start flank of alt locus with main
-        merge_intervals = intervals[0:2]
-        merge_intervals = [name_translation.translate(i) for i in merge_intervals]
-        merge_intervals = [final_trans.translate(i) for i in merge_intervals]
-        for intv in merge_intervals:
-            intv.graph = new_graph
-        if merge_intervals[0].length() > 0:
-            n_flanks += 1
-            #print("Merging start")
-            #print("=== Intervals after name translation ===")
-            #print(merge_intervals)
-            #print("=== Merge intervals after final_trans===")
-            #print(merge_intervals)
-            #print("=== Current graph ===")
-            #print(final_trans.graph2)
-            prev_graph = new_graph
-            new_graph, trans = new_graph.merge(merge_intervals)
+        new_graph, final_trans = merge_flanks(intervals, final_trans, new_graph, name_translation)
 
-            final_trans += trans
-        else:
-            # Only connect by edge
-            new_graph, trans = new_graph.connect_postitions(
-                            new_graph.prev_position(merge_intervals[0].start_position),
-                            merge_intervals[1].start_position
-            )
-            print("=== Trans start flank ===")
-            print(trans)
-            print(trans.graph1)
-            print(trans.graph2)
-            final_trans += trans
-            final_trans.graph2 = new_graph.copy()
-            print("=== Final trans graph2 ==")
-            print(final_trans.graph2)
-            final_trans.graph2._update_a_b_graph(final_trans._a_to_b, new_graph)
-            print("No start flank")
-        #final_trans.graph2 = trans.graph2
-
-        # Merge end flank of alt locus with main
-
-        merge_intervals = intervals[2:4]
-        merge_intervals = [final_trans.translate(name_translation.translate(i))
-                           for i in merge_intervals]
-        for intv in merge_intervals:
-            intv.graph = new_graph
-        if merge_intervals[0].length() > 0:
-            #print("Merging end")
-
-            prev_graph = new_graph
-            new_graph, trans = new_graph.merge(merge_intervals)
-
-            #assert final_trans.graph1 == list(final_trans._b_to_a.values())[-1][0].graph
-            #assert final_trans.graph2 == list(final_trans._a_to_b.values())[-1][0].graph
-            #assert trans.graph2 == list(trans._a_to_b.values())[-1][0].graph
-            #assert trans.graph1 == list(trans._b_to_a.values())[-1][0].graph
-            assert trans.graph1 == final_trans.graph2, \
-                print("%s \n != \n %s" % (trans.graph1, final_trans.graph2))
-
-            final_trans += trans
-        else:
-            # Only connect by edge
-            new_graph, trans = new_graph.connect_postitions(
-                            merge_intervals[1].start_position,
-                            new_graph.next_position(merge_intervals[0].start_position)
-            )
-            final_trans += trans
-            print("No end flank")
-        #print("=== Graph after iteration ====")
-        #print(new_graph)
     f.close()
     print("NUMBER OF FLANKS: %d" % n_flanks)
     return new_graph, final_trans
@@ -190,6 +207,17 @@ def parse_genes_file(genes_fn):
 
     return genes
 
+
+def get_genes_as_intervals(fn):
+    """
+    Returns a dict. Keys are gene names and values are intervals representing the gene
+    :param fn: File name of file containing genes (on the format of UCSC)
+    :return:
+    """
+    genes = parse_genes_file(fn)
+    out = {}
+    for gene in genes:
+        print(gene)
 
 if __name__ == "__main__":
     if len(sys.argv) != 4:
@@ -217,7 +245,7 @@ if __name__ == "__main__":
             new_numeric_graph, name_translation, numeric_translation)
         final_translation = name_translation + numeric_translation + new_name_translation
         print(final_translation)
-        genes = parse_genes_file(sys.argv[3])
+        genes = get_genes_as_intervals(sys.argv[3]) # parse_genes_file(sys.argv[3])
         # print(genes)
 
 
