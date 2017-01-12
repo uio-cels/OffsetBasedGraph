@@ -92,6 +92,8 @@ def merge_flanks(intervals, final_trans, new_graph, name_translation):
     merge_intervals = [final_trans.translate(i) for i in merge_intervals]
     print("=== Flanking intervals after translate===")
     print('\n'.join([str(i) for i in merge_intervals]))
+    print("=== Graph ===")
+    print(merge_intervals[0].graph)
     for intv in merge_intervals:
         intv.graph = new_graph
     if merge_intervals[0].length() > 0:
