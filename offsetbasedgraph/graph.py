@@ -306,7 +306,7 @@ class Graph(object):
         rp_out = rp_a
         rp_in = rp_b
 
-        if offset_a < l_a:
+        if offset_a < l_a-1:
             idf = self._next_id()
             idl = self._next_id()
             rp_out = idf
