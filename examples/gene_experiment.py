@@ -93,35 +93,18 @@ def merge_flanks(intervals, final_trans, new_graph, name_translation):
     for intv in merge_intervals:
         intv.graph = new_graph
     if merge_intervals[0].length() > 0:
-        #n_flanks += 1
-        #print("Merging start")
-        #print("=== Intervals after name translation ===")
-        #print(merge_intervals)
-        #print("=== Merge intervals after final_trans===")
-        #print(merge_intervals)
-        #print("=== Current graph ===")
-        #print(final_trans.graph2)
         prev_graph = new_graph
         new_graph, trans = new_graph.merge(merge_intervals)
-
         final_trans += trans
     else:
         # Only connect by edge
         new_graph, trans = new_graph.connect_postitions(
-                        new_graph.prev_position(merge_intervals[0].start_position),
-                        merge_intervals[1].start_position
+            new_graph.prev_position(merge_intervals[0].start_position),
+            merge_intervals[1].start_position
         )
-        print("=== Trans start flank ===")
-        print(trans)
-        print(trans.graph1)
-        print(trans.graph2)
         final_trans += trans
         final_trans.graph2 = new_graph.copy()
-        print("=== Final trans graph2 ==")
-        print(final_trans.graph2)
         final_trans.graph2._update_a_b_graph(final_trans._a_to_b, new_graph)
-        print("No start flank")
-    #final_trans.graph2 = trans.graph2
 
     # Merge end flank of alt locus with main
 
@@ -131,18 +114,7 @@ def merge_flanks(intervals, final_trans, new_graph, name_translation):
     for intv in merge_intervals:
         intv.graph = new_graph
     if merge_intervals[0].length() > 0:
-        #print("Merging end")
-
-        prev_graph = new_graph
         new_graph, trans = new_graph.merge(merge_intervals)
-
-        #assert final_trans.graph1 == list(final_trans._b_to_a.values())[-1][0].graph
-        #assert final_trans.graph2 == list(final_trans._a_to_b.values())[-1][0].graph
-        #assert trans.graph2 == list(trans._a_to_b.values())[-1][0].graph
-        #assert trans.graph1 == list(trans._b_to_a.values())[-1][0].graph
-        #assert trans.graph1 == final_trans.graph2, \
-        #    print("%s \n != \n %s" % (trans.graph1, final_trans.graph2))
-
         final_trans += trans
     else:
         # Only connect by edge
@@ -153,8 +125,6 @@ def merge_flanks(intervals, final_trans, new_graph, name_translation):
         final_trans += trans
         print("No end flank")
 
-    #print("=== Graph after iteration ====")
-    #print(new_graph)
     return new_graph, final_trans
 
 
