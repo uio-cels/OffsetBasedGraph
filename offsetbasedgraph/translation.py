@@ -221,6 +221,11 @@ class Translation(object):
         if not any(rp in trans_dict for rp in interval.region_paths):
             return SingleMultiPathInterval(interval, self._get_other_graph(inverse))
 
+        if (interval.length() == 0):
+            start_poses = self.translate_position(interval.start_position, inverse)
+            return SimpleMultipathInterval([Interval(sp, sp, [sp.region_path_id], graph=self._get_other_graph(inverse))
+                                            for sp in start_poses])
+
         new_starts = self.translate_position(interval.start_position, inverse)
         # Hack: Convert to inclusive end coordinate
         interval.end_position.offset -= 1
