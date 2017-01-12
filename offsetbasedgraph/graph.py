@@ -349,7 +349,7 @@ class Graph(object):
             if prev is None:
                 raise Exception("Found no previous pos for position %s" % pos)
 
-            return Position(b, self.graph.blocks[b].length() - 1)
+            return Position(b, self.blocks[b].length() - 1)
 
     def next_position(self, pos):
         """

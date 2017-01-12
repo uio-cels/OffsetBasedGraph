@@ -18,6 +18,19 @@ class Translation(object):
         self._a_to_b = translate_dict
         self._b_to_a = reverse_dict
 
+        for k, intervals in translate_dict.items():
+            for interval in intervals:
+                if not interval.graph:
+                    continue
+                assert interval.length() > 0, "Empty interval in translate: (%s: %s)" % ("T", translate_dict)
+
+        for k, intervals in reverse_dict.items():
+            for interval in intervals:
+                if not interval.graph:
+                    continue
+                assert interval.length() > 0, "Empty interval in translate: (%s: %s)" % ("R", reverse_dict)
+
+
         # Store graph references
         self.graph1 = None
         self.graph2 = None
