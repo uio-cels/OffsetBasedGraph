@@ -140,8 +140,8 @@ def merge_flanks(intervals, final_trans, new_graph, name_translation):
         #assert final_trans.graph2 == list(final_trans._a_to_b.values())[-1][0].graph
         #assert trans.graph2 == list(trans._a_to_b.values())[-1][0].graph
         #assert trans.graph1 == list(trans._b_to_a.values())[-1][0].graph
-        assert trans.graph1 == final_trans.graph2, \
-            print("%s \n != \n %s" % (trans.graph1, final_trans.graph2))
+        #assert trans.graph1 == final_trans.graph2, \
+        #    print("%s \n != \n %s" % (trans.graph1, final_trans.graph2))
 
         final_trans += trans
     else:
@@ -169,6 +169,8 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
     f = open(alt_loci_fn)
     n_flanks = 0
     new_graph = graph
+    print("===== first new graph ====")
+    print(new_graph)
     orig_graph = graph.copy()
     final_trans = Translation(graph=graph)
     final_trans.graph2 = graph
