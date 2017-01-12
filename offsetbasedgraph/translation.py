@@ -20,15 +20,11 @@ class Translation(object):
 
         for k, intervals in translate_dict.items():
             for interval in intervals:
-                if not interval.graph:
-                    continue
-                assert interval.length() > 0, "Empty interval in translate: (%s: %s)" % ("T", translate_dict)
+                assert interval.start_position != interval.end_position, "Empty interval in translate: (%s: %s)" % ("T", translate_dict)
 
         for k, intervals in reverse_dict.items():
             for interval in intervals:
-                if not interval.graph:
-                    continue
-                assert interval.length() > 0, "Empty interval in translate: (%s: %s)" % ("R", reverse_dict)
+                assert interval.start_position != interval.end_position, "Empty interval in translate: (%s: %s)" % ("R", reverse_dict)
 
 
         # Store graph references
@@ -373,26 +369,20 @@ class Translation(object):
         for intervals in self._a_to_b.values():
             for interval in intervals:
                 assert interval.graph.blocks == self.graph2.blocks, \
-                    "first translation object has interval %s with graph different than graph2" % (interval)
+                    "first translation object has interval %s with graph different than graph2" % (
+                        interval)
 
         for intervals in self._b_to_a.values():
             for interval in intervals:
-                #print("Checking interval %s" % interval)
                 assert interval.graph == self.graph1, \
-                    "interval %s has graph %s \n!=\n %s \nTranslation: %s" % (interval, interval.graph, self.graph1, self)
+                    "interval %s has graph %s \n!=\n %s \nTranslation: %s" % (
+                        interval, interval.graph, self.graph1, self)
 
         for intervals in other._b_to_a.values():
             for interval in intervals:
                 assert interval.graph == other.graph1, \
                     "%s \n != \n %s" % (interval.graph, other.graph1)
                 assert interval.graph.blocks == self.graph2.blocks
-        """
-        if list(other._b_to_a.values())[0][0].graph is not None and other.graph2 is not None:
-            for intervals in other._a_to_b.values():
-                for interval in intervals:
-                    assert interval.graph == other.graph2, \
-                        "%s \n != \n %s" % (interval.graph, other.graph2)
-        """
 
         new_trans = Translation(self._a_to_b, self._b_to_a, graph=self.graph1)
         region_paths = set(self._a_to_b.keys()).union(set(other._a_to_b.keys()))
@@ -405,10 +395,6 @@ class Translation(object):
                 self._translations(t)[0])
             new_translate_dict[t] = [i.copy() for i in translated.get_single_path_intervals()]
         new_trans._a_to_b = new_translate_dict
-        import copy
-
-        #new_b_to_a = copy.deepcopy(other._b_to_a)
-
         i_region_paths = set(self._b_to_a.keys()).union(set(other._b_to_a.keys()))        
         valid_i_region_paths = [rp for rp in i_region_paths if rp not in other._a_to_b]
 

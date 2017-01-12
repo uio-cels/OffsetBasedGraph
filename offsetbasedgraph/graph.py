@@ -305,8 +305,11 @@ class Graph(object):
         b_to_a = {}
         rp_out = rp_a
         rp_in = rp_b
+        assert offset_a < l_a
+        assert offset_b < l_b, "%s, %s" % (offset_b, l_b)
 
         if offset_a < l_a - 1:
+            # Split first block
             idf = self._next_id()
             idl = self._next_id()
             rp_out = idf
@@ -316,6 +319,7 @@ class Graph(object):
             b_to_a[idl] = [Interval(offset_a+1, l_a, [rp_a])]
 
         if offset_b > 0:
+            # Split last block
             idf = self._next_id()
             idl = self._next_id()
             rp_in = idl
