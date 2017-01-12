@@ -364,7 +364,7 @@ class Graph(object):
             return Position(pos.region_path_id, pos.offset + 1)
         else:
             # Find next region path
-            next = self.adj_list[pos.region_path_id]
+            next = self.adj_list[pos.region_path_id][0]
             return Position(next, 0)
 
     def _get_insulated_merge_transformation(self, intervals):
