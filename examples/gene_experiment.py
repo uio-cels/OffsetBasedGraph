@@ -126,12 +126,14 @@ def merge_flanks(intervals, final_trans, new_graph, name_translation):
     # Merge end flank of alt locus with main
 
     merge_intervals = intervals[2:4]
-    merge_intervals = [final_trans.translate(name_translation.translate(i))
-                       for i in merge_intervals]
-    for intv in merge_intervals:
-        intv.graph = new_graph
+
     if merge_intervals[0].length() > 0:
         #print("Merging end")
+
+        merge_intervals = [final_trans.translate(name_translation.translate(i))
+                       for i in merge_intervals]
+        for intv in merge_intervals:
+            intv.graph = new_graph
 
         prev_graph = new_graph
         new_graph, trans = new_graph.merge(merge_intervals)
@@ -145,6 +147,17 @@ def merge_flanks(intervals, final_trans, new_graph, name_translation):
 
         final_trans += trans
     else:
+        # Change position 1 back for alt loci
+        ig = name_translation.graph1
+        merge_intervals[1].start_position = \
+            ig.prev_position(merge_intervals[1].start_position)
+
+        merge_intervals = [final_trans.translate(name_translation.translate(i))
+                       for i in merge_intervals]
+
+        for intv in merge_intervals:
+            intv.graph = new_graph
+
         # Only connect by edge
         new_graph, trans = new_graph.connect_postitions(
                         merge_intervals[1].start_position,
