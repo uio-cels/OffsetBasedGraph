@@ -83,15 +83,17 @@ def merge_flanks(intervals, final_trans, new_graph, name_translation):
     :return: Returns the new graph and translation as a tuple
     """
     #if final_trans is not None:
-    print("=== Flanking intervals ===")
-    print(intervals)
+    #print("=== Flanking intervals ===")
+    #print(intervals)
     print('\n'.join([str(i) for i in intervals]))
     # Merge start flank of alt locus with main
     merge_intervals = intervals[0:2]
     merge_intervals = [name_translation.translate(i) for i in merge_intervals]
     merge_intervals = [final_trans.translate(i) for i in merge_intervals]
-    print("=== Flanking intervals after translate===")
-    print('\n'.join([str(i) for i in merge_intervals]))
+    #print("=== Flanking intervals after translate===")
+    #print('\n'.join([str(i) for i in merge_intervals]))
+    #print("=== Graph ===")
+    #print(merge_intervals[0].graph)
     for intv in merge_intervals:
         intv.graph = new_graph
     if merge_intervals[0].length() > 0:
@@ -139,13 +141,13 @@ def merge_flanks(intervals, final_trans, new_graph, name_translation):
             new_graph.next_position(merge_intervals[0].start_position)
         )
 
-        print("=== end flank trans ===")
-        print(trans)
+        #print("=== end flank trans ===")
+        #print(trans)
 
         final_trans += trans
         final_trans.graph2 = new_graph.copy()
         final_trans.graph2._update_a_b_graph(final_trans._a_to_b, new_graph)
-        print("No end flank")
+        #print("No end flank")
 
     return new_graph, final_trans
 

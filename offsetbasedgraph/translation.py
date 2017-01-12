@@ -448,7 +448,8 @@ class Translation(object):
         new_trans._assert_is_valid()
 
         # Important that intervals graphs match trans graph
-        assert(new_trans.graph1 == list(new_trans._b_to_a.values())[0][0].graph)
+        if len(list(new_trans._b_to_a.values())) > 0:
+            assert(new_trans.graph1 == list(new_trans._b_to_a.values())[0][0].graph)
 
         # Find graph2 for new_trans
         graph2 = new_trans.translate_subgraph(new_trans.graph1)

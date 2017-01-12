@@ -360,7 +360,7 @@ class Graph(object):
         :param pos: Position
         :return: Returns the previous position in graph
         """
-        if pos.offset < self.blocks[pos.region_path_id].length():
+        if pos.offset < self.blocks[pos.region_path_id].length() - 1:
             return Position(pos.region_path_id, pos.offset + 1)
         else:
             # Find next region path
