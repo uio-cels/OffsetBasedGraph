@@ -93,6 +93,8 @@ def merge_flanks(intervals, final_trans, new_graph, name_translation):
     for intv in merge_intervals:
         intv.graph = new_graph
     if merge_intervals[0].length() > 0:
+        for interval in merge_intervals:
+            print(interval)
         new_graph, trans = new_graph.merge(merge_intervals)
         final_trans += trans
     else:
@@ -169,8 +171,10 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
         end = int(l[3])
         length = int(l[4])
 
-        intervals = flanks.get_flanks(alt_locus_id, length, main_chr, start-1, end)
-        new_graph, final_trans = merge_flanks(intervals, final_trans, new_graph, name_translation)
+        intervals = flanks.get_flanks(alt_locus_id, length,
+                                      main_chr, start-1, end)
+        new_graph, final_trans = merge_flanks(intervals, final_trans,
+                                              new_graph, name_translation)
 
     f.close()
     print("NUMBER OF FLANKS: %d" % n_flanks)
@@ -231,5 +235,5 @@ if __name__ == "__main__":
         print(final_translation)
         genes = get_genes_as_intervals(sys.argv[3]) # parse_genes_file(sys.argv[3])
         # print(genes)
-
+    print("SUCCESS!")
 
