@@ -163,7 +163,13 @@ def merge_flanks(intervals, final_trans, new_graph, name_translation):
                         merge_intervals[1].start_position,
                         new_graph.next_position(merge_intervals[0].start_position)
         )
+
+        print("=== end flank trans ===")
+        print(trans)
+
         final_trans += trans
+        final_trans.graph2 = new_graph.copy()
+        final_trans.graph2._update_a_b_graph(final_trans._a_to_b, new_graph)
         print("No end flank")
 
     #print("=== Graph after iteration ====")
