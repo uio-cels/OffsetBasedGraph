@@ -34,12 +34,12 @@ class Gene(object):
         """
         chrom = attr_dict["chrom"]
         transcription_region = Interval(
-            Position(chrom, attr_dict["txStart"]),
-            Position(chrom, attr_dict["txEnd"]), [chrom]
+            Position(chrom, int(attr_dict["txStart"])),
+            Position(chrom, int(attr_dict["txEnd"])), [chrom]
             )
 
-        exon_starts = [int(i) for i in attr_dict["exonStarts"].split(",")]
-        exon_ends = [int(i) for i in attr_dict["exonEnds"].split(",")]
+        exon_starts = [int(i) for i in attr_dict["exonStarts"].split(",")[:-1]]
+        exon_ends = [int(i) for i in attr_dict["exonEnds"].split(",")[:-1]]
         exons = [Interval(start, end, [chrom]) for start, end in
                  zip(exon_starts, exon_ends)]
         return cls(attr_dict["name"], transcription_region, exons)
@@ -57,6 +57,11 @@ class Gene(object):
         t_transcription_region = T.translate(self.transcription_region)
         t_exons = [T.translate(exon) for exon in self.exons]
         return Gene(self. name, t_transcription_region, t_exons)
+
+    def __str__(self):
+        exon_string = "\n\t".join(str(exon) for exon in self.exons)
+        return "Gene(%s: %s \n %s)" % (self.name,
+                                       self.transcription_region, exon_string)
 
     def __eq__(self, other):
         """Check if genes are equal up to name
@@ -289,6 +294,31 @@ def get_genes_as_intervals(fn, graph):
     return out
 
 
+def get_gene_objects_as_intervals(fn, graph):
+    """
+    Returns a dict. Keys are gene names and values are intervals
+    representing the gene
+    :param fn: File name of file containing genes (on the format of UCSC)
+    :return:
+    """
+    genes = parse_genes_file(fn)
+    return [Gene.from_dict(gene) for gene in genes]
+
+
+def find_exon_duplicates(genes, translation):
+    translated = [gene.translate(translation) for gene in genes]
+    print("Duplicates")
+    for g in translated:
+        for h in translated:
+            if g.name == h.name:
+                print(g.name)
+                continue
+
+            if g == h:
+                print(g)
+                print(h)
+
+
 if __name__ == "__main__":
     if len(sys.argv) != 4:
         print("""
@@ -299,24 +329,20 @@ if __name__ == "__main__":
     else:
         graph = create_initial_grch38_graph(sys.argv[1])
 
-        print("=== First graph===")
-        #print(graph)
         numeric_graph, name_translation = convert_to_numeric_graph(graph)
 
-        print("=== Numeric graph ===")
-        #print(numeric_graph)
-        #print(name_translation)
-
-        print("=== Connecting ===")
         new_numeric_graph, numeric_translation = connect_without_flanks(
             numeric_graph, sys.argv[2], name_translation)
 
         name_graph, new_name_translation = convert_to_text_graph(
             new_numeric_graph, name_translation, numeric_translation)
+
         final_translation = name_translation + numeric_translation + new_name_translation
+        genes = get_gene_objects_as_intervals(sys.argv[3], graph)
+        find_exon_duplicates(genes, final_translation)
+        exit(0)
 
-        genes = get_genes_as_intervals(sys.argv[3], graph) # parse_genes_file(sys.argv[3])
-
+        genes = get_genes_as_intervals(sys.argv[3], graph)
         genes_compact_graph = {}
         for g in genes:
             genes_compact_graph[g] = \
@@ -327,12 +353,8 @@ if __name__ == "__main__":
         # To human readable graph
         genes_readable = {}
         for g in genes_compact_graph:
-            genes_readable[g] = new_name_translation.translate(genes_compact_graph[g])
-
-        #genes_translated = [name_translation.translate(g) for g in genes.values()]
-        #genes_numeric = [numeric_translation.translate(g) for g in genes_translated]
-
-        #print(name_translation)
+            genes_readable[g] = new_name_translation.translate(
+                genes_compact_graph[g])
 
         print(genes)
         print("\nOriginal genes")
@@ -346,8 +368,6 @@ if __name__ == "__main__":
         print("\nReadable")
         for g in genes_readable:
             print("%s: %s" % (g, genes_readable[g]))
-        #print("Numeric")
-        #print(genes_numeric)
 
     print("SUCCESS!")
 
