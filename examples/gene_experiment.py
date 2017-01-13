@@ -311,10 +311,12 @@ def find_exon_duplicates(genes, translation):
     for g in translated:
         for h in translated:
             if g.name == h.name:
-                print(g.name)
                 continue
 
             if g == h:
+                print("--------")
+                #print(g.name)
+                #print(h.name)
                 print(g)
                 print(h)
 
