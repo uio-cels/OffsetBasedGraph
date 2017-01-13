@@ -11,8 +11,72 @@ python3 gene_experiment.py grch38.chrom.sizes-small grch38_alt_loci_small.txt ge
 
 import sys
 import csv
-from offsetbasedgraph import Graph, Block, Translation, Interval
+from offsetbasedgraph import Graph, Block, Translation, Interval, Position
 from genutils import flanks
+
+
+class Gene(object):
+
+    def __init__(self, name, transcription_region, exons):
+        self.name = name
+        self.transcription_region = transcription_region
+        self.exons = exons
+
+    @classmethod
+    def from_dict(cls, attr_dict):
+        """Create Gene object from gene dict obtained
+        from csv dict reader
+
+        :param attr_dict: gene dict
+        :returns: Gene object
+        :rtype: Gene
+
+        """
+        chrom = attr_dict["chrom"]
+        transcription_region = Interval(
+            Position(chrom, attr_dict["txStart"]),
+            Position(chrom, attr_dict["txEnd"]), [chrom]
+            )
+
+        exon_starts = [int(i) for i in attr_dict["exonStarts"].split(",")]
+        exon_ends = [int(i) for i in attr_dict["exonEnds"].split(",")]
+        exons = [Interval(start, end, [chrom]) for start, end in
+                 zip(exon_starts, exon_ends)]
+        return cls(attr_dict["name"], transcription_region, exons)
+
+    def translate(self, T):
+        """Translate transcription_region and exons and return
+        new gene
+
+        :param T: Translation object
+        :returns: Translated gene
+        :rtype: Gene
+
+        """
+
+        t_transcription_region = T.translate(self.transcription_region)
+        t_exons = [T.translate(exon) for exon in self.exons]
+        return Gene(self. name, t_transcription_region, t_exons)
+
+    def __eq__(self, other):
+        """Check if genes are equal up to name
+
+        :param other: other gene
+        :returns: Wheter genes are equal
+        :rtype: bool
+
+        """
+        if not self.transcription_region == other.transcription_region:
+            return False
+
+        if len(self.exons) != len(other.exons):
+            return False
+
+        for exon in self.exons:
+            if exon not in other.exons:
+                return False
+
+        return True
 
 
 def convert_to_numeric_graph(graph):
@@ -208,7 +272,8 @@ def parse_genes_file(genes_fn):
 
 def get_genes_as_intervals(fn, graph):
     """
-    Returns a dict. Keys are gene names and values are intervals representing the gene
+    Returns a dict. Keys are gene names and values are intervals
+    representing the gene
     :param fn: File name of file containing genes (on the format of UCSC)
     :return:
     """
@@ -222,8 +287,6 @@ def get_genes_as_intervals(fn, graph):
         out[name] = Interval(start, end, [chrom], graph)
 
     return out
-
-
 
 
 if __name__ == "__main__":
