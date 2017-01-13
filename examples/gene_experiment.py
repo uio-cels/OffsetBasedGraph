@@ -11,7 +11,7 @@ python3 gene_experiment.py grch38.chrom.sizes-small grch38_alt_loci_small.txt ge
 
 import sys
 import csv
-from offsetbasedgraph import Graph, Block, Translation
+from offsetbasedgraph import Graph, Block, Translation, Interval
 from genutils import flanks
 
 
@@ -206,7 +206,7 @@ def parse_genes_file(genes_fn):
     return genes
 
 
-def get_genes_as_intervals(fn):
+def get_genes_as_intervals(fn, graph):
     """
     Returns a dict. Keys are gene names and values are intervals representing the gene
     :param fn: File name of file containing genes (on the format of UCSC)
@@ -215,7 +215,16 @@ def get_genes_as_intervals(fn):
     genes = parse_genes_file(fn)
     out = {}
     for gene in genes:
-        print(gene)
+        chrom = gene["chrom"]
+        start = int(gene["txStart"])
+        end = int(gene["txEnd"])
+        name = gene["name"]
+        out[name] = Interval(start, end, [chrom], graph)
+
+    return out
+
+
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 4:
@@ -242,8 +251,40 @@ if __name__ == "__main__":
         name_graph, new_name_translation = convert_to_text_graph(
             new_numeric_graph, name_translation, numeric_translation)
         final_translation = name_translation + numeric_translation + new_name_translation
-        print(final_translation)
-        genes = get_genes_as_intervals(sys.argv[3]) # parse_genes_file(sys.argv[3])
-        # print(genes)
+
+        genes = get_genes_as_intervals(sys.argv[3], graph) # parse_genes_file(sys.argv[3])
+
+        genes_compact_graph = {}
+        for g in genes:
+            genes_compact_graph[g] = \
+                numeric_translation.translate(
+                    name_translation.translate(genes[g])
+                )
+
+        # To human readable graph
+        genes_readable = {}
+        for g in genes_compact_graph:
+            genes_readable[g] = new_name_translation.translate(genes_compact_graph[g])
+
+        #genes_translated = [name_translation.translate(g) for g in genes.values()]
+        #genes_numeric = [numeric_translation.translate(g) for g in genes_translated]
+
+        #print(name_translation)
+
+        print(genes)
+        print("\nOriginal genes")
+        for g in genes:
+            print("%s: %s" % (g, genes[g]))
+
+        print("\nTranslated: ")
+        for g in genes_compact_graph:
+            print("%s: %s" % (g, genes_compact_graph[g]))
+
+        print("\nReadable")
+        for g in genes_readable:
+            print("%s: %s" % (g, genes_readable[g]))
+        #print("Numeric")
+        #print(genes_numeric)
+
     print("SUCCESS!")
 
