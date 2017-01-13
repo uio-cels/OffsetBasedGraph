@@ -283,7 +283,29 @@ if __name__ == "__main__":
         print("\nReadable")
         for g in genes_readable:
             print("%s: %s" % (g, genes_readable[g]))
-        #print("Numeric")
+
+        shown = []
+        for g in genes_readable:
+            if g in shown:
+                continue
+            # Check if duplicate
+            for g2 in genes_readable:
+                if g == g2:
+                    continue
+
+                if genes_readable[g] == genes_readable[g2]:
+                    print("Duplicates:")
+                    print("%s: %s" % (g, genes_readable[g]))
+                    print("%s: %s" % (g2, genes_readable[g2]))
+                    print("\n")
+                    shown.append(g2)
+                    shown.append(g)
+                    
+            if g not in shown:
+                print("Single")
+                print("%s: %s" % (g, genes_readable[g]))
+                print("\n")
+
         #print(genes_numeric)
 
     print("SUCCESS!")
