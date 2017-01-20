@@ -245,6 +245,21 @@ class TestGraph(unittest.TestCase):
                  a[2]: [c[0], 5], c[0]: [c[1], d[2]]}
         self.assert_graph_equals(new_graph, blocks, edges)
 
+    def test_connect_positions(self):
+        graph = dummygraph.get_disjoint_graph()
+        pos_a = Position(1, 4)
+        pos_b = Position(2, 10)
+        n_g, trans = graph.connect_postitions(pos_a, pos_b)
+        a, b = trans.translate(Interval(0, 10, [1])).region_paths
+        c, d = trans.translate(Interval(0, 20, [2])).region_paths
+
+        blocks = {a: Block(5), b: Block(5), c: Block(10), d: Block(10),
+                  3: Block(30)}
+
+        adj_list = {a: [b, d], c: [d]}
+        t_g = Graph(blocks, adj_list)
+        self.assertEquals(n_g, t_g)
+
     def test_get_all_block_borders(self):
         blocks = {1: Block(20), 2: Block(20),
                   11: Block(20), 12: Block(20)}
@@ -324,6 +339,61 @@ class TestGraph(unittest.TestCase):
 
     def test_from_file(self):
         pass
+
+    def test_has_identical_structure(self):
+        # Case 1
+        g1 = Graph(
+            {
+                1: Block(1),
+                2: Block(10)
+            },
+            {
+                1: [2]
+            }
+        )
+
+        g2 = Graph(
+            {
+                5: Block(10),
+                2: Block(1)
+            },
+            {
+                5: [2]
+            }
+        )
+
+        self.assertTrue(g1.has_identical_structure(g2))
+
+        # Case 2
+        g1 = Graph(
+            {
+                1: Block(1),
+                2: Block(1),
+                3: Block(1),
+                4: Block(1)
+            },
+            {
+                1: [2, 3],
+                3: [4],
+                2: [4]
+            }
+        )
+
+        g2 = Graph(
+            {
+                10: Block(2),
+                20: Block(2),
+                30: Block(2),
+                40: Block(2)
+            },
+            {
+                10: [20, 30],
+                30: [40],
+                20: [40]
+            }
+        )
+
+        self.assertTrue(g1.has_identical_structure(g2))
 
 
 if __name__ == "__main__":

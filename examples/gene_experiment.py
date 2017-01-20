@@ -11,11 +11,10 @@ python3 gene_experiment.py grch38.chrom.sizes-small grch38_alt_loci_small.txt ge
 
 import sys
 import csv
-from offsetbasedgraph import Graph, Block, Translation
+from offsetbasedgraph import Graph, Block, Translation, Interval, Position
 from genutils import flanks
 
 from offsetbasedgraph.util import *
-
 
 
 if __name__ == "__main__":
@@ -28,23 +27,45 @@ if __name__ == "__main__":
     else:
         graph = create_initial_grch38_graph(sys.argv[1])
 
-        print("=== First graph===")
-        print(graph)
         numeric_graph, name_translation = convert_to_numeric_graph(graph)
 
-        print("=== Numeric graph ===")
-        print(numeric_graph)
-        print(name_translation)
-
-        print("=== Connecting ===")
         new_numeric_graph, numeric_translation = connect_without_flanks(
             numeric_graph, sys.argv[2], name_translation)
 
-
         name_graph, new_name_translation = convert_to_text_graph(
             new_numeric_graph, name_translation, numeric_translation)
-        final_translation = name_translation + numeric_translation + new_name_translation
-        genes = parse_genes_file(sys.argv[3])
-        print(genes)
 
+        final_translation = name_translation + numeric_translation + new_name_translation
+        genes = get_gene_objects_as_intervals(sys.argv[3], graph)
+        find_exon_duplicates(genes, final_translation)
+        exit(0)
+
+        genes = get_genes_as_intervals(sys.argv[3], graph)
+        genes_compact_graph = {}
+        for g in genes:
+            genes_compact_graph[g] = \
+                numeric_translation.translate(
+                    name_translation.translate(genes[g])
+                )
+
+        # To human readable graph
+        genes_readable = {}
+        for g in genes_compact_graph:
+            genes_readable[g] = new_name_translation.translate(
+                genes_compact_graph[g])
+
+        print(genes)
+        print("\nOriginal genes")
+        for g in genes:
+            print("%s: %s" % (g, genes[g]))
+
+        print("\nTranslated: ")
+        for g in genes_compact_graph:
+            print("%s: %s" % (g, genes_compact_graph[g]))
+
+        print("\nReadable")
+        for g in genes_readable:
+            print("%s: %s" % (g, genes_readable[g]))
+
+    print("SUCCESS!")
 
