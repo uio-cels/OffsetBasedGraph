@@ -3,7 +3,8 @@ from .interval import Interval, Position
 from .util import takes
 from .translation import Translation
 import sys
-
+import json
+import os
 
 class Block(object):
     def __init__(self, length):
@@ -75,7 +76,39 @@ class Graph(object):
         :param file_name: File name
         :return:
         """
-        pass
+        if os.path.isfile("data/tmp/%s_blocks.txt" % file_name):
+            with open("data/tmp/%s_blocks.txt" % file_name, "r") as f:
+                numeric_blocks = json.load(f)
+                blocks = {}
+                for b in numeric_blocks:
+                    blocks[int(b)] = Block(numeric_blocks[b])
+
+            with open("data/tmp/%s_adj_list.txt" % file_name, "r") as f:
+                adj_list = json.load(f)
+
+            return Graph(blocks, adj_list)
+        else:
+            print("Graph not saved data/tmp/%s_blocks.txt" % file_name)
+            return None
+
+    def to_file(self, file_name):
+        """
+        Writes the graph to file so that it later can be
+        recreated using the from_file method
+        :param file_name: File name
+        :return:
+        """
+
+        numeric_block_dict = {}
+
+        for b in self.blocks:
+            numeric_block_dict[b] = self.blocks[b].length()
+
+        with open("data/tmp/%s_blocks.txt" % file_name, "w") as f:
+            json.dump(numeric_block_dict, f)
+
+        with open("data/tmp/%s_adj_list.txt" % file_name, "w") as f:
+            json.dump(self.adj_list, f)
 
     def get_edges_as_list(self):
         """

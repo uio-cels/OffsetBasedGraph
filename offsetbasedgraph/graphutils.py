@@ -144,7 +144,7 @@ def merge_flanks(intervals, final_trans, new_graph, name_translation):
     #if final_trans is not None:
     #print("=== Flanking intervals ===")
     #print(intervals)
-    print('\n'.join([str(i) for i in intervals]))
+    #print('\n'.join([str(i) for i in intervals]))
     # Merge start flank of alt locus with main
     merge_intervals = intervals[0:2]
     merge_intervals = [name_translation.translate(i) for i in merge_intervals]
@@ -156,8 +156,6 @@ def merge_flanks(intervals, final_trans, new_graph, name_translation):
     for intv in merge_intervals:
         intv.graph = new_graph
     if merge_intervals[0].length() > 0:
-        for interval in merge_intervals:
-            print(interval)
         new_graph, trans = new_graph.merge(merge_intervals)
         final_trans += trans
     else:
@@ -222,19 +220,15 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
     f = open(alt_loci_fn)
     n_flanks = 0
     new_graph = graph
-    print("===== first new graph ====")
-    print(new_graph)
     orig_graph = graph.copy()
     final_trans = Translation(graph=graph)
     final_trans.graph2 = graph
     for line in f.readlines():
         if line.startswith("#"):
-            print("Skipping line")
             continue
-        print("================= Iteration ==")
-        print(line)
         l = line.split()
         alt_locus_id = l[0]
+        print("Connecting %s" % (alt_locus_id))
         main_chr = l[1]
         start = int(l[2])
         end = int(l[3])
@@ -246,7 +240,7 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
                                               new_graph, name_translation)
 
     f.close()
-    print("NUMBER OF FLANKS: %d" % n_flanks)
+    #print("NUMBER OF FLANKS: %d" % n_flanks)
     return new_graph, final_trans
 
 

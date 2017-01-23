@@ -1,6 +1,7 @@
 from .util import takes
 from .interval import Interval, Position
 from .multipathinterval import GeneralMultiPathInterval, SingleMultiPathInterval, SimpleMultipathInterval
+import json
 
 
 class Translation(object):
@@ -71,6 +72,33 @@ class Translation(object):
                          for k, v in trans_dict.items()}
 
         return cls(interval_dict, rev_dict, graph)
+
+    def to_file(self, file_name):
+
+        with open("data/tmp/translation_%s_a_to_b.txt" % file_name, "w") as f:
+            json.dump(self._a_to_b, f)
+
+        with open("data/tmp/translation_%s_b_to_a.txt" % file_name, "w") as f:
+            json.dump(self._b_to_a, f)
+
+        if self.graph1 is not None:
+            self.graph1.to_file("translation_graph1_%s" % file_name)
+
+        if self.graph2 is not None:
+            self.graph2.to_file("translation_graph2_%s" % file_name)
+
+    @staticmethod
+    def from_file(self, file_name):
+        with open("data/tmp/translation_%s_a_to_b.txt" % file_name, "r") as f:
+            ab = json.load(f)
+
+        with open("data/tmp/translation_%s_b_to_a.txt" % file_name, "w") as f:
+            ba = json.load(f)
+
+        from .graph import Graph
+        self.graph1 = Graph.from_file("translation_graph1_%s" % file_name)
+        self.graph2 = Graph.from_file("translation_graph2_%s" % file_name)
+
 
     def _translations(self, rp, inverse=False):
         dict = self._b_to_a if inverse else self._a_to_b
