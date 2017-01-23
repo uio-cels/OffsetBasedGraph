@@ -395,6 +395,13 @@ class TestGraph(unittest.TestCase):
 
         self.assertTrue(g1.has_identical_structure(g2))
 
+    def test_to_from_file(self):
+        for graph in [dummygraph.get_simple_graph(),
+                      dummygraph.get_disjoint_graph()]:
+            graph.to_file("test_graph")
+
+            graph2 = Graph.from_file("test_graph")
+            self.assertEqual(graph, graph2)
 
 if __name__ == "__main__":
     unittest.main()

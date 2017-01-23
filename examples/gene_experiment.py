@@ -13,13 +13,10 @@ import sys
 import csv
 from offsetbasedgraph import Graph, Block, Translation, Interval, Position
 
-
-from offsetbasedgraph.graphutil import Gene, convert_to_numeric_graph, create_initial_grch38_graph, convert_to_text_graph, merge_flanks, connect_without_flanks, parse_genes_file, get_genes_as_intervals, get_gene_objects_as_intervals, find_exon_duplicates
-
-
-
-
-
+from offsetbasedgraph.graphutils import Gene, convert_to_numeric_graph, connect_without_flanks, \
+    convert_to_text_graph, merge_flanks, connect_without_flanks, parse_genes_file, \
+    get_genes_as_intervals, get_gene_objects_as_intervals, find_exon_duplicates, \
+    create_initial_grch38_graph
 
 if __name__ == "__main__":
     if len(sys.argv) != 4:
