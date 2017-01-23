@@ -12,9 +12,13 @@ python3 gene_experiment.py grch38.chrom.sizes-small grch38_alt_loci_small.txt ge
 import sys
 import csv
 from offsetbasedgraph import Graph, Block, Translation, Interval, Position
-from genutils import flanks
 
-from offsetbasedgraph.util import *
+
+from offsetbasedgraph.graphutil import Gene, convert_to_numeric_graph, create_initial_grch38_graph, convert_to_text_graph, merge_flanks, connect_without_flanks, parse_genes_file, get_genes_as_intervals, get_gene_objects_as_intervals, find_exon_duplicates
+
+
+
+
 
 
 if __name__ == "__main__":
