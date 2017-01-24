@@ -1,7 +1,7 @@
 from .util import takes
 from .interval import Interval, Position
 from .multipathinterval import GeneralMultiPathInterval, SingleMultiPathInterval, SimpleMultipathInterval
-import json
+import pickle
 
 
 class Translation(object):
@@ -18,7 +18,6 @@ class Translation(object):
         """
         self._a_to_b = translate_dict
         self._b_to_a = reverse_dict
-
         for k, intervals in translate_dict.items():
             for interval in intervals:
                 assert interval.start_position != interval.end_position, "Empty interval in translate: (%s: %s)" % ("T", translate_dict)
@@ -75,11 +74,11 @@ class Translation(object):
 
     def to_file(self, file_name):
 
-        with open("data/tmp/translation_%s_a_to_b.txt" % file_name, "w") as f:
-            json.dump(self._a_to_b, f)
+        with open("data/tmp/translation_%s_a_to_b.txt" % file_name, "wb") as f:
+            pickle.dump(self._a_to_b, f)
 
-        with open("data/tmp/translation_%s_b_to_a.txt" % file_name, "w") as f:
-            json.dump(self._b_to_a, f)
+        with open("data/tmp/translation_%s_b_to_a.txt" % file_name, "wb") as f:
+            pickle.dump(self._b_to_a, f)
 
         if self.graph1 is not None:
             self.graph1.to_file("translation_graph1_%s" % file_name)
@@ -88,17 +87,19 @@ class Translation(object):
             self.graph2.to_file("translation_graph2_%s" % file_name)
 
     @staticmethod
-    def from_file(self, file_name):
-        with open("data/tmp/translation_%s_a_to_b.txt" % file_name, "r") as f:
-            ab = json.load(f)
+    def from_file(file_name):
+        with open("data/tmp/translation_%s_a_to_b.txt" % file_name, "rb") as f:
+            ab = pickle.loads(f.read())
 
-        with open("data/tmp/translation_%s_b_to_a.txt" % file_name, "w") as f:
-            ba = json.load(f)
+        with open("data/tmp/translation_%s_b_to_a.txt" % file_name, "rb") as f:
+            ba = pickle.loads(f.read())
 
         from .graph import Graph
-        self.graph1 = Graph.from_file("translation_graph1_%s" % file_name)
-        self.graph2 = Graph.from_file("translation_graph2_%s" % file_name)
-
+        graph1 = Graph.from_file("translation_graph1_%s" % file_name)
+        graph2 = Graph.from_file("translation_graph2_%s" % file_name)
+        t = Translation(ab, ba, graph1)
+        t.graph2 = graph2
+        return t
 
     def _translations(self, rp, inverse=False):
         dict = self._b_to_a if inverse else self._a_to_b

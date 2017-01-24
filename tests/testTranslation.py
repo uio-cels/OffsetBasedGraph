@@ -248,5 +248,13 @@ class TestTranslation(unittest.TestCase):
         num_graph2, num_trans = num_graph.merge(
             [trans.translate(interval) for interval in intervals])
 
+    def test_to_from_file(self):
+        graph1, graph2, trans = dummygraph.get_merged_middle_translation()
+        trans.to_file("test_trans")
+        t2 = Translation.from_file("test_trans")
+        self.assertEqual(trans, t2)
+        self.assertEqual(trans.graph1, t2.graph1)
+        self.assertEqual(trans.graph2, t2.graph2)
+
 if __name__ == "__main__":
     unittest.main()

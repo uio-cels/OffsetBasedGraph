@@ -3,7 +3,7 @@ from .interval import Interval, Position
 from .util import takes
 from .translation import Translation
 import sys
-import json
+import pickle
 import os
 
 class Block(object):
@@ -77,14 +77,19 @@ class Graph(object):
         :return:
         """
         if os.path.isfile("data/tmp/%s_blocks.txt" % file_name):
-            with open("data/tmp/%s_blocks.txt" % file_name, "r") as f:
-                numeric_blocks = json.load(f)
+            with open("data/tmp/%s_blocks.txt" % file_name, "rb") as f:
+                blocks_numeric = pickle.loads(f.read())
                 blocks = {}
-                for b in numeric_blocks:
-                    blocks[int(b)] = Block(numeric_blocks[b])
+                for b in blocks_numeric:
+                    blocks[b] = Block(blocks_numeric[b])
 
-            with open("data/tmp/%s_adj_list.txt" % file_name, "r") as f:
-                adj_list = json.load(f)
+            with open("data/tmp/%s_adj_list.txt" % file_name, "rb") as f:
+                adj_list = pickle.loads(f.read())
+                """
+                adj_list = defaultdict(list)
+                for a in adj_list_str:
+                    adj_list[int(a)].extend([int(l) for l in adj_list_str[a]])
+                """
 
             return Graph(blocks, adj_list)
         else:
@@ -104,11 +109,11 @@ class Graph(object):
         for b in self.blocks:
             numeric_block_dict[b] = self.blocks[b].length()
 
-        with open("data/tmp/%s_blocks.txt" % file_name, "w") as f:
-            json.dump(numeric_block_dict, f)
+        with open("data/tmp/%s_blocks.txt" % file_name, "wb") as f:
+            pickle.dump(numeric_block_dict, f)
 
-        with open("data/tmp/%s_adj_list.txt" % file_name, "w") as f:
-            json.dump(self.adj_list, f)
+        with open("data/tmp/%s_adj_list.txt" % file_name, "wb") as f:
+            pickle.dump(self.adj_list, f)
 
     def get_edges_as_list(self):
         """
