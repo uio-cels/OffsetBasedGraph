@@ -74,13 +74,13 @@ class Translation(object):
 
     def to_file(self, file_name):
 
-        with open("data/tmp/translation_%s" % file_name, "wb") as f:
+        with open("%s" % file_name, "wb") as f:
             pickle.dump(self, f)
 
     @staticmethod
     def from_file(file_name):
 
-        with open("data/tmp/translation_%s" % file_name, "rb") as f:
+        with open("%s" % file_name, "rb") as f:
             return pickle.loads(f.read())
 
     def _translations(self, rp, inverse=False):

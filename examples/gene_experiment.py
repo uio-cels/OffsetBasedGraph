@@ -10,6 +10,7 @@ python3 gene_experiment.py grch38.chrom.sizes-small grch38_alt_loci_small.txt ge
 """
 
 import sys
+import argparse
 import csv
 from offsetbasedgraph import Graph, Block, Translation, Interval, Position
 
@@ -18,7 +19,61 @@ from offsetbasedgraph.graphutils import Gene, convert_to_numeric_graph, connect_
     get_genes_as_intervals, get_gene_objects_as_intervals, find_exon_duplicates, \
     create_initial_grch38_graph
 
+
+def create_graph(args):
+    graph = create_initial_grch38_graph(args.chrom_sizes_file_name)
+    numeric_graph, name_translation = convert_to_numeric_graph(graph)
+    new_numeric_graph, numeric_translation = connect_without_flanks(
+        numeric_graph, args.alt_locations_file_name, name_translation)
+    name_graph, new_name_translation = convert_to_text_graph(
+        new_numeric_graph, name_translation, numeric_translation)
+
+    final_translation = name_translation + numeric_translation + new_name_translation
+    final_translation.to_file(args.out_file_name)
+    print("Graph and translation object stored in %s" % (args.out_file_name))
+
+def check_duplicate_genes(args):
+    genes_file_name = args.genes_file_name
+    final_trans = Translation.from_file(args.translation_file_name)
+    print(genes_file_name)
+
+
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description='Interact with a graph created from GRCh38')
+    subparsers = parser.add_subparsers(help='Subcommands')
+
+    # Subcommand for create graph
+    parser_create_graph = subparsers.add_parser('create_graph', help='Create graph')
+    parser_create_graph.add_argument('chrom_sizes_file_name',
+                    help='Tabular file containing two columns, chrom/alt name and size')
+    parser_create_graph.add_argument('alt_locations_file_name',
+                    help='File containing alternative loci')
+    parser_create_graph.add_argument('out_file_name',
+                    help='Name of file to store graph and translation objects insize')
+    parser_create_graph.set_defaults(func=create_graph)
+
+    # Subcommand for...
+    parser_genes = subparsers.add_parser('check_duplicate_genes', help='Check duplicate genes')
+    parser_genes.add_argument('translation_file_name',
+                                help='Translation file created by running create_graph')
+    parser_genes.add_argument('genes_file_name', help='Genes')
+    parser_genes.set_defaults(func=check_duplicate_genes)
+
+    if len(sys.argv)==1:
+        parser.print_help()
+        sys.exit(1)
+
+
+    args = parser.parse_args()
+    if hasattr(args, 'func'):
+        args.func(args)
+    else:
+        parser.help()
+
+    sys.exit()
+
+
     if len(sys.argv) != 4:
         print("""
             Usage: gene_experiment.py chrom_sizes_file alt_loci_file gene_file \n
