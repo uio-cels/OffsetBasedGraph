@@ -5,12 +5,16 @@ import csv
 from genutils import flanks
 
 
+from collections import defaultdict
+
+
 class Gene(object):
 
     def __init__(self, name, transcription_region, exons):
         self.name = name
         self.transcription_region = transcription_region
         self.exons = exons
+        self.chrom = transcription_region.region_paths[0]
 
     @classmethod
     def from_dict(cls, attr_dict):
@@ -290,17 +294,31 @@ def get_gene_objects_as_intervals(fn, graph):
 
 
 def find_exon_duplicates(genes, translation):
+    """Find and count duplicate genes on flanks of 
+    alt loci
+
+    :param genes: genes on original graph
+    :param translation: translation object
+    """
     translated = [gene.translate(translation) for gene in genes]
-    print("Duplicates")
-    for g in translated:
-        for h in translated:
-            if g.name == h.name:
-                continue
+    main_chr_dict = defaultdict(list)
+    alt_dict = defaultdict(list)
 
-            if g == h:
-                print("--------")
-                #print(g.name)
-                #print(h.name)
-                print(g)
-                print(h)
+    for gene, t_gene in zip(genes, translated):
+        if "alt" in gene.chrom:
+            alt_dict[gene.chrom.split("_")[0]].append(t_gene)
+        else:
+            main_chr_dict[gene.chrom].append(t_gene)
 
+    s = 0
+    for chrom, genes in alt_dict.items():
+        print(chrom)
+        for gene in genes:
+            for main_gene in main_chr_dict[chrom]:
+                if gene.name == main_gene.name:
+                    continue
+                if gene == main_gene:
+                    print(main_gene.name, gene.name)
+                    s += 1
+
+    print(s, "/", sum(len(v) for v in alt_dict.values()))

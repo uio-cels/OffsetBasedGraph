@@ -81,24 +81,23 @@ if __name__ == "__main__":
             Smaller example: python3 gene_experiment.py grch38.chrom.sizes-small grch38_alt_loci_small.txt genes_chr1_GL383518v1_alt.txt
             """)
     else:
-
-        """
-        graph = create_initial_grch38_graph(sys.argv[1])
-        numeric_graph, name_translation = convert_to_numeric_graph(graph)
-        new_numeric_graph, numeric_translation = connect_without_flanks(
-            numeric_graph, sys.argv[2], name_translation)
-        name_graph, new_name_translation = convert_to_text_graph(
-            new_numeric_graph, name_translation, numeric_translation)
-
-        # To save to disk:
-        graph.to_file("initial_grch38_graph")
-        name_translation.to_file("name_translation")
-        numeric_graph.to_file("numeric_graph")
-        new_numeric_graph.to_file("new_numeric_graph")
-        numeric_translation.to_file("numeric_translation")
-        new_name_translation.to_file("new_name_translation")
-        """
-
+#
+#
+#        graph = create_initial_grch38_graph(sys.argv[1])
+#        numeric_graph, name_translation = convert_to_numeric_graph(graph)
+#        new_numeric_graph, numeric_translation = connect_without_flanks(
+#            numeric_graph, sys.argv[2], name_translation)
+#        name_graph, new_name_translation = convert_to_text_graph(
+#            new_numeric_graph, name_translation, numeric_translation)
+#
+#        # To save to disk:
+#        graph.to_file("initial_grch38_graph")
+#        name_translation.to_file("name_translation")
+#        numeric_graph.to_file("numeric_graph")
+#        new_numeric_graph.to_file("new_numeric_graph")
+#        numeric_translation.to_file("numeric_translation")
+#        new_name_translation.to_file("new_name_translation")
+#
         # To read from disk:
 
         graph = Graph.from_file("initial_grch38_graph")
@@ -115,7 +114,7 @@ if __name__ == "__main__":
         final_translation = final_translation + new_name_translation
         genes = get_gene_objects_as_intervals(sys.argv[3], graph)
         find_exon_duplicates(genes, final_translation)
-        sys.exit()
+        exit()
 
         genes = get_genes_as_intervals(sys.argv[3], graph)
         genes_compact_graph = {}
@@ -130,7 +129,6 @@ if __name__ == "__main__":
         for g in genes_compact_graph:
             genes_readable[g] = new_name_translation.translate(
                 genes_compact_graph[g])
-
 
         print("\nOriginal genes")
         for g in genes:
