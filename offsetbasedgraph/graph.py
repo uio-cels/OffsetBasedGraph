@@ -77,23 +77,10 @@ class Graph(object):
         :return:
         """
         if os.path.isfile("data/tmp/%s_blocks.txt" % file_name):
-            with open("data/tmp/%s_blocks.txt" % file_name, "rb") as f:
-                blocks_numeric = pickle.loads(f.read())
-                blocks = {}
-                for b in blocks_numeric:
-                    blocks[b] = Block(blocks_numeric[b])
-
-            with open("data/tmp/%s_adj_list.txt" % file_name, "rb") as f:
-                adj_list = pickle.loads(f.read())
-                """
-                adj_list = defaultdict(list)
-                for a in adj_list_str:
-                    adj_list[int(a)].extend([int(l) for l in adj_list_str[a]])
-                """
-
-            return Graph(blocks, adj_list)
+            with open("data/tmp/graph_%s" % file_name, "rb") as f:
+                return pickle.loads(f.read())
         else:
-            print("Graph not saved data/tmp/%s_blocks.txt" % file_name)
+            print("Warning: Graph not found" % file_name)
             return None
 
     def to_file(self, file_name):
@@ -103,17 +90,8 @@ class Graph(object):
         :param file_name: File name
         :return:
         """
-
-        numeric_block_dict = {}
-
-        for b in self.blocks:
-            numeric_block_dict[b] = self.blocks[b].length()
-
-        with open("data/tmp/%s_blocks.txt" % file_name, "wb") as f:
-            pickle.dump(numeric_block_dict, f)
-
-        with open("data/tmp/%s_adj_list.txt" % file_name, "wb") as f:
-            pickle.dump(self.adj_list, f)
+        with open("data/tmp/graph_%s" % file_name, "wb") as f:
+            pickle.dump(self, f)
 
     def get_edges_as_list(self):
         """

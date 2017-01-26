@@ -74,32 +74,14 @@ class Translation(object):
 
     def to_file(self, file_name):
 
-        with open("data/tmp/translation_%s_a_to_b.txt" % file_name, "wb") as f:
-            pickle.dump(self._a_to_b, f)
-
-        with open("data/tmp/translation_%s_b_to_a.txt" % file_name, "wb") as f:
-            pickle.dump(self._b_to_a, f)
-
-        if self.graph1 is not None:
-            self.graph1.to_file("translation_graph1_%s" % file_name)
-
-        if self.graph2 is not None:
-            self.graph2.to_file("translation_graph2_%s" % file_name)
+        with open("data/tmp/translation_%s" % file_name, "wb") as f:
+            pickle.dump(self, f)
 
     @staticmethod
     def from_file(file_name):
-        with open("data/tmp/translation_%s_a_to_b.txt" % file_name, "rb") as f:
-            ab = pickle.loads(f.read())
 
-        with open("data/tmp/translation_%s_b_to_a.txt" % file_name, "rb") as f:
-            ba = pickle.loads(f.read())
-
-        from .graph import Graph
-        graph1 = Graph.from_file("translation_graph1_%s" % file_name)
-        graph2 = Graph.from_file("translation_graph2_%s" % file_name)
-        t = Translation(ab, ba, graph1)
-        t.graph2 = graph2
-        return t
+        with open("data/tmp/translation_%s" % file_name, "rb") as f:
+            return pickle.loads(f.read())
 
     def _translations(self, rp, inverse=False):
         dict = self._b_to_a if inverse else self._a_to_b
