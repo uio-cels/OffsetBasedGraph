@@ -60,7 +60,7 @@ if __name__ == "__main__":
         final_translation = final_translation + new_name_translation
         genes = get_gene_objects_as_intervals(sys.argv[3], graph)
         find_exon_duplicates(genes, final_translation)
-
+        sys.exit()
 
         genes = get_genes_as_intervals(sys.argv[3], graph)
         genes_compact_graph = {}
