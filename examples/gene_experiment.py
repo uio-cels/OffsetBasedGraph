@@ -26,6 +26,8 @@ if __name__ == "__main__":
             Smaller example: python3 gene_experiment.py grch38.chrom.sizes-small grch38_alt_loci_small.txt genes_chr1_GL383518v1_alt.txt
             """)
     else:
+
+        """
         graph = create_initial_grch38_graph(sys.argv[1])
         numeric_graph, name_translation = convert_to_numeric_graph(graph)
         new_numeric_graph, numeric_translation = connect_without_flanks(
@@ -35,23 +37,30 @@ if __name__ == "__main__":
 
         # To save to disk:
         graph.to_file("initial_grch38_graph")
+        name_translation.to_file("name_translation")
         numeric_graph.to_file("numeric_graph")
         new_numeric_graph.to_file("new_numeric_graph")
         numeric_translation.to_file("numeric_translation")
-        
-        # To read from disk:
+        new_name_translation.to_file("new_name_translation")
         """
+
+        # To read from disk:
+
         graph = Graph.from_file("initial_grch38_graph")
         numeric_graph = Graph.from_file("numeric_graph")
         name_translation = Translation.from_file("name_translation")
         new_numeric_graph = Graph.from_file("new_numeric_graph")
         numeric_translation = Translation.from_file("numeric_translation")
-        """
+        new_name_translation = Translation.from_file("new_name_translation")
 
-        final_translation = name_translation + numeric_translation + new_name_translation
+        #print(numeric_translation.graph1)
+
+
+        final_translation = name_translation + numeric_translation
+        final_translation = final_translation + new_name_translation
         genes = get_gene_objects_as_intervals(sys.argv[3], graph)
         find_exon_duplicates(genes, final_translation)
-        exit(0)
+
 
         genes = get_genes_as_intervals(sys.argv[3], graph)
         genes_compact_graph = {}
@@ -67,7 +76,7 @@ if __name__ == "__main__":
             genes_readable[g] = new_name_translation.translate(
                 genes_compact_graph[g])
 
-        print(genes)
+
         print("\nOriginal genes")
         for g in genes:
             print("%s: %s" % (g, genes[g]))
