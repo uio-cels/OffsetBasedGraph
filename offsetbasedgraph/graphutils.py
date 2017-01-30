@@ -2,10 +2,26 @@ from .interval import Interval, Position
 from .graph import Graph, Block
 from .translation import Translation
 import csv
+import pickle
 from genutils import flanks
 
 
 from collections import defaultdict
+
+
+class GeneList(object):
+    def __init__(self, gene_list):
+        self.gene_list = gene_list
+
+    def to_file(self, file_name):
+        with open("%s" % file_name, "wb") as f:
+            pickle.dump(self, f)
+
+    @staticmethod
+    def from_file(file_name):
+
+        with open("%s" % file_name, "rb") as f:
+            return pickle.loads(f.read())
 
 
 class Gene(object):
@@ -293,14 +309,47 @@ def get_gene_objects_as_intervals(fn, graph):
     return [Gene.from_dict(gene) for gene in genes]
 
 
+def find_unequal_sibling_genes(main_genes, alt_genes):
+    """TODO:
+    * Write diff for intervals
+    * Write diff for genes
+    * Numeric/
+
+    :param main_genes: 
+    :param alt_genes: 
+    :returns: 
+    :rtype: 
+
+    """
+    graph = main_genes[0].transcription_region.graph
+    graph.critical_blocks = graph.find_all_critical_blocks()
+    main_dict = defaultdict(list)
+    for gene in main_genes:
+        main_dict[gene.name].append(gene)
+    for gene in alt_genes:
+        if gene.name in main_dict and gene not in main_dict[gene.name]:
+            codes = []
+            for m_gene in main_dict[gene.name]:
+                m_code = m_gene.transcription_region.diff(
+                    gene.transcription_region)
+                if all(c == "E" for c in m_code):
+                    codes.append("("+"".join(m_code)+")")
+            if codes:
+                print(gene.transcription_region.region_paths)
+                print(gene.name, "".join(codes))
+
+
 def find_exon_duplicates(genes, translation):
-    """Find and count duplicate genes on flanks of 
+    """Find and count duplicate genes on flanks of
     alt loci
 
     :param genes: genes on original graph
     :param translation: translation object
     """
-    translated = [gene.translate(translation) for gene in genes]
+    translated = GeneList.from_file("trans_genes").gene_list
+    # [gene.translate(translation) for gene in genes]
+    # gene_list = GeneList(translated)
+    # gene_list.to_file("trans_genes")
     main_chr_dict = defaultdict(list)
     alt_dict = defaultdict(list)
 
@@ -313,10 +362,10 @@ def find_exon_duplicates(genes, translation):
     s = 0
     for chrom, genes in alt_dict.items():
         print(chrom)
+        find_unequal_sibling_genes(main_chr_dict[chrom], genes)
+        continue
         for gene in genes:
             for main_gene in main_chr_dict[chrom]:
-                if gene.name == main_gene.name:
-                    continue
                 if gene == main_gene:
                     print(main_gene.name, gene.name)
                     s += 1
