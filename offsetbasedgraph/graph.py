@@ -818,6 +818,85 @@ class Graph(object):
 
         return True
 
+    @staticmethod
+    def is_main_name(name):
+        if "alt" not in name:
+            return True
+        if name.count("chr") > 1:
+            return True
+        return False
+
+    def find_critical_blocks(self, start_block):
+        """Find all critical_blocks starting from
+        start block
+
+        :param start_block: block id of start_block
+        :returns: List of critical block ids
+        :rtype: list(str)
+
+        """
+
+        cur_block = start_block
+        counter = 0
+        critical_blocks = []
+        while(self.adj_list[cur_block]):
+            counter -= (len(self.reverse_adj_list[cur_block])-1)
+            if counter == 0:
+                critical_blocks.append(cur_block)
+            nexts = self.adj_list[cur_block]
+            counter += len(nexts)-1
+            next_main = [block for block in nexts if
+                         self.is_main_name(block)]
+            assert len(next_main) == 1
+            cur_block = next_main[0]
+
+        return critical_blocks
+
+    def find_previous_critical_block(self, block, critical_blocks):
+        if block in critical_blocks:
+            return block
+        cur_block = block
+        while self.reverse_adj_list[cur_block]:
+            prevs = self.reverse_adj_list[cur_block]
+            prev_mains = [b for b in prevs if
+                          self.is_main_name(b)]
+            if not prev_mains:
+                raise Exception("No prevs: %s" % prevs)
+
+            prev_main_block = prev_mains[0]
+
+            if prev_main_block in critical_blocks:
+                return prev_main_block
+            cur_block = prev_main_block
+
+    def are_paralell(self, block_a, block_b, critical_blocks=None):
+        if critical_blocks is None:
+            critical_blocks = self.critical_blocks
+        if block_a == block_b:
+            return True
+        critical_block_a = self.find_previous_critical_block(block_a, critical_blocks)
+        critical_block_b = self.find_previous_critical_block(block_b, critical_blocks)
+        return critical_block_a == critical_block_b
+
+    def find_all_critical_blocks(self):
+        """Find critical blocks in the graph.
+        I.e.  blocks that are traversed by all paths
+
+        :returns: list of critical_blocks ids
+        :rtype: list(str)
+
+        """
+
+        start_blocks = [block for block in self.blocks if
+                        not self.reverse_adj_list[block]]
+
+        critical_blocks = []
+        for start_block in start_blocks:
+            critical_blocks.extend(
+                self.find_critical_blocks(start_block))
+
+        return critical_blocks
+
     def n_edges_in(self, block):
         """
         Finds and returns the number of edges going in to a block
@@ -865,10 +944,4 @@ class Graph(object):
                 #print("No match for block %d" % (b))
                 return False
 
-
         return True
-
-
-
-
-

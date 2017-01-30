@@ -32,10 +32,13 @@ def create_graph(args):
     final_translation.to_file(args.out_file_name)
     print("Graph and translation object stored in %s" % (args.out_file_name))
 
+
 def check_duplicate_genes(args):
     genes_file_name = args.genes_file_name
     final_trans = Translation.from_file(args.translation_file_name)
-    print(genes_file_name)
+    genes = get_gene_objects_as_intervals(genes_file_name, final_trans.graph1)
+    find_exon_duplicates(genes, final_trans)
+    # print(genes_file_name)
 
 
 def merge_alignment(args):

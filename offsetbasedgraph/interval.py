@@ -129,7 +129,8 @@ class Interval(object):
         return Interval(self.start_position, other.end_position, region_paths)
 
     def __deepcopy__(self, memo):
-        return Interval(self.start_position, self.end_position, self.region_paths, self.graph)
+        return Interval(self.start_position, self.end_position,
+                        self.region_paths, self.graph)
 
     def copy(self):
         return Interval(self.start_position, self.end_position,
@@ -152,6 +153,32 @@ class Interval(object):
             self.start_position,
             self.end_position, self.region_paths,
             graph)
+
+    def diff(self, other):
+        codes = []
+        for rp in self.region_paths:
+            if any(o_rp == rp for o_rp in other.region_paths):
+                codes.append("E")
+            elif any(self.graph.are_paralell(rp, o_rp) for
+                     o_rp in other.region_paths):
+                codes.append("P")
+            else:
+                codes.append("N")
+        return codes
+
+        codes = []
+        if not any(rp in other.region_paths for rp in self.region_paths):
+            return ["D"]
+        if len(self.region_paths) != len(other.region_paths):
+            codes.append("dl")
+        if self.region_paths[0] != other.region_paths[0]:
+            codes.append("ds")
+        if self.region_paths[-1] != other.region_paths[-1]:
+            codes.append("de")
+        if len(self.region_paths) > 2 and len(other.region_paths) > 2:
+            if self.region_paths[1] != other.region_paths[1]:
+                codes.append("dm")
+        return codes
 
     def get_position_from_offset(self, offset, rp_lens=None):
         """Get position of with offset counted from the start of
