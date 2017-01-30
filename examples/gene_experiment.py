@@ -44,16 +44,30 @@ def check_duplicate_genes(args):
 def merge_alignment(args):
     trans = Translation.from_file(args.translation_file_name)
     graph = trans.graph1
-    from offsetbasedgraph.graphutils import merge_alt_using_cigar
+    from offsetbasedgraph.graphutils import merge_alt_using_cigar, grch38_graph_to_numeric
+    graph, trans = grch38_graph_to_numeric(graph)
+    merge_alt_using_cigar(graph, trans, args.alt_locus_id)
 
-    merge_alt_using_cigar(graph, args.alt_locus_id)
 
 def merge_all_alignments(args):
-    trans = Translation.from_file(args.translation_file_name)
-    graph = trans.graph1
-    from offsetbasedgraph.graphutils import merge_alt_using_cigar
+    from offsetbasedgraph.graphutils import merge_alt_using_cigar, grch38_graph_to_numeric
+    text_graph = create_initial_grch38_graph(args.chrom_sizes_file_name)  # Text ids (chrom names and alt names)
+    graph, numeric_trans = grch38_graph_to_numeric(text_graph)
 
-    merge_alt_using_cigar(graph, args.alt_locus_id)
+    # Go through all alts in this graph
+    new_graph = graph.copy()
+    trans = numeric_trans
+    #trans = Translation({}, {}, graph=graph)
+    i = 0
+    for b in text_graph.blocks:
+        if "alt" in b:
+            print("Merging %s" % b)
+            trans, new_graph = merge_alt_using_cigar(new_graph, trans, b)
+            i += 1
+            if i > 20000:
+                break
+
+    new_graph.to_file(args.out_file_name)
 
 if __name__ == "__main__":
 
@@ -85,10 +99,12 @@ if __name__ == "__main__":
     parser_merge_alignments.set_defaults(func=merge_alignment) # Subcommand for merge alt loci using alignments
 
     # Merge all alignments
-    parser_merge_alignments = subparsers.add_parser('merge_all_alignments', help='Merge graph using alignments of ALL alt loci')
-    parser_merge_alignments.add_argument('translation_file_name',
-                                help='Translation file created by running create_graph')
-    parser_merge_alignments.set_defaults(func=merge_all_alignments)
+    parser_merge_all_alignments = subparsers.add_parser('merge_all_alignments', help='Merge graph using alignments of ALL alt loci')
+    parser_merge_all_alignments.add_argument('chrom_sizes_file_name',
+                    help='Tabular file containing two columns, chrom/alt name and size')
+    parser_merge_all_alignments.add_argument('out_file_name',
+                                help='File name to store translation object for new graph')
+    parser_merge_all_alignments.set_defaults(func=merge_all_alignments)
 
 
 
