@@ -175,6 +175,8 @@ class testExamples(unittest.TestCase):
         self.assertTrue(new_graph.has_identical_structure(correct_structure))
 
     def test_merge_alt_using_cigar(self):
+
+        # Case 1
         graph = Graph({
                 "chr1": Block(30),
                 "chr1_test_alt": Block(10)
@@ -187,7 +189,7 @@ class testExamples(unittest.TestCase):
         main_seq = "CCCGGGTAAA"
         cigar = "M3 I1 M3 1D M3"
         from offsetbasedgraph.graphutils import _merge_alt_using_cigar
-        new_graph, trans = _merge_alt_using_cigar(graph,
+        trans, new_graph = _merge_alt_using_cigar(graph,
                                "chr1_test_alt",
                                cigar,
                                alt_seq,
@@ -196,6 +198,27 @@ class testExamples(unittest.TestCase):
                                start,
                                end,
                                10)
+
+        correct_structure = Graph(
+            {
+                1: Block(1),
+                2: Block(1),
+                3: Block(1),
+                4: Block(1),
+                5: Block(1),
+                6: Block(1),
+                7: Block(1),
+             },
+            {
+                1: [2],
+                2: [3, 6],
+                3: [4, 7],
+                4: [5],
+                6: [3],
+                7: [4]
+            }
+        )
+        self.assertTrue(new_graph.has_identical_structure(correct_structure))
 
 
 
