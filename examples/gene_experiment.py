@@ -48,6 +48,12 @@ def merge_alignment(args):
 
     merge_alt_using_cigar(graph, args.alt_locus_id)
 
+def merge_all_alignments(args):
+    trans = Translation.from_file(args.translation_file_name)
+    graph = trans.graph1
+    from offsetbasedgraph.graphutils import merge_alt_using_cigar
+
+    merge_alt_using_cigar(graph, args.alt_locus_id)
 
 if __name__ == "__main__":
 
@@ -76,7 +82,13 @@ if __name__ == "__main__":
     parser_merge_alignments.add_argument('translation_file_name',
                                 help='Translation file created by running create_graph')
     parser_merge_alignments.add_argument('alt_locus_id', help='Id of alt locus (e.g. chr2_KI270774v1_alt')
-    parser_merge_alignments.set_defaults(func=merge_alignment)
+    parser_merge_alignments.set_defaults(func=merge_alignment) # Subcommand for merge alt loci using alignments
+
+    # Merge all alignments
+    parser_merge_alignments = subparsers.add_parser('merge_all_alignments', help='Merge graph using alignments of ALL alt loci')
+    parser_merge_alignments.add_argument('translation_file_name',
+                                help='Translation file created by running create_graph')
+    parser_merge_alignments.set_defaults(func=merge_all_alignments)
 
 
 

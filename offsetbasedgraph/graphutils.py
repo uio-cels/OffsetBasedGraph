@@ -538,36 +538,43 @@ def _merge_alt_using_cigar(original_grch38_graph, alt_id, cigar, alt_seq, main_s
         print("Type/len: %s/%d" % (type, n))
 
         if type == "M":
+            #print("Match")
             # If sequences are identical, then merge
             if alt_seq[alt_offset:alt_offset+n] == main_seq[main_offset-main_pos_start:main_offset+n-main_pos_start]:
                 print("Merging match")
-                print(alt_offset)
-                print(alt_id)
                 intv1 = trans.translate(Interval(main_offset, main_offset+n, [main_chr], graph))
                 intv2 = trans.translate(Interval(alt_offset, alt_offset+n, [alt_id], graph))
-                print("Merging %s with %s" % (intv1, intv2))
+                #print("Merging %s with %s" % (intv1, intv2))
                 graph, mtrans = graph.merge([intv1, intv2])
 
                 trans = trans + mtrans
                 trans.graph2 = graph
 
-                print(trans)
-                print(graph)
+                #print(trans)
+                #print(graph)
+
             else:
-                continue
+                print("Not merging, different")
+                #continue
                 # Just connect ?
                 #graph.connect_postitions()
 
             main_offset += n
             alt_offset += n
+            #print("Offsets alt/main: %d/%d" % (alt_offset, main_offset))
 
         elif type == "I":
             alt_offset += n
         elif type == "D":
             main_offset += n
 
-    print("Final graph")
-    print(graph)
+    # Should be correct if cigar is correct:
+    assert alt_offset == len(alt_seq)
+    assert main_offset - main_pos_start == len(main_seq)
+
+    # Final translation should make final graph from original
+    assert graph == trans.translate_subgraph(original_grch38_graph)
+
 
     return trans, graph
 
