@@ -3,7 +3,7 @@ from .graph import Graph, Block
 from .translation import Translation
 import csv
 from genutils import flanks
-
+from gendatafetcher.sequences import get_sequence_ucsc
 
 from collections import defaultdict
 
@@ -232,7 +232,7 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
             continue
         l = line.split()
         alt_locus_id = l[0]
-        print("Connecting %s" % (alt_locus_id))
+        #print("Connecting %s" % (alt_locus_id))
         main_chr = l[1]
         start = int(l[2])
         end = int(l[3])
@@ -322,3 +322,203 @@ def find_exon_duplicates(genes, translation):
                     s += 1
 
     print(s, "/", sum(len(v) for v in alt_dict.values()))
+
+
+def blast_test():
+
+
+
+    from Bio.Blast import NCBIWWW
+    from Bio.Blast.Applications import NcbiblastpCommandline
+    from Bio.Blast import NCBIXML
+    try:
+        from StringIO import StringIO  # Python 2
+    except ImportError:
+        from io import StringIO
+    from Bio.Seq import Seq
+    from Bio.SeqRecord import SeqRecord
+    from Bio import SeqIO
+
+    q = "data/tmp/sequence_chr2_KI270769v1_alt_1_120616.fasta"
+    r = "data/tmp/sequence_chr4_KI270785v1_alt_1_119912.fasta"
+
+    from Bio import pairwise2
+    qs = open(q).read()
+    rs = open(r).read()
+    alignments = pairwise2.align.globalxx(qs, rs)
+    print(alignments)
+    """
+    # Run BLAST and parse the output as XML
+    output = NcbiblastpCommandline(query=q, cmnd='blastn', subject=r, outfmt=5)()[0]
+    blast_result_record = NCBIXML.read(StringIO(output))
+
+    # Print some information on the result
+    for alignment in blast_result_record.alignments:
+        for hsp in alignment.hsps:
+            print('****Alignment****')
+            print('sequence:', alignment.title)
+            print('length:', alignment.length)
+            print('e value:', hsp.expect)
+            print(hsp.query)
+            print(hsp.match)
+            print(hsp.sbjct)
+    """
+
+def merge_alt_using_cigar(original_grch38_graph, alt_id):
+    """
+    Uses a cigar string from ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_assembly_structure/
+    and merges the alt locus.
+
+    :param original_grch38_graph: Original grch38 graph, built by calling the method create_initial_grch38_graph
+    :param alt_id: Alt id (e.g. chr2_KI270774v1_alt)
+    :return: Returns the new graph and a translation object between the original grch38 graph and the new graph
+    """
+
+    try:
+        with open("alt_alignments/%s.alignment" % alt_id) as f:
+            cigar = f.read()
+    except:
+            print("Could not open alignment file alt_alignments/%s.alignment" % alt_id)
+
+
+     # Find position of alt locus
+    main_chr = ""
+    start = 0
+    end = 0
+    length = 0
+
+    alt_loci_fn = "grch38_alt_loci.txt"
+    f = open(alt_loci_fn)
+    for line in f.readlines():
+        if line.startswith("#"):
+            continue
+        l = line.split()
+        alt_locus_id = l[0]
+        if alt_locus_id == alt_id:
+            main_chr = l[1]
+            start = int(l[2])
+            end = int(l[3])
+            length = int(l[4])
+            break
+
+    # Get sequences
+    alt_seq = get_sequence_ucsc(alt_id, 1, length)
+    main_seq = get_sequence_ucsc(main_chr, start, end)
+
+    assert len(alt_seq) == length
+
+    print(alt_seq[-10:])
+    print(main_seq[-10:])
+
+    print(main_chr, start, end, length)
+
+    return _merge_alt_using_cigar(original_grch38_graph, alt_id, cigar, alt_seq, main_seq, main_chr, start, end, length)
+
+def _merge_alt_using_cigar(original_grch38_graph, alt_id, cigar, alt_seq, main_seq, main_chr, main_pos_start, main_pos_end, alt_length):
+    """
+
+    :param original_grch38_graph:
+    :param alt_id:
+    :param cigar:
+    :param alt_seq:
+    :param main_seq:
+    :param main_chr:
+    :param main_pos_start: Position of first base pair after alt loci starts
+    :param main_pos_end: Position of last base pair before alt loci merges
+    :param alt_length:
+    :return:
+    """
+
+    """
+    Algorithm:
+        go through cigar. For every cigar element, modify graph.
+        If cigar is m,
+    """
+    print(cigar)
+    cigar = cigar.split(" ")
+    alt_offset = 0
+    main_offset = main_pos_start
+
+    ab = {}
+    ba = {}
+    print("=== Merge alt ===")
+    graph = original_grch38_graph.copy()
+
+    # Convert to numeric graph
+    num_ab = {}
+    num_ba = {}
+    i = 0
+    for b in graph.blocks:
+        i += 1
+        num_ab[b] = [Interval(0, graph.blocks[b].length(), [i])]
+        num_ba[i] = [Interval(0, graph.blocks[b].length(), [b])]
+    trans = Translation(num_ab, num_ba, graph=original_grch38_graph)
+    trans.graph2 = trans.translate_subgraph(original_grch38_graph)
+    original_grch38_graph._update_a_b_graph(num_ab, trans.graph2)
+    original_grch38_graph._update_a_b_graph(num_ba, original_grch38_graph)
+    graph = trans.graph2
+
+
+    print("== Numeric graph ===")
+    print(graph)
+    """
+    graph, t = graph.connect_postitions(
+                        trans.translate(Position(main_chr, main_pos_start - 1)),
+                        trans.translate(Position(alt_id, 0)))
+    trans += t
+    graph, t = graph.connect_postitions(
+                        trans.translate(Position(alt_id, alt_length - 1)),
+                        trans.translate(Position(main_chr, main_pos_end + 1)))
+    trans += t
+    """
+
+    print("=== Graph before cigar ===")
+    print(graph)
+
+    print(cigar)
+    for c in cigar:
+
+        first = c[0]
+        if first == "M" or first == "D" or first == "I":
+            type = first
+            n = int(c[1:])
+        else:
+            type = c[-1]
+            n = int(c[:-1])
+
+        print("Type/len: %s/%d" % (type, n))
+
+        if type == "M":
+            # If sequences are identical, then merge
+            if alt_seq[alt_offset:alt_offset+n] == main_seq[main_offset-main_pos_start:main_offset+n-main_pos_start]:
+                print("Merging match")
+                print(alt_offset)
+                print(alt_id)
+                intv1 = trans.translate(Interval(main_offset, main_offset+n, [main_chr], graph))
+                intv2 = trans.translate(Interval(alt_offset, alt_offset+n, [alt_id], graph))
+                print("Merging %s with %s" % (intv1, intv2))
+                graph, mtrans = graph.merge([intv1, intv2])
+
+                trans = trans + mtrans
+                trans.graph2 = graph
+
+                print(trans)
+                print(graph)
+            else:
+                continue
+                # Just connect ?
+                #graph.connect_postitions()
+
+            main_offset += n
+            alt_offset += n
+
+        elif type == "I":
+            alt_offset += n
+        elif type == "D":
+            main_offset += n
+
+    print("Final graph")
+    print(graph)
+
+    return trans, graph
+

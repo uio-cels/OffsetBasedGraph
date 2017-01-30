@@ -71,9 +71,48 @@ def get_genes(alt_loci, chr, start, end):
     o.close()
     f.close()
 
-get_genes("chr13_KI270838v1_alt", "chr13", 112182875, 112505943)
+#get_genes("chr13_KI270838v1_alt", "chr13", 112182875, 112505943)
 
 
+def curate_alignment_files():
+    """
+    Renames all alignment files downloaded from ncbi
+    """
 
+    # Find mapping from id to chrom
+    alts = {}
+    f = open("grch38.chrom.sizes")
+    for line in f.readlines():
+        l = line.split()
+        id = l[0]
+        if "alt" in id:
+            s = id.split("_")
+            chrom = s[0]
+            alts[id.split("_")[1]] = chrom
+
+
+    alignments_dir = "/home/ivar/alignments"
+    import glob
+    files = glob.glob("%s/*.gff" % alignments_dir)
+
+    for fname in files:
+        with open(fname, "r") as f:
+            alt_id = fname.split("/")[-1].replace("gff", "").split("_")[0].replace(".", "v")
+            chrom = alts[alt_id]
+            alt_id = chrom + "_" + alt_id
+            #print(alt_id)
+            f2 = open(alignments_dir + "/" + alt_id + "_alt.alignment", "w")
+            text = f.read()
+            #print(fname)
+            s = text.split("Gap=")
+            if len(s) < 2:
+                print("No alignments for %s " % fname)
+                continue
+            cigar = s[1].split("#")[0]
+            f2.write(cigar)
+            #print(cigar)
+            f2.close()
+
+curate_alignment_files()
 
 # create_alt_loci_file_from_db()

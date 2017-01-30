@@ -25,6 +25,7 @@ class Interval(object):
 
     def __init__(self, start_position, end_position,
                  region_paths=None, graph=None):
+        assert region_paths is None or isinstance(region_paths, list), "Region paths must be None or list"
 
         if isinstance(start_position, int):
             assert region_paths, "No region paths given and start_position is int %s, %s, %s" % (start_position, end_position, region_paths)

@@ -42,7 +42,10 @@ class Graph(object):
         self.blocks = blocks
         self.adj_list = defaultdict(list, adj_list)
         self.reverse_adj_list = self._get_reverse_edges(adj_list)
-        self._id = max(blocks)
+        self._id = max([b for b in blocks if isinstance(b, int)] + [0])
+
+        if isinstance(self._id, str):
+            self._id = 0
 
     def copy(self):
         """Make a copy of the graph
