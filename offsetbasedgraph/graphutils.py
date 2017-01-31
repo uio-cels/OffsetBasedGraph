@@ -68,6 +68,9 @@ class Gene(object):
         t_exons = [T.translate(exon) for exon in self.exons]
         return Gene(self. name, t_transcription_region, t_exons)
 
+    def length(self):
+        return self.transcription_region.length()
+
     def __str__(self):
         exon_string = "\n\t".join(str(exon) for exon in self.exons)
         return "Gene(%s: %s \n %s)" % (self.name,
@@ -92,6 +95,38 @@ class Gene(object):
                 return False
 
         return True
+
+    def to_file_line(self):
+        cur_rp = self.transcription_region.region_paths[0]
+        exon_strings = []
+        for exon in self.exons:
+            rps = [rp for rp in exon.region_paths if rp != cur_rp]
+            offsets = [exon.start_position.offset, exon.end_position.offset]
+            exon_string = ",".join(str(e) for e in rps+offsets)
+            exon_strings.append(exon_string)
+            cur_rp = exon.region_paths[-1]
+        transcript_string = ",".join(self.transcription_region.region_paths+[
+            str(self.transcription_region.start_position.offset),
+            str(self.transcription_region.end_position.offset)])
+        return "\t".join([self.name,
+                          transcript_string,
+                          " ".join(exon_strings)])
+
+    def start_and_end_diffs(self, other):
+        my_interval = self.transcription_region
+        other_interval = other.transcription_region
+        start_diff = 0
+        end_diff = 0
+        if my_interval.region_paths[0] == other_interval.region_paths[0]:
+            start_diff = abs(my_interval.start_position.offset - other_interval.start_position.offset)
+        else:
+            start_diff = -1
+
+        if my_interval.region_paths[-1] == other_interval.region_paths[-1]:
+            end_diff = abs(my_interval.end_position.offset - other_interval.end_position.offset)
+        else:
+            end_diff = -1
+        return (start_diff, end_diff)
 
 
 def convert_to_numeric_graph(graph):
@@ -311,9 +346,13 @@ def get_gene_objects_as_intervals(fn, graph):
 
 def find_unequal_sibling_genes(main_genes, alt_genes):
     """TODO:
-    * Write diff for intervals
-    * Write diff for genes
-    * Numeric/
+    Categories:
+        Completely equal
+        Equal up to base pairs
+        Fully parallel
+        Starting ending equally, up to base pairs
+        Starting/Ending equally
+        Starting/Ending equally up to base pairs
 
     :param main_genes: 
     :param alt_genes: 
@@ -324,19 +363,64 @@ def find_unequal_sibling_genes(main_genes, alt_genes):
     graph = main_genes[0].transcription_region.graph
     graph.critical_blocks = graph.find_all_critical_blocks()
     main_dict = defaultdict(list)
+    gene_categories = defaultdict(list)
     for gene in main_genes:
         main_dict[gene.name].append(gene)
     for gene in alt_genes:
+        max_score = 0
+        best_match = None
         if gene.name in main_dict and gene not in main_dict[gene.name]:
-            codes = []
             for m_gene in main_dict[gene.name]:
+                diffs = gene.start_and_end_diffs(m_gene)
                 m_code = m_gene.transcription_region.diff(
                     gene.transcription_region)
                 if all(c == "E" for c in m_code):
-                    codes.append("("+"".join(m_code)+")")
-            if codes:
-                print(gene.transcription_region.region_paths)
-                print(gene.name, "".join(codes))
+                    if diffs[0] == 0 and diffs[1] == 0:
+                        gene_categories["Equal"].append((gene, m_gene))
+                    elif max(diffs) < 5:
+                        gene_categories["ApproxEqual"].append((gene, m_gene))
+                    else:
+                        gene_categories["WierdEqual"].append((gene, m_gene))
+                    break
+                if m_code[0] == "E" and m_code[-1] == "E":
+                    if diffs[0] == 0 and diffs[1] == 0:
+                        gene_categories["bubble"].append((gene, m_gene))
+                    elif max(diffs) < 5:
+                        gene_categories["ApproxBubble"].append((gene, m_gene))
+                    else:
+                        gene_categories["WierdBubble"].append((gene, m_gene))
+                    break
+                if m_code[0] == "E":
+                    if diffs[0] == 0:
+                        gene_categories["start"].append((gene, m_gene))
+                    elif diffs[0] < 5:
+                        gene_categories["ApproxStart"].append((gene, m_gene))
+                    else:
+                        gene_categories["WierdStart"].append((gene, m_gene))
+                    break
+                if m_code[-1] == "E":
+                    if diffs[1] == 0:
+                        gene_categories["end"].append((gene, m_gene))
+                    elif diffs[1] < 5:
+                        gene_categories["ApproxEnd"].append((gene, m_gene))
+                    else:
+                        gene_categories["WierdEnd"].append((gene, m_gene))
+                        print("----------------")
+                        print(gene.length(), gene.to_file_line())
+                        print(m_gene.length(), m_gene.to_file_line())
+                    break
+                if all(c == "P" for c in m_code):
+                    if abs(gene.length()-m_gene.length()) < 5:
+                        gene_categories["parallel"].append((gene, m_gene))
+                    else:
+                        print(gene.length(), gene.to_file_line())
+                        print(m_gene.length(), m_gene.to_file_line())
+                        gene_categories["WierdParallel"].append((gene, m_gene))
+                    break
+                if "N" in m_code:
+                    gene_categories["diff"].append((gene, m_gene))
+                    continue
+    return gene_categories
 
 
 def find_exon_duplicates(genes, translation):
@@ -352,7 +436,7 @@ def find_exon_duplicates(genes, translation):
     # gene_list.to_file("trans_genes")
     main_chr_dict = defaultdict(list)
     alt_dict = defaultdict(list)
-
+    gene_categories = defaultdict(list)
     for gene, t_gene in zip(genes, translated):
         if "alt" in gene.chrom:
             alt_dict[gene.chrom.split("_")[0]].append(t_gene)
@@ -361,8 +445,9 @@ def find_exon_duplicates(genes, translation):
 
     s = 0
     for chrom, genes in alt_dict.items():
-        print(chrom)
-        find_unequal_sibling_genes(main_chr_dict[chrom], genes)
+        new_things = find_unequal_sibling_genes(main_chr_dict[chrom], genes)
+        for k, v in new_things.items():
+            gene_categories[k].extend(v)
         continue
         for gene in genes:
             for main_gene in main_chr_dict[chrom]:
@@ -370,4 +455,7 @@ def find_exon_duplicates(genes, translation):
                     print(main_gene.name, gene.name)
                     s += 1
 
-    print(s, "/", sum(len(v) for v in alt_dict.values()))
+    for category, v in gene_categories.items():
+        print(category, len(v))
+
+    # print(s, "/", sum(len(v) for v in alt_dict.values()))
