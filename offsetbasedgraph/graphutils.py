@@ -112,6 +112,25 @@ class Gene(object):
                           transcript_string,
                           " ".join(exon_strings)])
 
+    @classmethod
+    def parse_transcript_region(cls, transcript_string):
+        parts = transcript_string.split(",")
+        start_offset, end_offset = [int(n) for n in parts[-2:]]
+        region_paths = parts[:-2]
+        return Interval(start_offset, end_offset, region_paths)
+
+    @classmethod
+    def parse_exons(cls, exon_string, start_rp):
+        exons = exon_string.split(" ")
+        for exon in exons:
+            start_offset, end_offset = [int(n) for n in parts[-2:]]
+
+    @classmethod
+    def from_file_line(cls, line):
+        name, transcript_string, exons_string = line.split("\t")
+        transcription_region = cls.parse_transcript_region(transcript_string)
+        exons = cls.parse_exons(exons_string)
+
     def start_and_end_diffs(self, other):
         my_interval = self.transcription_region
         other_interval = other.transcription_region
@@ -368,61 +387,70 @@ def find_unequal_sibling_genes(main_genes, alt_genes):
         main_dict[gene.name].append(gene)
     for gene in alt_genes:
         scores = []
-        if gene.name in main_dict and gene not in main_dict[gene.name]:
-            for m_gene in main_dict[gene.name]:
-                diffs = gene.start_and_end_diffs(m_gene)
-                m_code = m_gene.transcription_region.diff(
-                    gene.transcription_region)
-                if all(c == "E" for c in m_code):
-                    if diffs[0] == 0 and diffs[1] == 0:
-                        print(gene.to_file_line())
-                        print(m_gene.to_file_line())
-                        scores.append(10)
-                        break
-                    elif max(diffs) < 5:
-                        scores.append(9)
-                        continue
-                    else:
-                        scores.append(4)
+        if gene.name not in main_dict:
+            continue
+        if gene in main_dict[gene.name]:
+            gene_categories[11].append((gene, gene))
+            continue
+        for m_gene in main_dict[gene.name]:
+            diffs = gene.start_and_end_diffs(m_gene)
+            m_code = m_gene.transcription_region.diff(
+                gene.transcription_region)
+            if all(c == "E" for c in m_code):
+                if diffs[0] == 0 and diffs[1] == 0:
+                    print(gene.to_file_line())
+                    print(m_gene.to_file_line())
+                    scores.append(10)
+                    break
+                elif max(diffs) < 5:
+                    scores.append(9)
                     continue
-                if m_code[0] == "E" and m_code[-1] == "E":
-                    if diffs[0] == 0 and diffs[1] == 0:
-                        scores.append(8)
-                    elif max(diffs) < 5:
-                        scores.append(7)
-                    else:
-                        scores.append(3)
-                    continue
-                if m_code[0] == "E":
-                    if diffs[0] == 0:
-                        scores.append(6.1)
-                    elif diffs[0] < 5:
-                        scores.append(5.1)
-                    else:
-                        scores.append(2.1)
-                    continue
+                else:
+                    scores.append(4)
+                continue
+            if m_code[0] == "E" and m_code[-1] == "E":
+                if diffs[0] == 0 and diffs[1] == 0:
+                    scores.append(8)
+                elif max(diffs) < 5:
+                    scores.append(7)
+                else:
+                    scores.append(3)
+                continue
+            if m_code[0] == "E":
+                if diffs[0] == 0:
+                    scores.append(6.1)
+                elif diffs[0] < 5:
+                    scores.append(5.1)
+                else:
+                    scores.append(2.1)
+                continue
 
-                if m_code[-1] == "E":
-                    if diffs[1] == 0:
-                        scores.append(6)
-                    elif diffs[1] < 5:
-                        scores.append(5)
-                    else:
-                        scores.append(2)
-                    continue
-                if all(c == "P" for c in m_code):
-                    if abs(gene.length()-m_gene.length()) < 5:
-                        scores.append(4.5)
-                    else:
-                        scores.append(1)
-                    continue
-                if "N" in m_code:
-                    scores.append(0)
-                    continue
-                scores.append(-1)
-            gene_scores = zip(scores, main_dict[gene.name])
-            gene_scores = list(sorted(gene_scores, key=lambda x: x[0]))
-            gene_categories[gene_scores[-1][0]].append((gene, gene_scores[-1][1]))
+            if m_code[-1] == "E":
+                if diffs[1] == 0:
+                    scores.append(6)
+                elif diffs[1] < 5:
+                    scores.append(5)
+                else:
+                    scores.append(2)
+                continue
+            if all(c == "P" for c in m_code):
+                if abs(gene.length()-m_gene.length()) < 5:
+                    scores.append(4.5)
+                else:
+                    scores.append(1)
+                continue
+            if "N" in m_code:
+                scores.append(0)
+                continue
+            scores.append(-1)
+        gene_scores = zip(scores, main_dict[gene.name])
+        gene_scores = list(sorted(gene_scores, key=lambda x: x[0]))
+        score = gene_scores[-1]
+        if score[0] == -1:
+            print(gene.to_file_line())
+            print(score[1].to_file_line())
+            GeneList([gene, score[1]]).to_file("wierd_genes")
+        gene_categories[gene_scores[-1][0]].append((gene, gene_scores[-1][1]))
     return gene_categories
 
 
