@@ -367,8 +367,7 @@ def find_unequal_sibling_genes(main_genes, alt_genes):
     for gene in main_genes:
         main_dict[gene.name].append(gene)
     for gene in alt_genes:
-        max_score = 0
-        best_match = None
+        scores = []
         if gene.name in main_dict and gene not in main_dict[gene.name]:
             for m_gene in main_dict[gene.name]:
                 diffs = gene.start_and_end_diffs(m_gene)
@@ -376,50 +375,54 @@ def find_unequal_sibling_genes(main_genes, alt_genes):
                     gene.transcription_region)
                 if all(c == "E" for c in m_code):
                     if diffs[0] == 0 and diffs[1] == 0:
-                        gene_categories["Equal"].append((gene, m_gene))
+                        print(gene.to_file_line())
+                        print(m_gene.to_file_line())
+                        scores.append(10)
+                        break
                     elif max(diffs) < 5:
-                        gene_categories["ApproxEqual"].append((gene, m_gene))
+                        scores.append(9)
+                        continue
                     else:
-                        gene_categories["WierdEqual"].append((gene, m_gene))
-                    break
+                        scores.append(4)
+                    continue
                 if m_code[0] == "E" and m_code[-1] == "E":
                     if diffs[0] == 0 and diffs[1] == 0:
-                        gene_categories["bubble"].append((gene, m_gene))
+                        scores.append(8)
                     elif max(diffs) < 5:
-                        gene_categories["ApproxBubble"].append((gene, m_gene))
+                        scores.append(7)
                     else:
-                        gene_categories["WierdBubble"].append((gene, m_gene))
-                    break
+                        scores.append(3)
+                    continue
                 if m_code[0] == "E":
                     if diffs[0] == 0:
-                        gene_categories["start"].append((gene, m_gene))
+                        scores.append(6.1)
                     elif diffs[0] < 5:
-                        gene_categories["ApproxStart"].append((gene, m_gene))
+                        scores.append(5.1)
                     else:
-                        gene_categories["WierdStart"].append((gene, m_gene))
-                    break
+                        scores.append(2.1)
+                    continue
+
                 if m_code[-1] == "E":
                     if diffs[1] == 0:
-                        gene_categories["end"].append((gene, m_gene))
+                        scores.append(6)
                     elif diffs[1] < 5:
-                        gene_categories["ApproxEnd"].append((gene, m_gene))
+                        scores.append(5)
                     else:
-                        gene_categories["WierdEnd"].append((gene, m_gene))
-                        print("----------------")
-                        print(gene.length(), gene.to_file_line())
-                        print(m_gene.length(), m_gene.to_file_line())
-                    break
+                        scores.append(2)
+                    continue
                 if all(c == "P" for c in m_code):
                     if abs(gene.length()-m_gene.length()) < 5:
-                        gene_categories["parallel"].append((gene, m_gene))
+                        scores.append(4.5)
                     else:
-                        print(gene.length(), gene.to_file_line())
-                        print(m_gene.length(), m_gene.to_file_line())
-                        gene_categories["WierdParallel"].append((gene, m_gene))
-                    break
-                if "N" in m_code:
-                    gene_categories["diff"].append((gene, m_gene))
+                        scores.append(1)
                     continue
+                if "N" in m_code:
+                    scores.append(0)
+                    continue
+                scores.append(-1)
+            gene_scores = zip(scores, main_dict[gene.name])
+            gene_scores = list(sorted(gene_scores, key=lambda x: x[0]))
+            gene_categories[gene_scores[-1][0]].append((gene, gene_scores[-1][1]))
     return gene_categories
 
 
