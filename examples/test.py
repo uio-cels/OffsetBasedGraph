@@ -71,9 +71,73 @@ def get_genes(alt_loci, chr, start, end):
     o.close()
     f.close()
 
-get_genes("chr13_KI270838v1_alt", "chr13", 112182875, 112505943)
+#get_genes("chr13_KI270838v1_alt", "chr13", 112182875, 112505943)
 
 
+def curate_alignment_files():
+    """
+    Renames all alignment files downloaded from ncbi
+    """
 
+    # Find mapping from id to chrom
+    alts = {}
+    f = open("grch38.chrom.sizes")
+    for line in f.readlines():
+        l = line.split()
+        id = l[0]
+        if "alt" in id:
+            s = id.split("_")
+            chrom = s[0]
+            alts[id.split("_")[1]] = chrom
+
+
+    alignments_dir = "/home/ivar/alignments"
+    import glob
+    files = glob.glob("%s/*.gff" % alignments_dir)
+
+    for fname in files:
+        with open(fname, "r") as f:
+            alt_id = fname.split("/")[-1].replace("gff", "").split("_")[0].replace(".", "v")
+            chrom = alts[alt_id]
+            alt_id = chrom + "_" + alt_id
+            #print(alt_id)
+
+            # Find first non-comment line
+            cigar_line = ""
+            for l in f.readlines():
+                if not l.startswith("#"):
+                    cigar_line = l
+                    break
+
+            #print(cigar_line)
+            assert cigar_line != ""
+
+            f2 = open(alignments_dir + "/" + alt_id + "_alt.alignment", "w")
+            text = cigar_line
+            #print(fname)
+            s = text.split("Gap=")
+            if len(s) < 2:
+                print("No alignments for %s " % fname)
+                continue
+            cigar = s[1].split("#")[0]
+
+            # Find main chr start/end
+            s = cigar_line.split()
+            #print(s)
+            main_start = s[3]
+            main_end = s[4]
+            # Find alt pos
+            s = text.split("Target=")[1].split(";")[0].split()
+            alt_start = s[1]
+            alt_end = s[2]
+
+            line = "%s,%s,%s,%s,%s" % (main_start, main_end, alt_start, alt_end, cigar)
+            print("%s,%s,%s,%s,%s" % (alt_id, main_start, main_end, alt_start, alt_end))
+            f2.write(line)
+
+            #print(cigar)
+            f2.close()
+
+curate_alignment_files()
 
 # create_alt_loci_file_from_db()

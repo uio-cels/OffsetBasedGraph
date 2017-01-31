@@ -17,7 +17,7 @@ from offsetbasedgraph import Graph, Block, Translation, Interval, Position
 from offsetbasedgraph.graphutils import Gene, convert_to_numeric_graph, connect_without_flanks, \
     convert_to_text_graph, merge_flanks, connect_without_flanks, parse_genes_file, \
     get_genes_as_intervals, get_gene_objects_as_intervals, find_exon_duplicates, \
-    create_initial_grch38_graph
+    create_initial_grch38_graph, blast_test
 
 
 def create_graph(args):
@@ -41,6 +41,35 @@ def check_duplicate_genes(args):
     # print(genes_file_name)
 
 
+def merge_alignment(args):
+    trans = Translation.from_file(args.translation_file_name)
+    graph = trans.graph1
+    from offsetbasedgraph.graphutils import merge_alt_using_cigar, grch38_graph_to_numeric
+    graph, trans = grch38_graph_to_numeric(graph)
+    merge_alt_using_cigar(graph, trans, args.alt_locus_id)
+
+
+def merge_all_alignments(args):
+    from offsetbasedgraph.graphutils import merge_alt_using_cigar, grch38_graph_to_numeric
+    text_graph = create_initial_grch38_graph(args.chrom_sizes_file_name)  # Text ids (chrom names and alt names)
+    graph, numeric_trans = grch38_graph_to_numeric(text_graph)
+
+    # Go through all alts in this graph
+    new_graph = graph.copy()
+    trans = numeric_trans
+    #trans = Translation({}, {}, graph=graph)
+    i = 0
+    for b in text_graph.blocks:
+        if "alt" in b:
+            print("Merging %s" % b)
+            trans, new_graph = merge_alt_using_cigar(new_graph, trans, b)
+            i += 1
+            if i > 2000:
+                break
+
+    print("To file")
+    trans.to_file(args.out_file_name)
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Interact with a graph created from GRCh38')
@@ -56,12 +85,29 @@ if __name__ == "__main__":
                     help='Name of file to store graph and translation objects insize')
     parser_create_graph.set_defaults(func=create_graph)
 
-    # Subcommand for...
+    # Subcommand for genes
     parser_genes = subparsers.add_parser('check_duplicate_genes', help='Check duplicate genes')
     parser_genes.add_argument('translation_file_name',
                                 help='Translation file created by running create_graph')
     parser_genes.add_argument('genes_file_name', help='Genes')
     parser_genes.set_defaults(func=check_duplicate_genes)
+
+    # Subcommand for merge alt loci using alignments
+    parser_merge_alignments = subparsers.add_parser('merge_alignment', help='Merge graph using alignments of alt locus')
+    parser_merge_alignments.add_argument('translation_file_name',
+                                help='Translation file created by running create_graph')
+    parser_merge_alignments.add_argument('alt_locus_id', help='Id of alt locus (e.g. chr2_KI270774v1_alt')
+    parser_merge_alignments.set_defaults(func=merge_alignment) # Subcommand for merge alt loci using alignments
+
+    # Merge all alignments
+    parser_merge_all_alignments = subparsers.add_parser('merge_all_alignments', help='Merge graph using alignments of ALL alt loci')
+    parser_merge_all_alignments.add_argument('chrom_sizes_file_name',
+                    help='Tabular file containing two columns, chrom/alt name and size')
+    parser_merge_all_alignments.add_argument('out_file_name',
+                                help='File name to store translation object for new graph')
+    parser_merge_all_alignments.set_defaults(func=merge_all_alignments)
+
+
 
     if len(sys.argv)==1:
         parser.print_help()
