@@ -101,15 +101,40 @@ def curate_alignment_files():
             chrom = alts[alt_id]
             alt_id = chrom + "_" + alt_id
             #print(alt_id)
+
+            # Find first non-comment line
+            cigar_line = ""
+            for l in f.readlines():
+                if not l.startswith("#"):
+                    cigar_line = l
+                    break
+
+            #print(cigar_line)
+            assert cigar_line != ""
+
             f2 = open(alignments_dir + "/" + alt_id + "_alt.alignment", "w")
-            text = f.read()
+            text = cigar_line
             #print(fname)
             s = text.split("Gap=")
             if len(s) < 2:
                 print("No alignments for %s " % fname)
                 continue
             cigar = s[1].split("#")[0]
-            f2.write(cigar)
+
+            # Find main chr start/end
+            s = cigar_line.split()
+            #print(s)
+            main_start = s[3]
+            main_end = s[4]
+            # Find alt pos
+            s = text.split("Target=")[1].split(";")[0].split()
+            alt_start = s[1]
+            alt_end = s[2]
+
+            line = "%s,%s,%s,%s,%s" % (main_start, main_end, alt_start, alt_end, cigar)
+            print("%s,%s,%s,%s,%s" % (alt_id, main_start, main_end, alt_start, alt_end))
+            f2.write(line)
+
             #print(cigar)
             f2.close()
 

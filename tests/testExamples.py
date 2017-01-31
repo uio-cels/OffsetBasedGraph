@@ -182,6 +182,10 @@ class testExamples(unittest.TestCase):
                 "chr1_test_alt": Block(10)
             },
             {});
+
+        from offsetbasedgraph.graphutils import  grch38_graph_to_numeric
+        graph, trans = grch38_graph_to_numeric(graph)
+
         start = 10
         end = 19
 
@@ -189,7 +193,7 @@ class testExamples(unittest.TestCase):
         main_seq = "CCCGGGTAAA"
         cigar = "M3 I1 M3 1D M3"
         from offsetbasedgraph.graphutils import _merge_alt_using_cigar
-        trans, new_graph = _merge_alt_using_cigar(graph,
+        trans, new_graph = _merge_alt_using_cigar(graph, trans,
                                "chr1_test_alt",
                                cigar,
                                alt_seq,
@@ -197,6 +201,7 @@ class testExamples(unittest.TestCase):
                                "chr1",
                                start,
                                end,
+                               0,
                                10)
 
         correct_structure = Graph(

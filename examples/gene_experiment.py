@@ -64,10 +64,11 @@ def merge_all_alignments(args):
             print("Merging %s" % b)
             trans, new_graph = merge_alt_using_cigar(new_graph, trans, b)
             i += 1
-            if i > 20000:
+            if i > 2000:
                 break
 
-    new_graph.to_file(args.out_file_name)
+    print("To file")
+    trans.to_file(args.out_file_name)
 
 if __name__ == "__main__":
 
