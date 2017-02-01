@@ -839,19 +839,19 @@ class Graph(object):
         counter = 0
         critical_blocks = []
         while(self.adj_list[cur_block]):
-            counter -= (len(self.reverse_adj_list[cur_block])-1)
             if counter == 0:
                 critical_blocks.append(cur_block)
             nexts = self.adj_list[cur_block]
-            counter += len(nexts)-1
-            next_main = [block for block in nexts if
-                         self.is_main_name(block)]
-            assert len(next_main) == 1
-            cur_block = next_main[0]
-
+            counter += len(nexts) - 1
+            cur_block = nexts[0]
+            counter -= (len(self.reverse_adj_list[cur_block])-1)
+        if (counter == 0):
+            critical_blocks.append(cur_block)
         return critical_blocks
 
     def find_previous_critical_block(self, block, critical_blocks=None):
+        if critical_blocks is None:
+            critical_blocks = self.critical_blocks
         if block in critical_blocks:
             return block
         cur_block = block

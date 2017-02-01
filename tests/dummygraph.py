@@ -5,6 +5,7 @@ def get_name_graph():
     blocks = {"A": Block(20), "B": Block(10)}
     return Graph(blocks, {})
 
+
 def get_simple_graph():
     blocks = {1: Block(10), 2: Block(20), 3: Block(10), 4: Block(15)}
     block_edges = {1: [2, 3], 2: [4], 3: [4]}
@@ -36,6 +37,16 @@ def get_disjoint_graph():
     blocks = {1: Block(10), 2: Block(20), 3: Block(30)}
     block_edges = {}
     return Graph(blocks, block_edges)
+
+
+def get_realistic_graph():
+    blocks = {i: Block(10) for i in range(9)}
+    edges = {i: [i+1] for i in range(6)}
+    edges[1].append(7)
+    edges[2].append(8)
+    edges[7] = [4]
+    edges[8] = [5]
+    return Graph(blocks, edges)
 
 
 def get_medium_complex_graph():

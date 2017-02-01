@@ -258,7 +258,7 @@ class TestGraph(unittest.TestCase):
 
         adj_list = {a: [b, d], c: [d]}
         t_g = Graph(blocks, adj_list)
-        self.assertEquals(n_g, t_g)
+        self.assertEqual(n_g, t_g)
 
     def test_get_all_block_borders(self):
         blocks = {1: Block(20), 2: Block(20),
@@ -320,19 +320,19 @@ class TestGraph(unittest.TestCase):
                      Interval(Position(0, 1), Position(0, 2), [0], graph)]
 
         new_graph, trans = graph.merge(intervals)
-        print("test_merge_end_block_graph:")
-        print(new_graph)
-        print(trans)
+        # print("test_merge_end_block_graph:")
+        # print(new_graph)
+        # print(trans)
 
     def test_merge_two_end_block2(self):
-        print("test end block 2")
+        # print("test end block 2")
         graph = Graph({8: Block(118047), 1: Block(182439), 3: Block(144488705), 12: Block(67238), 6: Block(104400479)},
                       {3: [12], 12: [8, 6]})
 
         intervals = [Interval(Position(6, 117843), Position(6, 118838), [6], graph),
                      Interval(Position(8, 117052), Position(8, 118047), [8], graph)]
         new_graph, trans = graph.merge(intervals)
-        print(new_graph)
+        # print(new_graph)
 
     def test_connect_intervals(self):
         pass
@@ -395,7 +395,12 @@ class TestGraph(unittest.TestCase):
 
         self.assertTrue(g1.has_identical_structure(g2))
 
-    def test_to_from_file(self):
+    def test_find_critical_blocks(self):
+        graph = dummygraph.get_realistic_graph()
+        critical_blocks = graph.find_critical_blocks(0)
+        self.assertEqual(critical_blocks, [0, 1, 5, 6])
+
+    def _test_to_from_file(self):
         for graph in [dummygraph.get_simple_graph(),
                       dummygraph.get_disjoint_graph()]:
             graph.to_file("test_graph")

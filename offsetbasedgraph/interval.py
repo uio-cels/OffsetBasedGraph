@@ -72,9 +72,11 @@ class Interval(object):
         :rtype: int
 
         """
+        if not self.region_paths:
+            return 0
         try:
             r_lengths = [self.graph.blocks[rp].length()
-                     for rp in self.region_paths[:-1]]
+                         for rp in self.region_paths[:-1]]
             r_sum = sum(r_lengths)
             return r_sum-self.start_position.offset+self.end_position.offset
 
@@ -128,7 +130,27 @@ class Interval(object):
         region_paths = self.region_paths[:-1] + other.region_paths
         return Interval(self.start_position, other.end_position, region_paths)
 
+    def filter_to_main(self):
+        filtered_rps = [rp for rp in self.region_paths if
+                        self.graph.is_main_name(rp)]
+        if not filtered_rps:
+            return None
+        start_offset = self.start_position.offset if self.graph.is_main_name(self.region_paths[0]) else 0
+
+        end_offset = self.end_position.offset if self.graph.is_main_name(self.region_paths[-1]) else self.graph.blocks[filtered_rps[-1]].length()
+        return Interval(start_offset, end_offset, filtered_rps)
+
     def contains(self, other, tolerance=0):
+        """Check if transcription region and all exons of other
+        are contained in self. Accecpt difference in start and end
+        coordinates lower than tolerance
+
+        :param other: other gene
+        :param tolerance: number of basepair tolerance
+        :returns: wheter self conatins other
+        :rtype: bool
+
+        """
         if not all(rp in self.region_paths for rp in other.region_paths):
             return False
         if other.region_paths[0] == self.region_paths[0]:
