@@ -147,6 +147,53 @@ class Gene(object):
             end_diff = -1
         return (start_diff, end_diff)
 
+    def exon_diffs(self, other):
+        if len(self.exons) != len(other.exons):
+            return None
+        diff_sum = 0
+        for exon1, exon2 in zip(self.exons, other.exons):
+            if exon1.region_paths == exon2.region_paths:
+                s_diff = exon1.start_position.offset-exon2.start_position.offset
+                e_diff = exon1.end_position.offset-exon2.end_position.offset
+                diff_sum += abs(s_diff)+abs(e_diff)
+            else:
+                diff_sum += abs(exon1.length()-exon2.length())
+
+        return diff_sum/len(self.exons)
+
+    def contains(self, other, tolerance=0):
+        if not self.transcription_region.contains(
+                other.transcription_region, tolerance):
+            return False
+        cur_i = 0
+        for exon in other.exons:
+            while not self.exons[cur_i].contains(exon, tolerance):
+                cur_i += 1
+                if cur_i == len(self.exons):
+                    return False
+            cur_i += 1
+        return True
+
+    def is_cut_version(self, other, tolerance=0):
+        """Check if other is made from cutting self
+        at the edge of the alt loci
+
+        :param other: alt-gene
+        :param tolerance: number of base-pair tolerance
+        :returns: whether other is cut
+        :rtype: bool
+
+        """
+        # Check transcription_region
+
+        f_tx_region = other.transcription_region.filter_to_main()
+        if f_tx_region is None:
+            return False
+        f_exons = [e.filter_to_main() for e in other.exons]
+        f_exons = [e for e in f_exons if e is not None]
+        f_gene = Gene("f" + other.name, f_tx_region, f_exons)
+        return self.contains(f_gene, tolerance)
+
 
 def convert_to_numeric_graph(graph):
     a_to_b = {k: i for i, k in enumerate(graph.blocks.keys())}
@@ -396,14 +443,27 @@ def find_unequal_sibling_genes(main_genes, alt_genes):
             diffs = gene.start_and_end_diffs(m_gene)
             m_code = m_gene.transcription_region.diff(
                 gene.transcription_region)
+            exon_diffs = gene.exon_diffs(m_gene)
+            if m_gene.contains(gene, 5):
+                scores.append(9.1)
+                continue
+            elif m_gene.is_cut_version(gene):
+                # print("------------------")
+                # print(gene.to_file_line())
+                # print(m_gene.to_file_line())
+                scores.append(8.1)
+                continue
+            if exon_diffs is None:
+                scores.append(-3)
+                continue
             if all(c == "E" for c in m_code):
                 if diffs[0] == 0 and diffs[1] == 0:
-                    print(gene.to_file_line())
-                    print(m_gene.to_file_line())
                     scores.append(10)
+                    assert exon_diffs <= 40, "%s\n%s\n%s" % (exon_diffs, gene.to_file_line(), m_gene.to_file_line())
                     break
                 elif max(diffs) < 5:
                     scores.append(9)
+                    assert exon_diffs <= 2, "%s\n%s\n%s" % (exon_diffs, gene.to_file_line(), m_gene.to_file_line())
                     continue
                 else:
                     scores.append(4)
@@ -411,16 +471,21 @@ def find_unequal_sibling_genes(main_genes, alt_genes):
             if m_code[0] == "E" and m_code[-1] == "E":
                 if diffs[0] == 0 and diffs[1] == 0:
                     scores.append(8)
+                    assert exon_diffs <= 2
                 elif max(diffs) < 5:
                     scores.append(7)
+                    assert exon_diffs <= 2
                 else:
                     scores.append(3)
                 continue
             if m_code[0] == "E":
                 if diffs[0] == 0:
                     scores.append(6.1)
+                    if not exon_diffs <= 2:
+                        pass # print("%s\n%s\n%s" % (exon_diffs, gene.to_file_line(), m_gene.to_file_line()))
                 elif diffs[0] < 5:
                     scores.append(5.1)
+                    assert exon_diffs <= 2
                 else:
                     scores.append(2.1)
                 continue
@@ -428,13 +493,16 @@ def find_unequal_sibling_genes(main_genes, alt_genes):
             if m_code[-1] == "E":
                 if diffs[1] == 0:
                     scores.append(6)
+                    if not exon_diffs <= 2:
+                        pass # print("%s\n%s\n%s" % (exon_diffs, gene.to_file_line(), m_gene.to_file_line()))
                 elif diffs[1] < 5:
                     scores.append(5)
+                    assert exon_diffs <= 2
                 else:
                     scores.append(2)
                 continue
             if all(c == "P" for c in m_code):
-                if abs(gene.length()-m_gene.length()) < 5:
+                if exon_diffs < 5:
                     scores.append(4.5)
                 else:
                     scores.append(1)
@@ -446,10 +514,10 @@ def find_unequal_sibling_genes(main_genes, alt_genes):
         gene_scores = zip(scores, main_dict[gene.name])
         gene_scores = list(sorted(gene_scores, key=lambda x: x[0]))
         score = gene_scores[-1]
-        if score[0] == -1:
-            print(gene.to_file_line())
-            print(score[1].to_file_line())
-            GeneList([gene, score[1]]).to_file("wierd_genes")
+        # if score[0] == -3:
+            # print("______________________________")
+            # print(gene.length(), gene.to_file_line())
+            # print(m_gene.length(), m_gene.to_file_line())
         gene_categories[gene_scores[-1][0]].append((gene, gene_scores[-1][1]))
     return gene_categories
 
@@ -462,7 +530,7 @@ def find_exon_duplicates(genes, translation):
     :param translation: translation object
     """
     translated = GeneList.from_file("trans_genes").gene_list
-    # [gene.translate(translation) for gene in genes]
+    # translated = [gene.translate(translation) for gene in genes]
     # gene_list = GeneList(translated)
     # gene_list.to_file("trans_genes")
     main_chr_dict = defaultdict(list)
@@ -473,7 +541,7 @@ def find_exon_duplicates(genes, translation):
             alt_dict[gene.chrom.split("_")[0]].append(t_gene)
         else:
             main_chr_dict[gene.chrom].append(t_gene)
-
+    print("N:", sum(len(v) for v in alt_dict.values()))
     s = 0
     for chrom, genes in alt_dict.items():
         new_things = find_unequal_sibling_genes(main_chr_dict[chrom], genes)
