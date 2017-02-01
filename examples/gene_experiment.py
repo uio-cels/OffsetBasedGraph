@@ -70,6 +70,49 @@ def merge_all_alignments(args):
     print("To file")
     trans.to_file(args.out_file_name)
 
+def visualize_genes(args):
+    trans = Translation.from_file(args.translation_file_name)
+    graph = trans.graph2
+
+    # Find blocks that genes cover, create subgraph using them
+    from offsetbasedgraph.graphutils import GeneList
+    genes = GeneList.from_file(args.genes_file_name).gene_list
+    blocks = []
+
+    """
+    for gene in genes:
+        blocks.extend(gene.transcription_region.region_paths)
+        #for i in gene.transcription_region.region_paths:
+        print("adding %s" % gene.transcription_region.region_paths)
+
+    blocks = set(blocks)
+    """
+    trans_regions = [g.transcription_region for g in genes]
+    subgraph, trans = graph.create_subgraph_from_intervals(trans_regions, 20000)
+    #for g in genes:
+    #    g.trans = trans.translate(g)
+
+    levels = Graph.level_dict(blocks)
+
+    # Find start block by choosing a block having no edges in
+    start = None
+    for b in blocks:
+        if len(subgraph.reverse_adj_list[b]) == 0:
+            start = b
+            break
+
+    print("== Subgraph ==")
+    print(subgraph)
+    #return
+
+    from offsetbasedgraph import VisualizeHtml
+    subgraph.start_block = start
+    v = VisualizeHtml(subgraph, 1, 10, 0, levels, "", 300, genes)
+    print(v.get_wrapped_html())
+
+
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Interact with a graph created from GRCh38')
@@ -106,6 +149,14 @@ if __name__ == "__main__":
     parser_merge_all_alignments.add_argument('out_file_name',
                                 help='File name to store translation object for new graph')
     parser_merge_all_alignments.set_defaults(func=merge_all_alignments)
+
+    # Visualize genes
+    parser_visualize_genes = subparsers.add_parser('visualize_genes', help='Produce html visualization (that can be saved and opened in a browser)')
+    parser_visualize_genes.add_argument('translation_file_name',
+                    help='')
+    parser_visualize_genes.add_argument('genes_file_name',
+                                help='Pickled genes file')
+    parser_visualize_genes.set_defaults(func=visualize_genes)
 
 
 

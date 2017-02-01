@@ -148,6 +148,162 @@ class Graph(object):
 
         return pre_edges, post_edges
 
+    def get_first_blocks(self):
+        """
+        :param graph: Graph
+        :return: Returns a list of all blocks having no incoming edges
+        """
+        firsts = []
+        for b in self.blocks:
+            n_in = 0
+            if len(self.reverse_adj_list[b]) == 0:
+                firsts.append(b)
+
+        return firsts
+
+    def get_last_blocks(self):
+        """
+        :param graph: Graph
+        :return: Returns a list of all blocks having no incoming edges
+        """
+        lasts = []
+        for b in self.blocks:
+            if len(self.adj_list[b]) == 0:
+                lasts.append(b)
+
+        return lasts
+
+    def create_subgraph_from_intervals(self, intervals, padding = 10000):
+        """
+        Creates a subgraph containing all the intervals
+        :param intervals: list of intervals. All region paths in the intervals must create a connected subgraph.
+        :param padding: number of baseapairs that should be in graph before first and after last intervals
+        :return:
+        """
+        blocks = []
+        for i in intervals:
+            blocks.extend(i.region_paths)
+
+        subgraph = self.create_subgraph_from_blocks(blocks)
+        print("=== Subgraph === ")
+        print(subgraph)
+        # Find first block
+        first = subgraph.get_first_blocks()
+        print(" === sub create ==")
+        print(subgraph)
+        assert len(first) == 1 , "Found multiple first blocks: %s, Graph: \n %s" % (first, subgraph)
+        first = first[0]
+
+        first_length = subgraph.blocks[first].length()
+
+
+        # Find lowest start in this region path
+        first_start = first_length
+        for i in intervals:
+            if i.region_paths[0] == first:
+                first_start = min(i.start_position.offset, first_start)
+
+        padding_first = max(0, (first_length - first_start) + padding)
+        print("Padding first: %d" % padding_first)
+        print("First: %s" % first)
+        trans = Translation({}, {}, graph=subgraph)
+        trans.graph2 = subgraph
+        if first_length > padding:
+            # Divide first block
+            new_first = subgraph._next_id()
+            new_first_length = first_length - padding_first
+            new_second = subgraph._next_id()
+            trans_first = Translation({first: [Interval(0, padding_first, [new_first, new_second])]},
+                                {new_first: [Interval(0, new_first_length, [first], subgraph)],
+                                 new_second: [Interval(new_first_length, first_length, [first], subgraph)]}, graph=subgraph)
+            subgraph = trans_first.translate_subgraph(subgraph)
+            trans = trans + trans_first
+
+
+        # Last block
+        lasts = subgraph.get_last_blocks()
+        assert len(lasts) == 1, "%s is more than 1 last region path. Graph: \n %s" % (lasts, subgraph)
+
+        last = lasts[0]
+
+        last_length = subgraph.blocks[last].length()
+
+        # Find last end in end rp
+        last_end = 0
+        for i in intervals:
+            if i.region_paths[-1] == last:
+                print("End pos: %d" % i.end_position.offset)
+                last_end = max(i.end_position.offset, last_end)
+
+        padding_end = min(last_length, last_end + padding)
+        print("padding end: %d" % padding_end)
+
+        if last_length > padding:
+            # Divide last block
+            new_last = subgraph._next_id()
+            new_last_length  = last_length - padding_end
+            new_second = subgraph._next_id()
+            trans_last = Translation({last: [Interval(0, padding_end, [new_second, new_last])]},
+                                {new_last: [Interval(padding_end, last_length, [last], subgraph)],
+                                 new_second: [Interval(0, padding_end, [last], subgraph)]}, graph=subgraph)
+            subgraph = trans_last.translate_subgraph(subgraph)
+            trans = trans + trans_last
+
+
+        subgraph.remove(new_first)
+        subgraph.remove(new_last)
+
+
+        return subgraph, trans
+
+    def create_subgraph_from_blocks(self, blocks):
+        """
+        Creates a subgraph using existing edges and only the blocks send as argument
+        :param blocks: list of block ids
+        :return: Returns a new graph
+        """
+        # add prev and next critical
+
+        new_edges = {}
+        new_blocks = {}
+        for b in blocks:
+            new_blocks[b] = Block(self.blocks[b].length())
+
+
+        for b in blocks:
+            for e in self.adj_list[b]:
+                if e in new_blocks:
+                    if b in new_edges:
+                        new_edges[b].append(e)
+                    else:
+                        new_edges[b] = [e]
+
+        subgraph = Graph(new_blocks, new_edges)
+
+        # Append with prev critical and next critical
+        first = subgraph.get_first_blocks()[0]
+        critical = self.find_all_critical_blocks()
+        critical.append(self.get_last_blocks()[0])
+        print("Critical: %s" % critical)
+        prev_critical = self.find_previous_critical_block(first, critical)
+        print("prev critical: %s" % prev_critical)
+        new_blocks[prev_critical] = Block(self.blocks[prev_critical].length())
+        last = subgraph.get_last_blocks()[0]
+        next_critical = self.find_next_critical_block(last, critical)
+        print("Next critical: %s " % next_critical)
+        new_blocks[next_critical] = Block(self.blocks[next_critical].length())
+
+        # Create new edges to the new blocks
+        for l in subgraph.get_last_blocks():
+            if l != next_critical:
+                new_edges[l] = [next_critical]
+
+        for f in subgraph.get_first_blocks():
+            if f != prev_critical:
+                new_edges[prev_critical] = [f]
+
+        return Graph(new_blocks, new_edges)
+
     def remove(self, block_id):
         """Remove a block including edges from the graph
 
@@ -826,6 +982,32 @@ class Graph(object):
             return True
         return False
 
+    @staticmethod
+    def block_origin(name):
+        """
+        Checks if block is merged, alt or main based on the name
+        :param name: block name
+        :return: merged, alt or main
+        """
+
+        if name.count("chr") and not "alt" in name == 1:
+            return "main"
+        elif name.count("chr") == 2:
+            return "merged"
+        elif "alt" in name:
+            return "alt"
+
+    @staticmethod
+    def level_dict(blocks):
+        level_mapping = {"alt": 2,
+                         "main": 0,
+                         "merged": 1}
+        out = {}
+        for b in blocks:
+            out[b] = level_mapping[Graph.block_origin(b)]
+        return out
+
+
     def find_critical_blocks(self, start_block):
         """Find all critical_blocks starting from
         start block
@@ -837,7 +1019,7 @@ class Graph(object):
         """
 
         cur_block = start_block
-        counter = 0
+        counter = -1
         critical_blocks = []
         while(self.adj_list[cur_block]):
             counter -= (len(self.reverse_adj_list[cur_block])-1)
@@ -845,21 +1027,41 @@ class Graph(object):
                 critical_blocks.append(cur_block)
             nexts = self.adj_list[cur_block]
             counter += len(nexts)-1
-            next_main = [block for block in nexts if
-                         self.is_main_name(block)]
-            assert len(next_main) == 1
+            next_main = [block for block in nexts]
+            #assert len(next_main) == 1
             cur_block = next_main[0]
 
         return critical_blocks
 
     def find_previous_critical_block(self, block, critical_blocks):
+        #print("Finding critical blocks to %s" % block)
+        print(critical_blocks)
         if block in critical_blocks:
             return block
         cur_block = block
         while self.reverse_adj_list[cur_block]:
             prevs = self.reverse_adj_list[cur_block]
-            prev_mains = [b for b in prevs if
-                          self.is_main_name(b)]
+            prev_mains = [b for b in prevs]
+            print("Going back from %s" % cur_block)
+            print("    Found main blocks: %s" % prev_mains)
+            if not prev_mains:
+                raise Exception("No prevs: %s" % prevs)
+
+            prev_main_block = prev_mains[0]
+
+            if prev_main_block in critical_blocks:
+                return prev_main_block
+            cur_block = prev_main_block
+
+        raise Exception("No critical blocks found")
+
+    def find_next_critical_block(self, block, critical_blocks):
+        if block in critical_blocks:
+            return block
+        cur_block = block
+        while self.adj_list[cur_block]:
+            prevs = self.adj_list[cur_block]
+            prev_mains = [b for b in prevs]
             if not prev_mains:
                 raise Exception("No prevs: %s" % prevs)
 
