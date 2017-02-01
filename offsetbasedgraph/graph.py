@@ -681,7 +681,6 @@ class Graph(object):
 
         return final_graph, final_trans
 
-
     def _split_blocks_at_starts_and_ends(self, intervals):
         """
         Splits the region paths at the starts and ends of the
@@ -852,7 +851,7 @@ class Graph(object):
 
         return critical_blocks
 
-    def find_previous_critical_block(self, block, critical_blocks):
+    def find_previous_critical_block(self, block, critical_blocks=None):
         if block in critical_blocks:
             return block
         cur_block = block

@@ -128,6 +128,18 @@ class Interval(object):
         region_paths = self.region_paths[:-1] + other.region_paths
         return Interval(self.start_position, other.end_position, region_paths)
 
+    def contains(self, other, tolerance=0):
+        if not all(rp in self.region_paths for rp in other.region_paths):
+            return False
+        if other.region_paths[0] == self.region_paths[0]:
+            if other.start_position.offset < self.start_position.offset-tolerance:
+                return False
+        if other.region_paths[-1] == self.region_paths[-1]:
+            if other.end_position.offset > self.end_position.offset + tolerance:
+                return False
+
+        return True
+
     def __deepcopy__(self, memo):
         return Interval(self.start_position, self.end_position,
                         self.region_paths, self.graph)
