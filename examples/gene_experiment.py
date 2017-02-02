@@ -92,22 +92,35 @@ def visualize_genes(args):
     #for g in genes:
     #    g.trans = trans.translate(g)
 
-    levels = Graph.level_dict(blocks)
+    # NB: remember to translate genes using trans
+    for g in genes:
+        g.transcription_region = trans.translate(g.transcription_region)
+        for exon in g.exons:
+            exon = trans.translate(exon)
+
+    levels = Graph.level_dict(subgraph.blocks)
+
+    #print(levels)
+    #return
 
     # Find start block by choosing a block having no edges in
     start = None
-    for b in blocks:
+    for b in subgraph.blocks:
         if len(subgraph.reverse_adj_list[b]) == 0:
             start = b
             break
 
     print("== Subgraph ==")
     print(subgraph)
+
+    assert start is not None
+
     #return
 
     from offsetbasedgraph import VisualizeHtml
     subgraph.start_block = start
-    v = VisualizeHtml(subgraph, 1, 10, 0, levels, "", 300, genes)
+    max_offset = sum([subgraph.blocks[b].length() for b in subgraph.blocks])
+    v = VisualizeHtml(subgraph, 0, max_offset , 0, levels, "", 800, genes)
     print(v.get_wrapped_html())
 
 

@@ -995,18 +995,19 @@ class Graph(object):
         :param name: block name
         :return: merged, alt or main
         """
-
-        if name.count("chr") and not "alt" in name == 1:
+        name = str(name)
+        if name.count("chr") == 1 and not "alt" in name:
             return "main"
         elif name.count("chr") == 2:
             return "merged"
         elif "alt" in name:
             return "alt"
+        return "main"
 
     @staticmethod
     def level_dict(blocks):
-        level_mapping = {"alt": 2,
-                         "main": 0,
+        level_mapping = {"alt": 0,
+                         "main": 2,
                          "merged": 1}
         out = {}
         for b in blocks:
