@@ -409,7 +409,6 @@ class TestGraph(unittest.TestCase):
             self.assertEqual(graph, graph2)
 
     def test_create_subgraph_from_intervals(self):
-        print("test create subgraph")
         graph = Graph(
             {
                 1: Block(10),
@@ -431,11 +430,6 @@ class TestGraph(unittest.TestCase):
 
         subgraph, trans = graph.create_subgraph_from_intervals(intervals, 2)
 
-        print("== subgraph ==")
-        print(subgraph)
-        print("== trans ==")
-        print(trans)
-
         self.assertEqual(subgraph.blocks[subgraph.get_first_blocks()[0]].length(), 4)
         self.assertEqual(subgraph.blocks[subgraph.get_last_blocks()[0]].length(), 7)
         self.assertEqual(len(subgraph.blocks), 4)
@@ -455,21 +449,15 @@ class TestGraph(unittest.TestCase):
                 4: [3]
             }
         )
-        print("==== Case 2 ===")
+
         intervals = [
             Interval(8, 3, [1, 4], graph),
             Interval(5, 5, [1, 2], graph),
         ]
 
         subgraph, trans = graph.create_subgraph_from_intervals(intervals, 2)
-
-        print("== subgraph ==")
-        print(subgraph)
-        print("== trans ==")
-        print(trans)
-
         self.assertEqual(subgraph.blocks[subgraph.get_first_blocks()[0]].length(), 7)
-        self.assertEqual(subgraph.blocks[subgraph.get_last_blocks()[0]].length(), 10)
+        self.assertEqual(subgraph.blocks[subgraph.get_last_blocks()[0]].length(), 2)
         self.assertEqual(len(subgraph.blocks), 4)
 
 

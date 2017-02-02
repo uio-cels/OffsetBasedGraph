@@ -54,7 +54,16 @@ class Graph(object):
         :rtype: Graph
 
         """
-        return Graph(self.blocks, self.adj_list)
+
+        new_blocks = {}
+        new_adjs = {}
+        for b in self.blocks:
+            new_blocks[b] = Block(self.blocks[b].length())
+
+        for b in self.adj_list:
+            new_adjs[b] = list(self.adj_list[b])
+
+        return Graph(new_blocks, new_adjs)
 
     def _next_id(self):
         """Make a new id and return it
@@ -185,12 +194,8 @@ class Graph(object):
             blocks.extend(i.region_paths)
 
         subgraph = self.create_subgraph_from_blocks(blocks)
-        print("=== Subgraph === ")
-        print(subgraph)
         # Find first block
         first = subgraph.get_first_blocks()
-        print(" === sub create ==")
-        print(subgraph)
         assert len(first) == 1 , "Found multiple first blocks: %s, Graph: \n %s" % (first, subgraph)
         first = first[0]
 
@@ -204,8 +209,6 @@ class Graph(object):
                 first_start = min(i.start_position.offset, first_start)
 
         padding_first = max(0, (first_length - first_start) + padding)
-        print("Padding first: %d" % padding_first)
-        print("First: %s" % first)
         trans = Translation({}, {}, graph=subgraph)
         trans.graph2 = subgraph
         if first_length > padding:
@@ -232,11 +235,9 @@ class Graph(object):
         last_end = 0
         for i in intervals:
             if i.region_paths[-1] == last:
-                print("End pos: %d" % i.end_position.offset)
                 last_end = max(i.end_position.offset, last_end)
 
         padding_end = min(last_length, last_end + padding)
-        print("padding end: %d" % padding_end)
 
         if last_length > padding:
             # Divide last block
@@ -262,12 +263,14 @@ class Graph(object):
         :param blocks: list of block ids
         :return: Returns a new graph
         """
+        blocks = set(blocks)
         # add prev and next critical
 
         new_edges = {}
         new_blocks = {}
         for b in blocks:
             new_blocks[b] = Block(self.blocks[b].length())
+
 
 
         for b in blocks:
@@ -277,32 +280,36 @@ class Graph(object):
                         new_edges[b].append(e)
                     else:
                         new_edges[b] = [e]
-
         subgraph = Graph(new_blocks, new_edges)
+        subgraph_without_critical = subgraph.copy()
 
         # Append with prev critical and next critical
         first = subgraph.get_first_blocks()[0]
-        critical = self.find_all_critical_blocks()
+        critical = self.find_critical_blocks(first)
         critical.append(self.get_last_blocks()[0])
-        print("Critical: %s" % critical)
+        critical = set(critical)
+
         prev_critical = self.find_previous_critical_block(first, critical)
-        print("prev critical: %s" % prev_critical)
         new_blocks[prev_critical] = Block(self.blocks[prev_critical].length())
         last = subgraph.get_last_blocks()[0]
         next_critical = self.find_next_critical_block(last, critical)
-        print("Next critical: %s " % next_critical)
         new_blocks[next_critical] = Block(self.blocks[next_critical].length())
 
+        critical = set(critical)
+
         # Create new edges to the new blocks
-        for l in subgraph.get_last_blocks():
+        for l in subgraph_without_critical.get_last_blocks():
             if l != next_critical:
                 new_edges[l] = [next_critical]
 
-        for f in subgraph.get_first_blocks():
+        for f in subgraph_without_critical.get_first_blocks():
+
             if f != prev_critical:
                 new_edges[prev_critical] = [f]
 
-        return Graph(new_blocks, new_edges)
+        subgraph2 =  Graph(new_blocks, new_edges)
+
+        return subgraph2
 
     def remove(self, block_id):
         """Remove a block including edges from the graph
@@ -1018,7 +1025,7 @@ class Graph(object):
         """
 
         cur_block = start_block
-        counter = -1
+        counter = 0
         critical_blocks = []
         while(self.adj_list[cur_block]):
             if counter == 0:
@@ -1030,6 +1037,8 @@ class Graph(object):
             counter -= (len(self.reverse_adj_list[cur_block])-1)
         if (counter == 0):
             critical_blocks.append(cur_block)
+
+
         return critical_blocks
 
     def find_previous_critical_block(self, block, critical_blocks=None):
@@ -1041,8 +1050,6 @@ class Graph(object):
         while self.reverse_adj_list[cur_block]:
             prevs = self.reverse_adj_list[cur_block]
             prev_mains = [b for b in prevs]
-            print("Going back from %s" % cur_block)
-            print("    Found main blocks: %s" % prev_mains)
             if not prev_mains:
                 raise Exception("No prevs: %s" % prevs)
 
