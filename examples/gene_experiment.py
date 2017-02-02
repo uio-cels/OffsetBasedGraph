@@ -88,7 +88,7 @@ def visualize_genes(args):
     blocks = set(blocks)
     """
     trans_regions = [g.transcription_region for g in genes]
-    subgraph, trans = graph.create_subgraph_from_intervals(trans_regions, 20000)
+    subgraph, trans = graph.create_subgraph_from_intervals(trans_regions, 200000)
     #for g in genes:
     #    g.trans = trans.translate(g)
 
