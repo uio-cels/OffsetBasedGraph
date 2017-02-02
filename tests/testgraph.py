@@ -408,5 +408,59 @@ class TestGraph(unittest.TestCase):
             graph2 = Graph.from_file("test_graph")
             self.assertEqual(graph, graph2)
 
+    def test_create_subgraph_from_intervals(self):
+        graph = Graph(
+            {
+                1: Block(10),
+                2: Block(10),
+                3: Block(10),
+                4: Block(10)
+            },
+            {
+                1: [2, 4],
+                2: [3],
+                4: [3]
+            }
+        )
+
+        intervals = [
+            Interval(8, 3, [1, 4, 3], graph),
+            Interval(9, 5, [1, 2, 3], graph),
+        ]
+
+        subgraph, trans = graph.create_subgraph_from_intervals(intervals, 2)
+
+        self.assertEqual(subgraph.blocks[subgraph.get_first_blocks()[0]].length(), 4)
+        self.assertEqual(subgraph.blocks[subgraph.get_last_blocks()[0]].length(), 7)
+        self.assertEqual(len(subgraph.blocks), 4)
+
+
+        # Case 2
+        graph = Graph(
+            {
+                1: Block(10),
+                2: Block(10),
+                3: Block(10),
+                4: Block(10)
+            },
+            {
+                1: [2, 4],
+                2: [3],
+                4: [3]
+            }
+        )
+
+        intervals = [
+            Interval(8, 3, [1, 4], graph),
+            Interval(5, 5, [1, 2], graph),
+        ]
+
+        subgraph, trans = graph.create_subgraph_from_intervals(intervals, 2)
+        self.assertEqual(subgraph.blocks[subgraph.get_first_blocks()[0]].length(), 7)
+        self.assertEqual(subgraph.blocks[subgraph.get_last_blocks()[0]].length(), 2)
+        self.assertEqual(len(subgraph.blocks), 4)
+
+
+
 if __name__ == "__main__":
     unittest.main()
