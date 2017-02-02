@@ -427,7 +427,6 @@ def find_unequal_sibling_genes(main_genes, alt_genes):
 
     """
     graph = main_genes[0].transcription_region.graph
-    graph.critical_blocks = graph.find_all_critical_blocks()
     main_dict = defaultdict(list)
     gene_categories = defaultdict(list)
     for gene in main_genes:
@@ -514,10 +513,19 @@ def find_unequal_sibling_genes(main_genes, alt_genes):
         gene_scores = zip(scores, main_dict[gene.name])
         gene_scores = list(sorted(gene_scores, key=lambda x: x[0]))
         score = gene_scores[-1]
-        # if score[0] == -3:
-            # print("______________________________")
-            # print(gene.length(), gene.to_file_line())
-            # print(m_gene.length(), m_gene.to_file_line())
+        if score[0] == 0:
+            prev_blocks = graph.reverse_adj_list[gene.transcription_region.region_paths[0]]
+            prev_critical = graph.find_previous_critical_block(gene.transcription_region.region_paths[0])
+            if prev_blocks:
+                print("______________________________")
+                print(gene.length(), gene.to_file_line())
+                print(prev_blocks, prev_critical)
+                for m_gene in main_dict[gene.name]:
+                    print(m_gene.length(), m_gene.to_file_line())
+                    prev_blocks = graph.reverse_adj_list[m_gene.transcription_region.region_paths[0]]
+                    prev_critical = graph.find_previous_critical_block(m_gene.transcription_region.region_paths[0])
+                    print(prev_blocks, prev_critical)
+                print(m_code)
         gene_categories[gene_scores[-1][0]].append((gene, gene_scores[-1][1]))
     return gene_categories
 
@@ -536,6 +544,8 @@ def find_exon_duplicates(genes, translation):
     main_chr_dict = defaultdict(list)
     alt_dict = defaultdict(list)
     gene_categories = defaultdict(list)
+    graph = translated[0].transcription_region.graph
+    graph.critical_blocks = graph.find_all_critical_blocks()
     for gene, t_gene in zip(genes, translated):
         if "alt" in gene.chrom:
             alt_dict[gene.chrom.split("_")[0]].append(t_gene)

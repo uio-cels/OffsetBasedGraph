@@ -839,34 +839,57 @@ class Graph(object):
         counter = 0
         critical_blocks = []
         while(self.adj_list[cur_block]):
+            assert counter >= 0
             if counter == 0:
                 critical_blocks.append(cur_block)
             nexts = self.adj_list[cur_block]
-            counter += len(nexts) - 1
+            counter += (len(nexts) - 1)
             cur_block = nexts[0]
             counter -= (len(self.reverse_adj_list[cur_block])-1)
+
         if (counter == 0):
             critical_blocks.append(cur_block)
+
+        # Naive check that they are critical
+        for critical_block in critical_blocks:
+            n_nbs = [len(self.adj_list[prev_block]) for prev_block
+                     in self.reverse_adj_list[critical_block]]
+
+            if not all(n == 1 for n in n_nbs):
+                print("#", [self.adj_list[prev_block] for prev_block
+                            in self.reverse_adj_list[critical_block]])
+
         return critical_blocks
 
     def find_previous_critical_block(self, block, critical_blocks=None):
+        """Find previous critical block, going backwards from block.
+        Traverse blocks and return once a block in critical_blocks
+        is found.
+
+        :param block: block to start from
+        :param critical_blocks: list of critical blocks
+        :returns: previous critical block
+        :rtype: str
+
+        """
         if critical_blocks is None:
             critical_blocks = self.critical_blocks
+
         if block in critical_blocks:
             return block
         cur_block = block
         while self.reverse_adj_list[cur_block]:
             prevs = self.reverse_adj_list[cur_block]
-            prev_mains = [b for b in prevs if
-                          self.is_main_name(b)]
-            if not prev_mains:
+            if not prevs:
                 raise Exception("No prevs: %s" % prevs)
 
-            prev_main_block = prev_mains[0]
+            prev_block = prevs[0]
 
-            if prev_main_block in critical_blocks:
-                return prev_main_block
-            cur_block = prev_main_block
+            if prev_block in critical_blocks:
+                return prev_block
+
+            cur_block = prev_block
+        raise Exception("Did not find critical node from %s" % block)
 
     def are_paralell(self, block_a, block_b, critical_blocks=None):
         if critical_blocks is None:
@@ -888,6 +911,9 @@ class Graph(object):
 
         start_blocks = [block for block in self.blocks if
                         not self.reverse_adj_list[block]]
+        # for s in (start_block for start_block in start_blocks if "alt" in start_block or "random" in start_block):
+        #     print("Block:", s)
+        #     print([k for k, v in self.adj_list.items() if s in v])
 
         critical_blocks = []
         for start_block in start_blocks:
