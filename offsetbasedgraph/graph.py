@@ -1033,7 +1033,6 @@ class Graph(object):
         :rtype: list(str)
 
         """
-        assert not self.reverse_adj_list[start_block]
         cur_block = start_block
         counter = 0
         critical_blocks = []
@@ -1041,7 +1040,7 @@ class Graph(object):
 
         while(self.adj_list[cur_block]):
             visited.append((cur_block, counter))
-            assert counter >= 0, visited
+            # assert counter >= 0, visited
             if counter == 0:
                 critical_blocks.append(cur_block)
             nexts = self.adj_list[cur_block]
