@@ -263,18 +263,11 @@ def merge_flanks(intervals, final_trans, new_graph, name_translation):
     :param name_translation: Translation from human readable names to numeric IDs. Can be an empty translation
     :return: Returns the new graph and translation as a tuple
     """
-    #if final_trans is not None:
-    #print("=== Flanking intervals ===")
-    #print(intervals)
-    #print('\n'.join([str(i) for i in intervals]))
     # Merge start flank of alt locus with main
     merge_intervals = intervals[0:2]
     merge_intervals = [name_translation.translate(i) for i in merge_intervals]
     merge_intervals = [final_trans.translate(i) for i in merge_intervals]
-    #print("=== Flanking intervals after translate===")
-    #print('\n'.join([str(i) for i in merge_intervals]))
-    #print("=== Graph ===")
-    #print(merge_intervals[0].graph)
+
     for intv in merge_intervals:
         intv.graph = new_graph
     if merge_intervals[0].length() > 0:
@@ -336,13 +329,12 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
     Connects the alternative loci in the given file to the grch38 graph,
     without flanks.
     :param alt_loci_fn: Filename of file containing alternative loci.
-    One alt locus on each line. Four columns: alt_locus_id  chr chr_start   chr_stop
+    One alt locus on each line.
+    Four columns: alt_locus_id  chr chr_start   chr_stop
     :return: Returns the new graph
     """
     f = open(alt_loci_fn)
-    n_flanks = 0
     new_graph = graph
-    orig_graph = graph.copy()
     final_trans = Translation(graph=graph)
     final_trans.graph2 = graph
     for line in f.readlines():
@@ -350,7 +342,6 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
             continue
         l = line.split()
         alt_locus_id = l[0]
-        #print("Connecting %s" % (alt_locus_id))
         main_chr = l[1]
         start = int(l[2])
         end = int(l[3])
@@ -358,11 +349,18 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
 
         intervals = flanks.get_flanks(alt_locus_id, length,
                                       main_chr, start-1, end)
+        for interval in intervals:
+            print(interval)
+            
+        n_starts = len([b for b in new_graph.blocks if not
+                        new_graph.reverse_adj_list[b]])
         new_graph, final_trans = merge_flanks(intervals, final_trans,
                                               new_graph, name_translation)
 
+        new_n_starts = len([b for b in new_graph.blocks if not
+                            new_graph.reverse_adj_list[b]])
+        assert new_n_starts == n_starts-1, line
     f.close()
-    #print("NUMBER OF FLANKS: %d" % n_flanks)
     return new_graph, final_trans
 
 
@@ -428,7 +426,6 @@ def find_unequal_sibling_genes(main_genes, alt_genes):
 
     """
     graph = main_genes[0].transcription_region.graph
-    graph.critical_blocks = graph.find_all_critical_blocks()
     main_dict = defaultdict(list)
     gene_categories = defaultdict(list)
     for gene in main_genes:
@@ -515,10 +512,19 @@ def find_unequal_sibling_genes(main_genes, alt_genes):
         gene_scores = zip(scores, main_dict[gene.name])
         gene_scores = list(sorted(gene_scores, key=lambda x: x[0]))
         score = gene_scores[-1]
-        # if score[0] == -3:
-            # print("______________________________")
-            # print(gene.length(), gene.to_file_line())
-            # print(m_gene.length(), m_gene.to_file_line())
+        if score[0] == 0:
+            prev_blocks = graph.reverse_adj_list[gene.transcription_region.region_paths[0]]
+            prev_critical = graph.find_previous_critical_block(gene.transcription_region.region_paths[0])
+            if prev_blocks and False:
+                print("______________________________")
+                print(gene.length(), gene.to_file_line())
+                print(prev_blocks, prev_critical)
+                for m_gene in main_dict[gene.name]:
+                    print(m_gene.length(), m_gene.to_file_line())
+                    prev_blocks = graph.reverse_adj_list[m_gene.transcription_region.region_paths[0]]
+                    prev_critical = graph.find_previous_critical_block(m_gene.transcription_region.region_paths[0])
+                    print(prev_blocks, prev_critical)
+                print(m_code)
         gene_categories[gene_scores[-1][0]].append((gene, gene_scores[-1][1]))
     return gene_categories
 
@@ -530,13 +536,15 @@ def find_exon_duplicates(genes, translation):
     :param genes: genes on original graph
     :param translation: translation object
     """
-    translated = GeneList.from_file("trans_genes").gene_list
-    # translated = [gene.translate(translation) for gene in genes]
-    # gene_list = GeneList(translated)
-    # gene_list.to_file("trans_genes")
+    # translated = GeneList.from_file("trans_genes").gene_list
+    translated = [gene.translate(translation) for gene in genes]
+    gene_list = GeneList(translated)
+    gene_list.to_file("trans_genes")
     main_chr_dict = defaultdict(list)
     alt_dict = defaultdict(list)
     gene_categories = defaultdict(list)
+    graph = translated[0].transcription_region.graph
+    graph.critical_blocks = graph.find_all_critical_blocks()
     for gene, t_gene in zip(genes, translated):
         if "alt" in gene.chrom:
             alt_dict[gene.chrom.split("_")[0]].append(t_gene)
@@ -597,6 +605,7 @@ def blast_test():
             print(hsp.match)
             print(hsp.sbjct)
     """
+
 
 def grch38_graph_to_numeric(original_grch38_graph):
     # Convert to numeric graph

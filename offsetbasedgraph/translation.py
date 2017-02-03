@@ -206,7 +206,8 @@ class Translation(object):
                 % (len(translated))
             translated = translated[0]
             for rp in translated.region_paths:
-                new_blocks[rp] = Block(self._translations(rp, inverse=True)[0].length())
+                new_blocks[rp] = Block(
+                    self._translations(rp, inverse=True)[0].length())
                 # translated.graph.blocks[rp].length())
             edge_list_add.extend(translated.get_adj_list())  # Add these later
 
@@ -404,49 +405,27 @@ class Translation(object):
         for t in valid_region_paths:
             translated = other.translate_interval(
                 self._translations(t)[0])
-            new_translate_dict[t] = [i.copy() for i in translated.get_single_path_intervals()]
+            new_translate_dict[t] = [
+                i.copy() for i in translated.get_single_path_intervals()]
+
         new_trans._a_to_b = new_translate_dict
         i_region_paths = set(self._b_to_a.keys()).union(set(other._b_to_a.keys()))        
-        valid_i_region_paths = [rp for rp in i_region_paths if rp not in other._a_to_b]
+        valid_i_region_paths = [rp for rp in i_region_paths
+                                if rp not in other._a_to_b]
 
         new_translate_dict = {}
         for t in valid_i_region_paths:
             translated = []
             for inter in other._translations(t, inverse=True):
-                for translated_inter in self.translate_interval(inter, inverse=True).get_single_path_intervals():
+                intervals = self.translate_interval(
+                    inter, inverse=True).get_single_path_intervals()
+                for translated_inter in intervals:
                     translated.append(translated_inter.copy())
 
-                """
-                translated.extend(
-                    self.translate_interval(inter, inverse=True).get_single_path_intervals())
-                """
             new_translate_dict[t] = translated
+
         new_b_to_a = new_translate_dict
-        # new_trans._a_to_b = new_translate_dict
- #
- #
- #        changed = True
- #
- #        # valid_i_region_paths = i_region_paths.intersection
- #        while(changed):
- #            changed = False
- #            for t in i_region_paths:  # other._b_to_a:
- #                print("t ", t)
- #                # For every block=>interval, map backwards to intervals
- #                new_intervals = []
- #                for inter in other._translations(t, inverse=True):
- #                    new_intervals.extend(
- #                        #other.translate_interval(inter, True).get_single_path_intervals()
- #                        self.translate_interval(inter, True).get_single_path_intervals()
- #                    )
- #                old = new_b_to_a[t]
- #                if all(i in old for i in new_intervals) \
- #                   and all(i in new_intervals for i in old):
- #                    changed = False  # If change, translate again
- #                print("new intervals")
- #                print(new_intervals)
- #                new_b_to_a[t] = new_intervals
- #
+
         # Set b_to_a graph to graph1
         copied_graph = self.graph1.copy()
         for intvs in new_b_to_a.values():
