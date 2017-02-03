@@ -22,13 +22,25 @@ from offsetbasedgraph.graphutils import Gene, convert_to_numeric_graph, connect_
 
 def create_graph(args):
     graph = create_initial_grch38_graph(args.chrom_sizes_file_name)
+    n_starts = len([b for b in graph.blocks if not graph.reverse_adj_list[b]])
     numeric_graph, name_translation = convert_to_numeric_graph(graph)
+    n_starts2 = len([b for b in numeric_graph.blocks if not numeric_graph.reverse_adj_list[b]])
+    assert n_starts == n_starts2
     new_numeric_graph, numeric_translation = connect_without_flanks(
         numeric_graph, args.alt_locations_file_name, name_translation)
+    n_starts3 = len([b for b in new_numeric_graph.blocks if not new_numeric_graph.reverse_adj_list[b]])
+    print("################", n_starts2-n_starts3)
     name_graph, new_name_translation = convert_to_text_graph(
         new_numeric_graph, name_translation, numeric_translation)
-
+    n_starts4 = len([b for b in name_graph.blocks if not name_graph.reverse_adj_list[b]])
+    for k, v in name_graph.adj_list.items():
+        print(k, v)
+    assert n_starts3 == n_starts4
     final_translation = name_translation + numeric_translation + new_name_translation
+    final_translation.graph2 = name_graph
+    n_starts5 = len([b for b in final_translation.graph2.blocks if not final_translation.graph2.reverse_adj_list[b]])
+
+    assert n_starts5 == n_starts4
     final_translation.to_file(args.out_file_name)
     print("Graph and translation object stored in %s" % (args.out_file_name))
 

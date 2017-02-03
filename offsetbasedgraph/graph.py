@@ -1013,7 +1013,6 @@ class Graph(object):
             out[b] = level_mapping[Graph.block_origin(b)]
         return out
 
-
     def find_critical_blocks(self, start_block):
         """Find all critical_blocks starting from
         start block
@@ -1023,12 +1022,15 @@ class Graph(object):
         :rtype: list(str)
 
         """
-
+        assert not self.reverse_adj_list[start_block]
         cur_block = start_block
         counter = 0
         critical_blocks = []
+        visited = []
+
         while(self.adj_list[cur_block]):
-            assert counter >= 0
+            visited.append((cur_block, counter))
+            assert counter >= 0, visited
             if counter == 0:
                 critical_blocks.append(cur_block)
             nexts = self.adj_list[cur_block]
@@ -1038,15 +1040,6 @@ class Graph(object):
 
         if (counter == 0):
             critical_blocks.append(cur_block)
-
-        # Naive check that they are critical
-        for critical_block in critical_blocks:
-            n_nbs = [len(self.adj_list[prev_block]) for prev_block
-                     in self.reverse_adj_list[critical_block]]
-
-            if not all(n == 1 for n in n_nbs):
-                print("#", [self.adj_list[prev_block] for prev_block
-                            in self.reverse_adj_list[critical_block]])
 
         return critical_blocks
 
@@ -1119,9 +1112,6 @@ class Graph(object):
 
         start_blocks = [block for block in self.blocks if
                         not self.reverse_adj_list[block]]
-        # for s in (start_block for start_block in start_blocks if "alt" in start_block or "random" in start_block):
-        #     print("Block:", s)
-        #     print([k for k, v in self.adj_list.items() if s in v])
 
         critical_blocks = []
         for start_block in start_blocks:
