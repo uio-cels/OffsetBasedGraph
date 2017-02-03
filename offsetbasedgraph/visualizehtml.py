@@ -16,7 +16,7 @@ class VisualizeHtml(object):
     def __init__(self, graph, minOffset, maxOffset, id, levels, description='', width=800, genes=[]):
 
 
-        self.padding = 6  # Gap between blocks
+        self.padding = 50  # Gap between blocks
         self.gap_pixels = 0  # Extra gap pixels that are added
         self.graph = graph
         self.color_counter = 4
@@ -116,6 +116,10 @@ class VisualizeHtml(object):
         self.html += "</div></div></div>"
 
     def _plot_interval(self, interval, name, is_exon = False):
+
+        if is_exon:
+            print("<p><b>Plotting exon: %s</b></p>" % interval)
+
         for block in interval.region_paths:
             if not block in self.block_positions:
                 if DEBUG: print("Warning. Block %s not found in offset_positions when visualizing interval" % (block))
@@ -124,14 +128,17 @@ class VisualizeHtml(object):
             #plot_info = self.offset_positions[block]
             pos = self.block_positions[block]
             start = pos[0]
+            print("<p>Start pos is %d</p>" % start)
             end = pos[0] + pos[2]
             if block == interval.region_paths[0]:
                 start += interval.start_position.offset * self.width_ratio
+                print("<p>Setting exon start to %d after adding %d</p>" % (start, interval.start_position.offset * self.width_ratio))
             if block == interval.end_position.region_path_id:
-                end = start + interval.end_position.offset * self.width_ratio
-
+                end = pos[0] + interval.end_position.offset * self.width_ratio
+                print("<p>Fixing exon end: %d (offset: %d)</p>" % (end, interval.end_position.offset))
             if is_exon:
-                self._plot_exon(start, end, pos[1], interval, name)
+                #self._plot_exon(start, end, pos[1], interval, name)
+                self._plot_interval_in_block(start, end, pos[1], interval, name, True)
             else:
                 self._plot_interval_in_block(start, end, pos[1], interval, name)
 
@@ -216,7 +223,7 @@ class VisualizeHtml(object):
             self.exon_cnt += 1
 
 
-    def _plot_interval_in_block(self, start, end, level, interval_obj, name = ""):
+    def _plot_interval_in_block(self, start, end, level, interval_obj, name = "", is_exon = False):
         #level += 0.3 + 0.3 * (self.color_counter - 4)
         #print "=
         if end - start == 0:
@@ -224,14 +231,26 @@ class VisualizeHtml(object):
 
         top = level + 1 + self.gene_height * self.gene_counter
 
+        if is_exon:
+            top = (top + (self.gene_height - self.exon_height) /  2.0)
+
+        if not is_exon:
+            color = self.gene_colors[self.gene_counter]
+        else:
+            color = "black"
+
+        height = self.gene_height
+        if is_exon:
+            height = self.exon_height
+
         self.html += "<div class='interval interval_%d'" % self.gene_counter
 
         self.html += " style='z-index: 10; position: absolute;"
         self.html += "left: %.2fpx;" % start
         self.html += "width: %.2fpx;" % (end - start)
         self.html += "top: %.2fpx;" % (top)
-        self.html += "height: %dpx;" % (self.gene_height)
-        self.html += "background-color: %s;" % self.gene_colors[self.gene_counter]
+        self.html += "height: %dpx;" % (height)
+        self.html += "background-color: %s;" % color
         self.html += "' "
         self.html += "data-interval-id='%d'" % self.gene_counter
         self.html += "data-notation='%s'" % str(interval_obj)
@@ -395,13 +414,15 @@ class VisualizeHtml(object):
 
         if b == g.start_block:
             return 0
+        print("Start block: %s" % g.start_block)
+        print("Finding back for %s" % b)
 
         back_block = g.reverse_adj_list[b][0]
         #print("Finding back for %s" % b)
         distance = 0
         while True:
             block_size = self._scale(g.blocks[back_block].length())
-            distance += self.padding + block_size
+            distance += self.padding / self.width_ratio + block_size
             if back_block == g.start_block:
                 break
             print(back_block)
@@ -415,6 +436,7 @@ class VisualizeHtml(object):
         #self.offset_counter = self._scale(list(block.linear_references.values())[0].start)
         self.offset_counter = self._scale(0)
 
+
         # Find x position of all blocks
         self.block_positions = {}
         for b in self.graph.blocks:
@@ -425,6 +447,7 @@ class VisualizeHtml(object):
             xend, y, width, xstart = self._plot(start, end, self.levels[b], self.colors[self.levels[b] + 1], b)
 
             self.block_positions[b] = (xstart, y, width)
+            print("<p>PLotted %s at %d,%d with width %d, ending at %d</p>" % (b, xstart, y, width, xend))
 
         print(self.block_positions)
 
@@ -553,9 +576,9 @@ class VisualizeHtml(object):
             <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
         </head>
         <body>
-            <div class="container">
+            <div class="container" style='min-height: 800px;'>
         """
         html += self.__str__()
-        html += "</div></body></html>"
+        html += "<br><br><br><br><br><br><br></div></body></html>"
 
         return html

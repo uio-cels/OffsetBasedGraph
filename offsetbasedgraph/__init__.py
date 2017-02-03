@@ -8,4 +8,4 @@ from .interval import Interval
 from .interval import Position
 from .visualizehtml import VisualizeHtml
 from .translation import Translation
-from .multipathinterval import GeneralMultiPathInterval
+from .multipathinterval import GeneralMultiPathInterval, CriticalPathsMultiPathInterval

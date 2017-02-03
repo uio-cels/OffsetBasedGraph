@@ -91,39 +91,163 @@ def visualize_genes(args):
     genes = GeneList.from_file(args.genes_file_name).gene_list
     blocks = []
 
-    """
-    for gene in genes:
-        blocks.extend(gene.transcription_region.region_paths)
-        #for i in gene.transcription_region.region_paths:
-        print("adding %s" % gene.transcription_region.region_paths)
-
-    blocks = set(blocks)
-    """
     trans_regions = [g.transcription_region for g in genes]
     subgraph, trans = graph.create_subgraph_from_intervals(trans_regions, 20000)
-    #for g in genes:
-    #    g.trans = trans.translate(g)
 
-    levels = Graph.level_dict(blocks)
+    # Translate genes using trans
+    for g in genes:
+        g.transcription_region = trans.translate(g.transcription_region)
+        for exon in g.exons:
+            exon = trans.translate(exon)
+
+    levels = Graph.level_dict(subgraph.blocks)
 
     # Find start block by choosing a block having no edges in
     start = None
-    for b in blocks:
+    for b in subgraph.blocks:
         if len(subgraph.reverse_adj_list[b]) == 0:
             start = b
             break
 
     print("== Subgraph ==")
     print(subgraph)
-    #return
+
+    assert start is not None
 
     from offsetbasedgraph import VisualizeHtml
     subgraph.start_block = start
-    v = VisualizeHtml(subgraph, 1, 10, 0, levels, "", 300, genes)
+    max_offset = sum([subgraph.blocks[b].length() for b in subgraph.blocks])
+    v = VisualizeHtml(subgraph, 0, max_offset , 0, levels, "", 800, genes)
     print(v.get_wrapped_html())
 
+def translate_genes_to_aligned_graph(args):
+    trans = Translation.from_file(args.merged_graph_file_name)
+    orig_graph = trans.graph1
+    complex_graph = trans.graph2
+
+    # Creat critical path multipath intervals of genes by translating
+    # to complex graph.
+    # Represent by txStart, txEnd as start,end and exons as critical intervals
+    from offsetbasedgraph.graphutils import GeneList, parse_genes_file
+    from offsetbasedgraph import CriticalPathsMultiPathInterval
+    genes = GeneList(get_gene_objects_as_intervals(args.genes, trans.graph1))
+    mpgenes = []
+    spgenes = []  # Also store single path for debugging
+    n = 1
+    for gene in genes.gene_list:
+        #if n % 1000 == 0:
+            #print("parsed %d genes" % n)
+
+        n += 1
+
+        if gene.name != "NM_001320412":
+            continue
+
+        print("Found gene %s" % gene.name)
+        print(gene)
+
+        start = gene.transcription_region.start_position
+        end = gene.transcription_region.end_position
+        end.offset = end.offset - 1
+        new_start = trans.translate(start)
+        new_end = trans.translate(end)
+        new_end.offset = new_end.offset + 1
+        critical_intervals = []
+        for exon in gene.exons:
+            critical_intervals.append(trans.translate(exon))
+
+        mpinterval = CriticalPathsMultiPathInterval(
+            new_start,
+            new_end,
+            critical_intervals
+        )
+        mpgenes.append(mpinterval)
+
+        spgenes.append(Gene(gene.name,
+                            trans.translate(gene.transcription_region),
+                            critical_intervals
+                            )
+                       )
 
 
+        #if n >= 5000:
+        #    break
+
+    import pickle
+    with open("%s" % args.out_file_name, "wb") as f:
+        pickle.dump(mpgenes, f)
+
+    gene_list = GeneList(spgenes)
+    gene_list.to_file("%s_gene_list" % args.out_file_name)
+
+    print(spgenes[0])
+    print(spgenes[1])
+
+    print("Genes written")
+
+def analyse_multipath_genes(args):
+
+    import pickle
+    with open("%s" % args.multipath_genes_file_name, "rb") as f:
+        genes = pickle.loads(f.read())
+
+
+    # Create a simple dict index to speed up duplicate search
+    genes_index = {}
+    for g in genes:
+        if g.start_pos.offset in genes_index:
+            genes_index[g.start_pos.offset].append(g)
+        else:
+            genes_index[g.start_pos.offset] = [g]
+
+    print(genes)
+
+    # Exon index
+    print("Creating exon index")
+    exon_index = {}
+    for g in genes:
+        first_exon = g.critical_intervals[0]
+        index = "%s,%s" % (first_exon.region_paths[0], first_exon.start_position.offset)
+        if index in exon_index:
+            exon_index[index].append(g)
+        else:
+            exon_index[index] = [g]
+
+    print("Created exon index")
+
+
+    equal = 0
+    equal_exons = 0
+    n = 1
+    for g in genes:
+        if n % 1000 == 0:
+            print("Checked %d genes" % n)
+        n += 1
+        #if g.start_pos.region_path_id != g.end_pos.region_path_id:
+        #    print(g)
+
+        #for g2 in genes_index[g.start_pos.offset]:
+
+        first_exon = g.critical_intervals[0]
+        index = "%s,%s" % (first_exon.region_paths[0], first_exon.start_position.offset)
+        for g2 in exon_index[index]:#genes_index[g.start_pos.offset]:
+            if g is g2:
+                continue
+
+            if g == g2:
+                #print("=== Equal ==")
+                #print(g)
+                #print(g2)
+                equal += 1
+
+            if g.faster_equal_critical_intervals(g2):
+                #print("== Equal critical intervals ==")
+                #print(g)
+                #print(g2)
+                equal_exons += 1
+
+    print("Equal: %d" % (equal / 2))
+    print("Equal exons: %d" % (equal_exons / 2))
 
 if __name__ == "__main__":
 
@@ -161,6 +285,24 @@ if __name__ == "__main__":
     parser_merge_all_alignments.add_argument('out_file_name',
                                 help='File name to store translation object for new graph')
     parser_merge_all_alignments.set_defaults(func=merge_all_alignments)
+
+    # Translate genes to aligned graph
+    parser_translate_genes_to_aligned_graph = subparsers.add_parser('translate_genes_to_aligned_graph',
+                                                           help='Analyse genes on a merged graph, created by calling merge_all_alignments')
+    parser_translate_genes_to_aligned_graph.add_argument('merged_graph_file_name',
+                    help='Name of file created by running merge_all_alignments')
+    parser_translate_genes_to_aligned_graph.add_argument('genes',
+                    help='Tabular file containing genes')
+    parser_translate_genes_to_aligned_graph.add_argument('out_file_name',
+                    help='Name of file to write genes to')
+    parser_translate_genes_to_aligned_graph.set_defaults(func=translate_genes_to_aligned_graph)
+
+    # Analyze multipaht_genes
+    parser_analyse_multipath_genes = subparsers.add_parser('analyse_multipath_genes',
+                                                           help='Analyse genes on a merged graph, created by calling merge_all_alignments')
+    parser_analyse_multipath_genes.add_argument('multipath_genes_file_name',
+                    help='Name of file generated by translate_genes_to_aligned_graph')
+    parser_analyse_multipath_genes.set_defaults(func=analyse_multipath_genes)
 
     # Visualize genes
     parser_visualize_genes = subparsers.add_parser('visualize_genes', help='Produce html visualization (that can be saved and opened in a browser)')

@@ -21,6 +21,69 @@ class SingleMultiPathInterval(MultiPathInterval):
     def get_single_path_intervals(self):
         return [self.interval]
 
+class CriticalPathsMultiPathInterval(MultiPathInterval):
+    def __init__(self, start_pos, end_pos, critical_intervals):
+        """
+        :param start_pos: start Position
+        :param end_pos: end Position
+        :param critical_intervals: list of critical
+        intervals that the multipath interval needs to go through
+        """
+
+        self.start_pos = start_pos
+        self.end_pos = end_pos
+        self.critical_intervals = critical_intervals
+
+    def equal_critical_intervals(self, other):
+        for i in self.critical_intervals:
+            if i not in other.critical_intervals:
+                return False
+        for i in other.critical_intervals:
+            if i not in self.critical_intervals:
+                return False
+
+        return True
+
+    def faster_equal_critical_intervals(self, other):
+        # Assuming all critical intervals are ordered and corresponding
+        # in the two mps
+        if len(self.critical_intervals) != len(other.critical_intervals):
+            return False
+
+        for i in range(0, len(self.critical_intervals)):
+            if self.critical_intervals != other.critical_intervals:
+                return False
+
+        return True
+
+    def __eq__(self, other):
+        """
+        :param other:
+        :return:
+        NB: Only compare exact representation. Will give wrong result if equal, but
+        different critical_intervals.
+        TODO: Fix so that it compares the minimum representation
+        """
+        if other.start_pos != self.start_pos:
+            return False
+        if other.end_pos != self.end_pos:
+            return False
+        return self.faster_equal_critical_intervals(other)
+
+
+    def __str__(self):
+        out = "Start: "  + str(self.start_pos) + "\n"
+        out += "Critical paths:\n"
+        for c in self.critical_intervals:
+            out += "  " + str(c) + "\n"
+        out += "End: " + str(self.end_pos) + "\n"
+        return out
+
+    def __repr__(self):
+        return str(self)
+
+
+
 
 class SimpleMultipathInterval(object):
 
