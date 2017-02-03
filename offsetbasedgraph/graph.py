@@ -964,6 +964,13 @@ class Graph(object):
 
     def __eq__(self, other):
 
+        if(len(self.blocks) != len(other.blocks)):
+            return False
+
+        if self.blocks != other.blocks:
+            print("Different blocks")
+            return False
+
         for adj in self.adj_list:
             #if adj in other.adj_list and self.adj_list[adj] != other.adj_list[adj]:
             if set(self.adj_list[adj]) != set(other.adj_list[adj]):
@@ -979,9 +986,7 @@ class Graph(object):
         #if self.adj_list != other.adj_list:
         #    return False
 
-        if self.blocks != other.blocks:
-            print("Different blocks")
-            return False
+
 
         return True
 

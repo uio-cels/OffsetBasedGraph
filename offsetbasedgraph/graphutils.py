@@ -721,8 +721,13 @@ def _merge_alt_using_cigar(original_grch38_graph, trans, alt_id, cigar, alt_seq,
     :return:
     """
 
+    # Put sequences into numpy arrays
+    import numpy as np
+    alt_seq = np.array(list(alt_seq))
+    main_seq = np.array(list(main_seq))
+
     length = main_pos_end - main_pos_start
-    print("Merging %s" % alt_id)
+    #print("Merging %s" % alt_id)
 
     """
     Algorithm:
@@ -734,7 +739,9 @@ def _merge_alt_using_cigar(original_grch38_graph, trans, alt_id, cigar, alt_seq,
     #print("Alt start: %d" % alt_start)
     main_offset = main_pos_start
     alt_offset = alt_start
-    print("alt offset: %d" % alt_offset)
+
+    #
+    #print("alt offset: %d" % alt_offset)
 
     ab = {}
     ba = {}
@@ -780,8 +787,8 @@ def _merge_alt_using_cigar(original_grch38_graph, trans, alt_id, cigar, alt_seq,
             seq_on_alt = alt_seq[alt_offset-alt_start:alt_offset-alt_start+n]
             seq_on_main = main_seq[main_offset-main_pos_start:main_offset+n-main_pos_start]
 
-            print(seq_on_alt)
-            print(seq_on_main)
+            #print(seq_on_alt)
+            #print(seq_on_main)
             """
             print(seq_on_alt[0:10])
             print(seq_on_alt[-10:])
@@ -791,28 +798,29 @@ def _merge_alt_using_cigar(original_grch38_graph, trans, alt_id, cigar, alt_seq,
             prev = 0
             match = True
             for i in range(0, len(seq_on_alt)):
+                #print(i)
 
 
                 if seq_on_alt[i] != seq_on_main[i] or i == n - 1:
                     if i <= prev:
                         continue
-                    print("Merging from %d to %d" % (prev, i))
+
+                    if i == n-1:
+                        i += 1
+                    #print("    Merging from %d to %d" % (prev, i))
                     # Something is different, merge from prev to i
                     m_start = main_offset + prev
-                    m_end = main_offset + prev + i
+                    m_end = main_offset + i
                     a_start = alt_offset + prev
-                    a_end = alt_offset + prev + i
-                    print("Merging alt %d,%d with main %d,%d" % (a_start, a_end, m_start, m_end))
-
+                    a_end = alt_offset + i
+                    #print("Merging alt %d,%d with main %d,%d, prev: %d, i: %i" % (a_start, a_end, m_start, m_end, prev, i))
                     intv1 = trans.translate(Interval(m_start, m_end, [main_chr], original_grch38_graph))
                     intv2 = trans.translate(Interval(a_start, a_end, [alt_id], original_grch38_graph))
-
-                    print("Merging %s with %s" % (intv1, intv2))
+                    #print("Merging %s with %s" % (intv1, intv2))
                     graph, mtrans = graph.merge([intv1, intv2])
 
                     trans = trans + mtrans
                     trans.graph2 = graph
-
                     prev = i+1
 
 
@@ -842,10 +850,10 @@ def _merge_alt_using_cigar(original_grch38_graph, trans, alt_id, cigar, alt_seq,
             #print("Offsets alt/main: %d/%d" % (alt_offset, main_offset))
 
         elif type == "I":
-            print("Insertion")
+            #print("Insertion")
             alt_offset += n
         elif type == "D":
-            print("Deletion")
+            #print("Deletion")
             main_offset += n
 
     # Should be correct if cigar is correct:

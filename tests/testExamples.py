@@ -227,11 +227,11 @@ class testExamples(unittest.TestCase):
         print(new_graph)
         self.assertTrue(new_graph.has_identical_structure(correct_structure))
 
-    def _test_merge_alt_using_cigar2(self):
+    def test_merge_alt_using_cigar2(self):
 
         # Case 2, using M with match and mismatches
         graph = Graph({
-                "chr1": Block(30),
+                "chr1": Block(31),
                 "chr1_test_alt": Block(20)
             },
             {});
@@ -240,10 +240,10 @@ class testExamples(unittest.TestCase):
         graph, trans = grch38_graph_to_numeric(graph)
 
         start = 5
-        end = 20
+        end = 21
 
         alt_seq = "GCCCCTTTTATTTTATTTTA"
-        main_seq = "GTTTTATTTTATTTTA"
+        main_seq ="G" +"TTTTGTTTTGTTTTA"
         cigar = "1M 4I 15M"
         from offsetbasedgraph.graphutils import _merge_alt_using_cigar
         trans, new_graph = _merge_alt_using_cigar(graph, trans,
