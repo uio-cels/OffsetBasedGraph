@@ -441,10 +441,10 @@ def find_unequal_sibling_genes(main_genes, alt_genes):
             m_code = m_gene.transcription_region.diff(
                 gene.transcription_region)
             exon_diffs = gene.exon_diffs(m_gene)
-            if m_gene.contains(gene, 5):
+            if m_gene.contains(gene, 13):
                 scores.append(9.1)
                 continue
-            elif m_gene.is_cut_version(gene):
+            elif m_gene.is_cut_version(gene, 13):
                 # print("------------------")
                 # print(gene.to_file_line())
                 # print(m_gene.to_file_line())
@@ -528,6 +528,52 @@ def find_unequal_sibling_genes(main_genes, alt_genes):
     return gene_categories
 
 
+def classify_alt_gene(gene):
+    def is_merged(name):
+        return name.count("chr") > 1
+
+    def was_alt(name):
+        return "alt" in name
+
+    def is_varying(name):
+        return was_alt(name) and not is_merged(name)
+
+    rps = gene.transcription_region.region_paths
+    if not any(is_varying(rp) for rp in rps):
+        return "FLANK"
+    if is_merged(rps[0]) and is_merged(rps[-1]):
+        return "BUBBLE"
+    elif is_merged(rps[0]):
+        return "START"
+    elif is_merged(rps[-1]):
+        return "END"
+    if len(rps) == 1:
+        return "ALT"
+    else:
+        raise Exception("Couldnt classify %s" % rps)
+
+
+def classify_alt_genes(genes):
+    """Group alt genes by their position on the alt loci
+    i.e, on flank, varying or a combination.
+
+    :param genes: list of  alt genes
+    :returns: dict of gene-lists for each category
+    :rtype: dict[str] = list(Gene)
+
+    """
+
+    rp_lists = [gene.transcription_region.region_paths for gene in genes]
+    classificaitons = []
+    for rps in rp_lists:
+        class_lists = defaultdict(list)
+
+    for gene, classi in zip(genes, classificaitons):
+        class_lists[classi].append(gene)
+
+    return class_lists
+
+
 def find_exon_duplicates(genes, translation):
     """Find and count duplicate genes on flanks of
     alt loci
@@ -535,20 +581,26 @@ def find_exon_duplicates(genes, translation):
     :param genes: genes on original graph
     :param translation: translation object
     """
-    # translated = GeneList.from_file("trans_genes").gene_list
-    translated = [gene.translate(translation) for gene in genes]
-    gene_list = GeneList(translated)
-    gene_list.to_file("trans_genes")
-    main_chr_dict = defaultdict(list)
-    alt_dict = defaultdict(list)
-    gene_categories = defaultdict(list)
+    # translated = [gene.translate(translation) for gene in genes]
+    # gene_list = GeneList(translated)
+    # gene_list.to_file("trans_genes")
+
+    translated = GeneList.from_file("trans_genes").gene_list
     graph = translated[0].transcription_region.graph
     graph.critical_blocks = graph.find_all_critical_blocks()
+
+    main_chr_dict = defaultdict(list)
+
+    # class_lists = classify_alt_genes(genes)
+    alt_dict = defaultdict(list)
+    gene_categories = defaultdict(list)
+
     for gene, t_gene in zip(genes, translated):
         if "alt" in gene.chrom:
             alt_dict[gene.chrom.split("_")[0]].append(t_gene)
         else:
             main_chr_dict[gene.chrom].append(t_gene)
+
     print("N:", sum(len(v) for v in alt_dict.values()))
     s = 0
     for chrom, genes in alt_dict.items():
@@ -562,23 +614,26 @@ def find_exon_duplicates(genes, translation):
                     print(main_gene.name, gene.name)
                     s += 1
 
-    for category, v in gene_categories.items():
-        print(category, len(v))
+    for g, g2 in gene_categories[6.1]:
+        if classify_alt_gene(g) == "FLANK":
+            GeneList([g, g2]).to_file("wgenes")
+            break
+            print("__________________")
+            print(g.to_file_line())
+            print(g2.to_file_line())
+    return
+    for gene_category in ["ALT", "FLANK", "START", "END", "BUBBLE"]:
+        print(gene_category)
+        for category, v in gene_categories.items():
+            print(category, len([g for g in v if
+                                 classify_alt_gene(g[0]) == gene_category]))
+
 
 def blast_test():
-
-
-
-    from Bio.Blast import NCBIWWW
-    from Bio.Blast.Applications import NcbiblastpCommandline
-    from Bio.Blast import NCBIXML
     try:
         from StringIO import StringIO  # Python 2
     except ImportError:
         from io import StringIO
-    from Bio.Seq import Seq
-    from Bio.SeqRecord import SeqRecord
-    from Bio import SeqIO
 
     q = "data/tmp/sequence_chr2_KI270769v1_alt_1_120616.fasta"
     r = "data/tmp/sequence_chr4_KI270785v1_alt_1_119912.fasta"
