@@ -11,6 +11,7 @@ from collections import defaultdict
 
 class GeneList(object):
     def __init__(self, gene_list):
+        assert isinstance(gene_list, list)
         self.gene_list = gene_list
 
     def to_file(self, file_name):
@@ -638,7 +639,8 @@ def merge_alt_using_cigar(original_numeric_grch38_graph, trans, alt_id):
         with open("alt_alignments/%s.alignment" % alt_id) as f:
             d = f.read().split(",")
             cigar = d[-1]
-            # All numbers are 1-inexed
+            # All numbers are 1-indxed and inclusive end (?)
+            # Convert to 0-indexed and exclusive end
             main_start = int(d[0]) - 1
             main_end = int(d[1]) - 1 + 1  # Was inclusive
             alt_start = int(d[2]) - 1
@@ -671,9 +673,9 @@ def merge_alt_using_cigar(original_numeric_grch38_graph, trans, alt_id):
 
     # Get sequences
     print("Fetching alt sequence")
-    alt_seq = get_sequence_ucsc(alt_id, alt_start, alt_end - 1)  # uscs is 0 indexed and inclusive??
+    alt_seq = get_sequence_ucsc(alt_id, alt_start + 1, alt_end)  # uscs is 0 indexed and inclusive??
     print("Fetching main sequence")
-    main_seq = get_sequence_ucsc(main_chr, main_start, main_end - 1)
+    main_seq = get_sequence_ucsc(main_chr, main_start + 1, main_end)
 
     #print(alt_seq[0:10])
     #print(main_seq[0:10])
@@ -723,6 +725,7 @@ def _merge_alt_using_cigar(original_grch38_graph, trans, alt_id, cigar, alt_seq,
     #print("Alt start: %d" % alt_start)
     main_offset = main_pos_start
     alt_offset = alt_start
+    print("alt offset: %d" % alt_offset)
 
     ab = {}
     ba = {}
@@ -763,10 +766,50 @@ def _merge_alt_using_cigar(original_grch38_graph, trans, alt_id, cigar, alt_seq,
         #print("Type/len: %s/%d" % (type, n))
 
         if type == "M":
-            #print("Match")
+            print("Match %d" % (n))
             # If sequences are identical, then merge
-            if alt_seq[alt_offset-alt_start:alt_offset-alt_start+n] == main_seq[main_offset-main_pos_start:main_offset+n-main_pos_start]:
-                #print("Merging match")
+            seq_on_alt = alt_seq[alt_offset-alt_start:alt_offset-alt_start+n]
+            seq_on_main = main_seq[main_offset-main_pos_start:main_offset+n-main_pos_start]
+
+            print(seq_on_alt)
+            print(seq_on_main)
+            """
+            print(seq_on_alt[0:10])
+            print(seq_on_alt[-10:])
+            print(seq_on_main[0:10])
+            print(seq_on_main[-10:])
+            """
+            prev = 0
+            match = True
+            for i in range(0, len(seq_on_alt)):
+
+
+                if seq_on_alt[i] != seq_on_main[i] or i == n - 1:
+                    if i <= prev:
+                        continue
+                    print("Merging from %d to %d" % (prev, i))
+                    # Something is different, merge from prev to i
+                    m_start = main_offset + prev
+                    m_end = main_offset + prev + i
+                    a_start = alt_offset + prev
+                    a_end = alt_offset + prev + i
+                    print("Merging alt %d,%d with main %d,%d" % (a_start, a_end, m_start, m_end))
+
+                    intv1 = trans.translate(Interval(m_start, m_end, [main_chr], original_grch38_graph))
+                    intv2 = trans.translate(Interval(a_start, a_end, [alt_id], original_grch38_graph))
+
+                    print("Merging %s with %s" % (intv1, intv2))
+                    graph, mtrans = graph.merge([intv1, intv2])
+
+                    trans = trans + mtrans
+                    trans.graph2 = graph
+
+                    prev = i+1
+
+
+            """
+            if seq_on_alt == seq_on_main:
+                print("Merging match")
                 #print(trans)
                 intv1 = trans.translate(Interval(main_offset, main_offset+n, [main_chr], graph))
                 intv2 = trans.translate(Interval(alt_offset, alt_offset+n, [alt_id], graph))
@@ -779,19 +822,21 @@ def _merge_alt_using_cigar(original_grch38_graph, trans, alt_id, cigar, alt_seq,
                 #print(trans)
                 #print(graph)
 
-            #else:
-                #print("Not merging, different")
+            else:
+                print("Not merging, different")
                 #continue
                 # Just connect ?
                 #graph.connect_postitions()
-
+            """
             main_offset += n
             alt_offset += n
             #print("Offsets alt/main: %d/%d" % (alt_offset, main_offset))
 
         elif type == "I":
+            print("Insertion")
             alt_offset += n
         elif type == "D":
+            print("Deletion")
             main_offset += n
 
     # Should be correct if cigar is correct:

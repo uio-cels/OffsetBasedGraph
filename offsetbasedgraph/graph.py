@@ -189,6 +189,10 @@ class Graph(object):
         :param padding: number of baseapairs that should be in graph before first and after last intervals
         :return:
         """
+
+        new_first = None
+        new_last = None
+
         blocks = []
         for i in intervals:
             blocks.extend(i.region_paths)
@@ -250,9 +254,10 @@ class Graph(object):
             subgraph = trans_last.translate_subgraph(subgraph)
             trans = trans + trans_last
 
-
-        subgraph.remove(new_first)
-        subgraph.remove(new_last)
+        if new_first is not None:
+            subgraph.remove(new_first)
+        if new_last is not None:
+            subgraph.remove(new_last)
 
 
         return subgraph, trans
