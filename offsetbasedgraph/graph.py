@@ -287,6 +287,7 @@ class Graph(object):
                         new_edges[b] = [e]
         subgraph = Graph(new_blocks, new_edges)
         subgraph_without_critical = subgraph.copy()
+        return subgraph
 
         # Append with prev critical and next critical
         first = subgraph.get_first_blocks()[0]

@@ -27,11 +27,14 @@ class GeneList(object):
 
 class Gene(object):
 
-    def __init__(self, name, transcription_region, exons):
+    def __init__(self, name, transcription_region, exons, coding_region, strand):
         self.name = name
         self.transcription_region = transcription_region
+        self.coding_region = coding_region
         self.exons = exons
+        self.strand
         self.chrom = transcription_region.region_paths[0]
+        self.graph = self.transcription_region.graph
 
     @classmethod
     def from_dict(cls, attr_dict):
@@ -49,11 +52,19 @@ class Gene(object):
             Position(chrom, int(attr_dict["txEnd"])), [chrom]
             )
 
+        coding_region = Interval(
+            Position(chrom, int(attr_dict["cdsStart"])),
+            Position(chrom, int(attr_dict["cdsEnd"])), [chrom]
+            )
+
         exon_starts = [int(i) for i in attr_dict["exonStarts"].split(",")[:-1]]
         exon_ends = [int(i) for i in attr_dict["exonEnds"].split(",")[:-1]]
         exons = [Interval(start, end, [chrom]) for start, end in
                  zip(exon_starts, exon_ends)]
-        return cls(attr_dict["name"], transcription_region, exons)
+        strand = attr_dict["strand"]
+
+        return cls(attr_dict["name"], transcription_region, exons,
+                   coding_region, strand)
 
     def translate(self, T):
         """Translate transcription_region and exons and return
@@ -162,6 +173,14 @@ class Gene(object):
 
         return diff_sum/len(self.exons)
 
+    def approxEquals(self, other, tolerance=0):
+        if not len(self.exons) == len(other.exons):
+            return False
+        my_regions = [self.transcription_region] + self.exons
+        other_regions = [other.transcription_region] + other.exons
+        return all(my_reg.approxEquals(other_reg) for
+                   my_reg, other_reg in zip(my_regions, other_regions))
+
     def contains(self, other, tolerance=0):
         if not self.transcription_region.contains(
                 other.transcription_region, tolerance):
@@ -174,6 +193,15 @@ class Gene(object):
                     return False
             cur_i += 1
         return True
+
+    def partition_region_paths(self):
+        rps = self.transcription_region.region_paths
+        transcription_regions = self.transcription_regions.partition_region_paths()
+        exons_partitions = [exon.partition_region_paths() for exon in self.exons]
+        cur_rp = rps[0]
+        for exon_partition in exons_partitions:
+            while
+        
 
     def is_cut_version(self, other, tolerance=0):
         """Check if other is made from cutting self
@@ -615,14 +643,14 @@ def find_exon_duplicates(genes, translation):
                     print(main_gene.name, gene.name)
                     s += 1
 
-    for g, g2 in gene_categories[6.1]:
-        if classify_alt_gene(g) == "FLANK":
-            GeneList([g, g2]).to_file("wgenes")
-            break
-            print("__________________")
-            print(g.to_file_line())
-            print(g2.to_file_line())
-    return
+    # for g, g2 in gene_categories[6.1]:
+    #     if classify_alt_gene(g) == "FLANK":
+    #         GeneList([g, g2]).to_file("wgenes")
+    #         break
+    #         print("__________________")
+    #         print(g.to_file_line())
+    #         print(g2.to_file_line())
+    # return
     for gene_category in ["ALT", "FLANK", "START", "END", "BUBBLE"]:
         print(gene_category)
         for category, v in gene_categories.items():
@@ -658,7 +686,7 @@ def blast_test():
             print('e value:', hsp.expect)
             print(hsp.query)
             print(hsp.match)
-            print(hsp.sbjct)
+            print(hsp.sbjct)p
     """
 
 
