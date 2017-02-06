@@ -233,7 +233,7 @@ class Graph(object):
                 {new_first: [Interval(0, new_first_length, [first], subgraph)],
                  new_second: [Interval(new_first_length, first_length,
                                        [first], subgraph)]}, graph=subgraph)
-            print(trans_first._a_to_b)
+            #print(trans_first._a_to_b)
             subgraph = trans_first.translate_subgraph(subgraph)
             trans = trans + trans_first
 
