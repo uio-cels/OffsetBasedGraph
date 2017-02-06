@@ -59,10 +59,11 @@ class Graph(object):
         import copy
         #return copy.deepcopy(self)
 
-        new_blocks = {}
+        #new_blocks = {}
         new_adjs = {}
-        for b in self.blocks:
-            new_blocks[b] = Block(self.blocks[b].length())
+        #for b in self.blocks:
+        #    new_blocks[b] = Block(self.blocks[b].length())
+        new_blocks = copy.copy(self.blocks)
 
         #for b in self.adj_list:
         #    new_adjs[b] = list(self.adj_list[b])
