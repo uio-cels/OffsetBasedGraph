@@ -13,46 +13,52 @@ def align_cigar(cigar, main_interval, alt_interval, graph):
     :rtype: Translation
 
     """
-
-    main_rps = []
-    alt_rps = []
-    b_to_a = {}
-    _id = graph._next_id()
     main_offset = main_interval.start_position.offset
     alt_offset = alt_interval.start_position.offset
 
     main_id = main_interval.region_paths[0]
     alt_id = alt_interval.region_paths[0]
 
+    def MainInterval(start, end):
+        return Interval(start, end, [main_id], graph=graph)
+
+    def AltInterval(start, end):
+        return Interval(start, end, [alt_id], graph=graph)
+
+    main_rps = []
+    alt_rps = []
+    b_to_a = {}
+    _id = 0
+
     main_n = 0
     alt_n = 0
     if main_offset > 0:
         main_rps.append(_id)
-        b_to_a[_id] = [Interval(0, main_offset, [main_id])]
+        b_to_a[_id] = [MainInterval(0, main_offset)]
         _id += 1
     if alt_offset > 0:
         alt_rps.append(_id)
-        b_to_a[_id] = [Interval(0, alt_offset, [alt_id])]
+        b_to_a[_id] = [AltInterval(0, alt_offset)]
         _id += 1
 
     for var_type, n in cigar:
         if var_type == "D":
             main_rps.append(_id)
-            b_to_a[_id] = [Interval(main_offset, main_offset+n, [main_id])]
+            b_to_a[_id] = [MainInterval(main_offset, main_offset+n)]
             main_n = n
             main_offset += n
 
         elif var_type == "I":
             alt_rps.append(_id)
-            b_to_a[_id] = [Interval(alt_offset, alt_offset+n, [alt_id])]
+            b_to_a[_id] = [AltInterval(alt_offset, alt_offset+n)]
             alt_n = n
             alt_offset += n
 
         elif var_type == "M":
             alt_rps.append(_id)
             main_rps.append(_id)
-            b_to_a[_id] = [Interval(main_offset, main_offset+n, [main_id]),
-                           Interval(alt_offset, alt_offset+n, [alt_id])]
+            b_to_a[_id] = [MainInterval(main_offset, main_offset+n),
+                           AltInterval(alt_offset, alt_offset+n)]
             main_n = n
             alt_n = n
             alt_offset += n
@@ -63,8 +69,8 @@ def align_cigar(cigar, main_interval, alt_interval, graph):
             _id += 1
             alt_rps.append(id_a)
             main_rps.append(_id)
-            b_to_a[_id] = [Interval(main_offset, main_offset+n, [main_id])]
-            b_to_a[id_a] = [Interval(alt_offset, alt_offset+n, [alt_id])]
+            b_to_a[_id] = [MainInterval(main_offset, main_offset+n)]
+            b_to_a[id_a] = [AltInterval(alt_offset, alt_offset+n)]
             main_n = n
             alt_n = n
             alt_offset += n
@@ -73,17 +79,16 @@ def align_cigar(cigar, main_interval, alt_interval, graph):
         _id += 1
     if main_offset < graph.blocks[main_id].length():
         main_rps.append(_id)
-        b_to_a[_id] = [Interval(main_offset,
-                                graph.blocks[main_id].length(),
-                                [main_id])]
+        b_to_a[_id] = [MainInterval(main_offset,
+                                    graph.blocks[main_id].length())]
+
         main_n = graph.blocks[main_id].length()-main_offset
         _id += 1
 
     if alt_offset < graph.blocks[alt_id].length():
         alt_rps.append(_id)
-        b_to_a[_id] = [Interval(alt_offset,
-                                graph.blocks[alt_id].length(),
-                                [alt_id])]
+        b_to_a[_id] = [AltInterval(alt_offset,
+                                   graph.blocks[alt_id].length())]
         alt_n = graph.blocks[alt_id].length()-alt_offset
         _id += 1
 
@@ -124,7 +129,7 @@ def get_match_cigar(seq1, seq2):
     return cigar
 
 
-def clean_cigar(cigar, alt_seq, main_seq, alt_start, main_start):
+def clean_cigar(cigar, alt_seq, main_seq):
     """Clean up and create full cigar string (convetrt M to M or V)
 
     :param cigar: list of cigar codes
@@ -136,6 +141,7 @@ def clean_cigar(cigar, alt_seq, main_seq, alt_start, main_start):
     :rtype: list(tuple(char, int))
 
     """
+    cigar = cigar.split()
     cleaned_cigar = []
     alt_offset = 0
     main_offset = 0
@@ -156,10 +162,11 @@ def clean_cigar(cigar, alt_seq, main_seq, alt_start, main_start):
             main_offset += n
             cleaned_cigar.append((var_type, n))
             continue
-        seq_on_alt = alt_seq[alt_offset-alt_start:alt_offset-alt_start+n]
-        seq_on_main = main_seq[main_offset-main_start:main_offset+n-main_start]
+        seq_on_alt = alt_seq[alt_offset:alt_offset+n]
+        seq_on_main = main_seq[main_offset:main_offset+n]
         match_cigar = get_match_cigar(seq_on_main, seq_on_alt)
         cleaned_cigar.extend(match_cigar)
         main_offset += n
         alt_offset += n
+
     return cleaned_cigar

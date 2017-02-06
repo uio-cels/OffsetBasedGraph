@@ -64,24 +64,27 @@ def merge_alignment(args):
 def merge_all_alignments(args):
     from offsetbasedgraph.graphutils import merge_alt_using_cigar, grch38_graph_to_numeric
     text_graph = create_initial_grch38_graph(args.chrom_sizes_file_name)  # Text ids (chrom names and alt names)
-    graph, numeric_trans = grch38_graph_to_numeric(text_graph)
+    graph, name_trans = grch38_graph_to_numeric(text_graph)
 
     # Go through all alts in this graph
     new_graph = graph.copy()
-    trans = numeric_trans
-    #trans = Translation({}, {}, graph=graph)
     i = 0
     # for b in ['chr8_KI270812v1_alt']:
     for b in ['chr8_KI270822v1_alt']:
         if "alt" in b:
             print("Merging %s" % b)
-            trans, new_graph = merge_alt_using_cigar(new_graph, trans, b)
+            numeric_trans, new_graph = merge_alt_using_cigar(new_graph, name_trans, b)
             i += 1
             if i >= 1:
                 break
-
+    final_graph, trans2 = convert_to_text_graph(
+        new_graph, name_trans, numeric_trans)
+    for k in sorted(new_graph.adj_list.keys()):
+        print(k, new_graph.adj_list[k])
+    full_trans = name_trans + numeric_trans + trans2
+    full_trans.graph2 = final_graph
     print("To file")
-    trans.to_file(args.out_file_name)
+    full_trans.to_file(args.out_file_name)
 
 def visualize_genes(args):
     trans = Translation.from_file(args.translation_file_name)
