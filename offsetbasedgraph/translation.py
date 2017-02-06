@@ -265,7 +265,7 @@ class Translation(object):
                 for l in lasts:
                     edges[l].extend([f for f in my_firsts if f != l])
                 for f in my_firsts:
-                    edges[f].extend([l for l in lasts if f != l])
+                    rev_edges[f].extend([l for l in lasts if f != l])
 
     def _translate_subgraph_edges(self, subgraph, copy_graph):
         edge_list_add = []
@@ -431,7 +431,7 @@ class Translation(object):
 
         edges, rev_edges = self.get_old_edges(subgraph)
         self.get_external_edges(subgraph, edges, rev_edges)
-        self.get_internal_edges(subgraph, edges)
+        self.get_internal_edges(subgraph, edges, rev_edges)
         # edge_list_add = self._translate_subgraph_edges(subgraph, copy_graph)
 
         new_blocks, edge_list_add = self._translate_subgraph_blocksv2(

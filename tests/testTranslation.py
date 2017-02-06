@@ -283,16 +283,16 @@ class TestTranslation(unittest.TestCase):
 
         trans = Translation(ab, ba, graph=graph)
         # Old edges
-        old_edges = trans.get_old_edges(graph)
+        old_edges, new = trans.get_old_edges(graph)
         self.assertTrue(3 in old_edges)
         self.assertTrue(4 in old_edges[3])
 
-        edges = old_edges
-        trans.get_external_edges(graph, edges)
-        self.assertEqual(edges[0], [10  ])
-        self.assertTrue(11 in edges[10])
-        self.assertEqual(edges[11], [3])
-        self.assertEqual(edges[3], [4])
+
+        trans.get_external_edges(graph, old_edges, new)
+        self.assertEqual(old_edges[0], [10  ])
+        self.assertTrue(11 in old_edges[10])
+        self.assertEqual(old_edges[11], [3])
+        self.assertEqual(old_edges[3], [4])
 
 
 
