@@ -825,6 +825,7 @@ def _merge_alt_using_cigar(original_grch38_graph, trans, alt_id, cigar, alt_seq,
 
     #print(cigar)
     for c in cigar:
+        print("Graph size: %d" % len(graph.blocks))
 
         first = c[0]
         if first == "M" or first == "D" or first == "I":
@@ -862,7 +863,7 @@ def _merge_alt_using_cigar(original_grch38_graph, trans, alt_id, cigar, alt_seq,
 
                     if i == n-1:
                         i += 1
-                    #print("    Merging from %d to %d" % (prev, i))
+                    print("    Merging from %d to %d" % (prev, i))
                     # Something is different, merge from prev to i
                     m_start = main_offset + prev
                     m_end = main_offset + i
@@ -877,6 +878,7 @@ def _merge_alt_using_cigar(original_grch38_graph, trans, alt_id, cigar, alt_seq,
                     trans = trans + mtrans
                     trans.graph2 = graph
                     prev = i+1
+                    #print ("  Finished merging")
 
 
             """
