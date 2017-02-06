@@ -31,7 +31,7 @@ class Graph(object):
     reverse_adj_list = defaultdict(list)
 
     # Graph alterations
-    def __init__(self, blocks, adj_list, create_reverse_adj_list=True):
+    def __init__(self, blocks, adj_list, create_reverse_adj_list=True, rev_adj_list=None):
         """
         Inits the graph with a list of blocks and an adjency list
         :param blocks:
@@ -40,7 +40,9 @@ class Graph(object):
         """
         self.blocks = blocks
         self.adj_list = defaultdict(list, adj_list)
-        if create_reverse_adj_list:
+        if rev_adj_list is not None:
+            self.reverse_adj_list = rev_adj_list
+        elif create_reverse_adj_list:
             self.reverse_adj_list = self._get_reverse_edges(adj_list)
 
         self._id = max([b for b in blocks if isinstance(b, int)] + [0])

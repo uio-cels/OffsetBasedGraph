@@ -222,16 +222,11 @@ class Translation(object):
                     continue
                 new_edges[v] = new_edges[v][:]
                 new_edges[v].remove(a)
-<<<<<<< HEAD
-
-        return new_edges
-=======
             for v in subgraph.adj_list[a]:
                 if a not in new_rev_edges[v]:
                     continue
                 new_rev_edges[v] = new_rev_edges[v][:]
                 new_rev_edges[v].remove(a)
->>>>>>> 876a95cac725e53960cde747eacfd3bb84894733
 
         return new_edges, new_rev_edges
 
@@ -437,14 +432,6 @@ class Translation(object):
         edges, rev_edges = self.get_old_edges(subgraph)
         self.get_external_edges(subgraph, edges, rev_edges)
         self.get_internal_edges(subgraph, edges)
-<<<<<<< HEAD
-
-        for k, v in edges.items():
-            edges[k] = list(set(v))
-=======
-        # for k, v in edges.items():
-        #    edges[k] = list(set(v))
->>>>>>> 876a95cac725e53960cde747eacfd3bb84894733
         # edge_list_add = self._translate_subgraph_edges(subgraph, copy_graph)
 
         new_blocks, edge_list_add = self._translate_subgraph_blocksv2(
