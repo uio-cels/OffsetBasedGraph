@@ -69,8 +69,8 @@ class Graph(object):
         #    new_adjs[b] = list(self.adj_list[b])
         new_adjs = self.adj_list.copy()
 
-        new_graph =  Graph(new_blocks, new_adjs, False)
-        new_graph.reverse_adj_list = self.reverse_adj_list.copy()
+        new_graph =  Graph(new_blocks, new_adjs, True)
+        #new_graph.reverse_adj_list = self.reverse_adj_list.copy()
         return new_graph
 
     def _next_id(self):
