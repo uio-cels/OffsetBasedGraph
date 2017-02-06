@@ -176,6 +176,7 @@ class Translation(object):
             translated = self.translate_interval(
                 interval).get_single_path_intervals()
 
+
     def get_internal_edges(self, subgraph, edges, reverse_edges):
         """Find new edges gotten from splitting region paths
         under current translation
