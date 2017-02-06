@@ -118,6 +118,9 @@ class testExamples(unittest.TestCase):
                 9: [6]
             }
         )
+
+        print(new_graph)
+        print(correct_structure)
         self.assertTrue(new_graph.has_identical_structure(correct_structure))
 
     def test_merge_flanks_2x_case2(self):
