@@ -70,8 +70,9 @@ class Graph(object):
             new_adjs[b] = list(self.adj_list[b])
         # new_adjs = self.adj_list.copy()
 
-        new_graph = Graph(new_blocks, new_adjs, False)
-        new_graph.reverse_adj_list = self.reverse_adj_list.copy()
+
+        new_graph = Graph(new_blocks, new_adjs, True)
+        #new_graph.reverse_adj_list = self.reverse_adj_list.copy()
         return new_graph
 
     def _next_id(self):
@@ -234,7 +235,7 @@ class Graph(object):
                 {new_first: [Interval(0, new_first_length, [first], subgraph)],
                  new_second: [Interval(new_first_length, first_length,
                                        [first], subgraph)]}, graph=subgraph)
-            print(trans_first._a_to_b)
+            #print(trans_first._a_to_b)
             subgraph = trans_first.translate_subgraph(subgraph)
             trans = trans + trans_first
 
