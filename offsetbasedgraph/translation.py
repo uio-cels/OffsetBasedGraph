@@ -50,6 +50,8 @@ class Translation(object):
         #else:
             #print("Graph2 is none")
 
+        self.block_cls = self.graph1.blocks.values()[0].__class__
+
     @classmethod
     def make_name_translation(cls, trans_dict, graph):
         """
@@ -196,9 +198,8 @@ class Translation(object):
 
         return new_blocks
 
-
     def _translate_subgraph_blocksv2(self, subgraph, edge_list_add, copy_graph):
-        from .graph import Block
+        # from .graph import Block
 
         if copy_graph:
             new_blocks = self._copy_blocks(subgraph)
@@ -209,11 +210,8 @@ class Translation(object):
         # Add blocks sthat should be translated
         for block in self._a_to_b:
 
-
-
             if block not in subgraph.blocks:
                 continue
-
 
             translated = self._translations(block, inverse=False)
             assert len(translated) <= 1, \
@@ -221,30 +219,27 @@ class Translation(object):
                 % (len(translated))
             translated = translated[0]
             for rp in translated.region_paths:
-                #print("   New rp")
                 if rp not in new_blocks:
-                    new_blocks[rp] = Block(
+                    new_blocks[rp] = self.block_cls(
                         self._translations(rp, inverse=True)[0].length())
-                # translated.graph.blocks[rp].length())
+
             edge_list_add.extend(translated.get_adj_list())  # Add these later
 
             if not copy_graph:
                 del new_blocks[block]
 
-
         return new_blocks, edge_list_add
 
 
     def _translate_subgraph_blocks(self, subgraph, edge_list_add):
-        from .graph import Graph, Block
+        # from .graph import Graph, Block
         new_blocks = {}
         # Translate all blocks
         for block in subgraph.blocks:
 
             if block not in self._a_to_b:
-                new_blocks[block] = Block(subgraph.blocks[block].length())
+                new_blocks[block] = self.block_cls(subgraph.blocks[block].length())
                 continue
-
 
             translated = self._translations(block, inverse=False)
             assert len(translated) <= 1, \
@@ -252,7 +247,7 @@ class Translation(object):
                 % (len(translated))
             translated = translated[0]
             for rp in translated.region_paths:
-                new_blocks[rp] = Block(
+                new_blocks[rp] = self.block_cls(
                     self._translations(rp, inverse=True)[0].length())
                 # translated.graph.blocks[rp].length())
             edge_list_add.extend(translated.get_adj_list())  # Add these later
@@ -303,8 +298,7 @@ class Translation(object):
             else:
                 new_adj[edge[0]] = [edge[1]]
 
-        from .graph import Graph
-        return Graph(new_blocks, new_adj)
+        return self.graph1.__class__(new_blocks, new_adj)
 
     # @takes(Interval)
     def translate_interval(self, interval, inverse=False):

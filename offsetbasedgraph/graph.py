@@ -757,7 +757,7 @@ class Graph(object):
             assert interval.length() == length, \
                 "All intervals should have the same length (%d, %d)" % (interval.length(), length)
 
-        # Step 1: Translate graph so that all intervals starts and ends at region paths
+        # 1: Translate graph so that all intervals starts and ends at rps
         trans, graph1 = self._get_inslulate_translation(intervals)
         trans.graph2 = graph1
         self._update_a_b_graph(trans._a_to_b, graph1)  # correct, a to b interval's graph is wrong for some reason
