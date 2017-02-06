@@ -2,6 +2,7 @@ from .util import takes
 from .interval import Interval, Position
 from .multipathinterval import GeneralMultiPathInterval, SingleMultiPathInterval, SimpleMultipathInterval
 import pickle
+import copy
 
 class Translation(object):
 
@@ -187,7 +188,9 @@ class Translation(object):
         return edge_list_add
 
     def _copy_blocks(self, subgraph):
-        from .graph import Block
+        #from .graph import Block
+        return copy.copy(subgraph.blocks)
+
         #new_blocks = {}
         new_blocks = dict.fromkeys(set(subgraph.blocks.keys()))
         for b in subgraph.blocks:
