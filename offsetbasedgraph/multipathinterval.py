@@ -124,7 +124,7 @@ class GeneralMultiPathInterval(MultiPathInterval):
         :rtype: generator
 
         """
-        print(region_paths)
+        #print(region_paths)
         cur_region_path = region_paths[-1]
         if cur_region_path in self.end_region_paths:
             yield Interval(start_position,

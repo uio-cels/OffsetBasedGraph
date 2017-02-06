@@ -104,12 +104,13 @@ class Translation(object):
 
         assert(g is not None)
         if rp not in g.blocks:
+            """
             print(inverse)
             if g == self.graph1:
                 print("Chose graph 1")
             elif g == self.graph2:
-                print("Chose graph 2")
-
+                 print("Chose graph 2")
+            """
             raise Exception("Region path %d is not in graph" % rp)
 
         length = g.blocks[rp].length()
@@ -175,7 +176,7 @@ class Translation(object):
             translated = self.translate_interval(
                 interval).get_single_path_intervals()            
 
-    def get_internal_edges(self, subgraph, edges):
+    def get_internal_edges(self, subgraph, edges, reverse_edges = {}):
         for a in self._a_to_b:
             t_a = self._translations(a, inverse=False)
             for interval in t_a:
@@ -184,10 +185,10 @@ class Translation(object):
 
                     assert rp1 != rp2
                     edges[rp1].append(rp2)
+                    reverse_edges[rp2].append(rp1)
 
     def get_old_edges(self, subgraph):
         new_edges = subgraph.adj_list.copy()
-        print("New edges: %s" % new_edges)
         for k, v in new_edges.items():
             new_edges[k] = v[:]
 

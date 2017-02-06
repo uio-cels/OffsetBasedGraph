@@ -222,8 +222,6 @@ class TestTranslation(unittest.TestCase):
         t_edges = {a: [b], b: [c], c: [d, g], d: [e, i],
                    f: [b], h: [c]}
 
-        print("=== trans: ===")
-        print(full_trans)
         self.assertEqual(Graph(t_blocks, t_edges), last_graph)
 
 
@@ -285,19 +283,14 @@ class TestTranslation(unittest.TestCase):
 
         trans = Translation(ab, ba, graph=graph)
         # Old edges
-        print("==== Tets get old edges ===")
         old_edges = trans.get_old_edges(graph)
         self.assertTrue(3 in old_edges)
         self.assertTrue(4 in old_edges[3])
-        print("== Old edges ==")
-        print(old_edges)
 
         edges = old_edges
         trans.get_external_edges(graph, edges)
-        print("=== External ===")
-        print(edges)
         self.assertEqual(edges[0], [10  ])
-        self.assertEqual(edges[10], [11])
+        self.assertTrue(11 in edges[10])
         self.assertEqual(edges[11], [3])
         self.assertEqual(edges[3], [4])
 
