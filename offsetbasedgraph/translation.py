@@ -176,6 +176,15 @@ class Translation(object):
                 interval).get_single_path_intervals()            
 
     def get_internal_edges(self, subgraph, edges):
+        """Find new edges gotten from splitting region paths
+        under current translation
+
+        :param subgraph: former subgraph
+        :param edges: adjacency list to be updated
+        :returns: updates edges
+        :rtype: None
+
+        """
         for a in self._a_to_b:
             t_a = self._translations(a, inverse=False)
             for interval in t_a:
@@ -185,6 +194,14 @@ class Translation(object):
                     edges[rp1].append(rp2)
 
     def get_old_edges(self, subgraph):
+        """Find all edges in subgraph that are still valid
+        after this translation
+
+        :param subgraph: former subgraph
+        :returns: Adjacancy list of valid edges
+        :rtype: defaultdict(list)
+
+        """
         new_edges = subgraph.adj_list.copy()
         for k, v in new_edges.items():
             new_edges[k] = v[:]
@@ -201,8 +218,19 @@ class Translation(object):
         return new_edges
 
     def get_external_edges(self, subgraph, edges):
+        """Get new external edges, i.e edges between
+        region paths that have been translated
+
+        :param subgraph: subgraph to be translated
+        :param edges: Adj list to update
+        :rtype: None (updates edges)
+
+        """
         for a in self._a_to_b:
-            lasts = [i.region_paths[-1] for i in self._translations(a, False)]
+            translations = self._translations(a, False)
+
+            # Edges from a
+            lasts = [i.region_paths[-1] for i in translations]
             for b in subgraph.adj_list[a]:
                 firsts = [b]
                 if b in self._a_to_b:
@@ -210,8 +238,10 @@ class Translation(object):
                               for i in self._translations(b, False)]
                 for l in lasts:
                     edges[l].extend([f for f in firsts if f != l])
+
+            # Edges to a
             my_firsts = [i.region_paths[0] for i in
-                         self._translations(a, False)]
+                         translations]
             for b in subgraph.reverse_adj_list[a]:
                 lasts = [b]
                 if b in self._a_to_b:
