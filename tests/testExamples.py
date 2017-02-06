@@ -13,6 +13,8 @@ class testExamples(unittest.TestCase):
         numeric_graph, name_translation = g.convert_to_numeric_graph(graph)
 
         self.assertEqual(len(graph.blocks), 3)
+        print("adj list")
+        print(graph.adj_list)
         self.assertEqual(len(graph.adj_list), 0)
 
         new_numeric_graph, numeric_translation = \
