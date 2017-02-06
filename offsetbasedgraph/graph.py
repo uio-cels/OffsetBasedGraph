@@ -32,7 +32,7 @@ class Graph(object):
     reverse_adj_list = defaultdict(list)
 
     # Graph alterations
-    def __init__(self, blocks, adj_list):
+    def __init__(self, blocks, adj_list, create_reverse_adj_list=True):
         """
         Inits the graph with a list of blocks and an adjency list
         :param blocks:
@@ -41,7 +41,9 @@ class Graph(object):
         """
         self.blocks = blocks
         self.adj_list = defaultdict(list, adj_list)
-        self.reverse_adj_list = self._get_reverse_edges(adj_list)
+        if create_reverse_adj_list:
+            self.reverse_adj_list = self._get_reverse_edges(adj_list)
+
         self._id = max([b for b in blocks if isinstance(b, int)] + [0])
 
         if isinstance(self._id, str):
@@ -54,16 +56,21 @@ class Graph(object):
         :rtype: Graph
 
         """
+        import copy
+        #return copy.deepcopy(self)
 
         new_blocks = {}
         new_adjs = {}
         for b in self.blocks:
             new_blocks[b] = Block(self.blocks[b].length())
 
-        for b in self.adj_list:
-            new_adjs[b] = list(self.adj_list[b])
+        #for b in self.adj_list:
+        #    new_adjs[b] = list(self.adj_list[b])
+        new_adjs = self.adj_list.copy()
 
-        return Graph(new_blocks, new_adjs)
+        new_graph =  Graph(new_blocks, new_adjs, False)
+        new_graph.reverse_adj_list = self.reverse_adj_list.copy()
+        return new_graph
 
     def _next_id(self):
         """Make a new id and return it
@@ -660,7 +667,7 @@ class Graph(object):
         for interval in new_intervals:
             interval.graph = cur_graph
 
-        back_graph_end = cur_graph.copy()
+        back_graph_end = cur_graph
         end_translations = Translation(graph=cur_graph)
         end_translations.graph2 = back_graph_end
 
@@ -683,7 +690,7 @@ class Graph(object):
                 Position(id_b, L-offset)
                 )]
 
-            prev_graph = cur_graph.copy()
+            prev_graph = cur_graph#.copy()
             reverse_dict[id_a] = [Interval(Position(rp, 0),
                                            Position(rp, offset),
                                            graph=prev_graph)]
@@ -695,9 +702,9 @@ class Graph(object):
             tmp_trans = Translation(trans_dict, reverse_dict, graph=prev_graph)
             cur_graph = tmp_trans.translate_subgraph(cur_graph)
 
-            self._update_a_b_graph(tmp_trans._a_to_b, cur_graph.copy())
+            self._update_a_b_graph(tmp_trans._a_to_b, cur_graph)
 
-            tmp_trans.graph2 = cur_graph.copy()
+            tmp_trans.graph2 = cur_graph
 
             # Asssert translations now have all intervals needed
             self._assert_translation_intervals_has_graphs(translation)
@@ -965,6 +972,13 @@ class Graph(object):
 
     def __eq__(self, other):
 
+        if(len(self.blocks) != len(other.blocks)):
+            return False
+
+        if self.blocks != other.blocks:
+            print("Different blocks")
+            return False
+
         for adj in self.adj_list:
             #if adj in other.adj_list and self.adj_list[adj] != other.adj_list[adj]:
             if set(self.adj_list[adj]) != set(other.adj_list[adj]):
@@ -980,9 +994,7 @@ class Graph(object):
         #if self.adj_list != other.adj_list:
         #    return False
 
-        if self.blocks != other.blocks:
-            print("Different blocks")
-            return False
+
 
         return True
 
