@@ -191,13 +191,9 @@ class Translation(object):
         return edge_list_add
 
     def _copy_blocks(self, subgraph):
-        new_blocks = dict.fromkeys(set(subgraph.blocks.keys()))
-        for b in subgraph.blocks:
-            if b not in self._a_to_b:
-                new_blocks[b] = self.block_cls(subgraph.blocks[b].length())
-            else:
-                del new_blocks[b]
-
+        new_blocks = subgraph.blocks.copy()
+        for b in self._a_to_b:
+            del new_blocks[b]
         return new_blocks
 
     def _translate_subgraph_blocksv2(self, subgraph, edge_list_add, copy_graph):
