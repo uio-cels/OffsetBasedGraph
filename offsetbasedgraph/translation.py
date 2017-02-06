@@ -161,21 +161,6 @@ class Translation(object):
         for rp in rps:
             assert rp in self._b_to_a, "%s not in %s" % (rp, self._b_to_a)
 
-    def _translagte_subgraph_edgesv2(self, subgraph, copy_graph):
-        adj_list = subgraph.adj_list.copy()
-        rev_list = subgraph.reverse_adj_list()
-        for a in self._a_to_b:
-            del adj_list[a]
-            for r in rev_list[a]:
-                adj_list[r].remove(a)
-
-        for block1 in self._a_to_b:
-            interval = Interval(0, subgraph.blocks[block2].length(),
-                                [block1, block2], subgraph)
-
-            translated = self.translate_interval(
-                interval).get_single_path_intervals()
-
 
     def get_internal_edges(self, subgraph, edges, reverse_edges):
         """Find new edges gotten from splitting region paths
@@ -208,8 +193,10 @@ class Translation(object):
         """
         new_edges = subgraph.adj_list.copy()
         new_rev_edges = subgraph.reverse_adj_list.copy()
-        # for k, v in new_edges.items():
-        #    new_edges[k] = v[:]
+        for k, v in new_edges.items():
+            new_edges[k] = v[:]
+        for k, v in new_rev_edges.items():
+            new_rev_edges[k] = v[:]
 
         for a in self._a_to_b:
             if a in new_edges:
@@ -433,6 +420,11 @@ class Translation(object):
         edges, rev_edges = self.get_old_edges(subgraph)
         self.get_external_edges(subgraph, edges, rev_edges)
         self.get_internal_edges(subgraph, edges, rev_edges)
+        for k, v in edges.items():
+            edges[k] = list(set(v))
+        for k, v in rev_edges.items():
+            rev_edges[k] = list(set(v))
+
         # edge_list_add = self._translate_subgraph_edges(subgraph, copy_graph)
 
         new_blocks, edge_list_add = self._translate_subgraph_blocksv2(
