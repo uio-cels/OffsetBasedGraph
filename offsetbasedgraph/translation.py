@@ -177,6 +177,15 @@ class Translation(object):
                 interval).get_single_path_intervals()            
 
     def get_internal_edges(self, subgraph, edges, reverse_edges = {}):
+        """Find new edges gotten from splitting region paths
+        under current translation
+
+        :param subgraph: former subgraph
+        :param edges: adjacency list to be updated
+        :returns: updates edges
+        :rtype: None
+
+        """
         for a in self._a_to_b:
             t_a = self._translations(a, inverse=False)
             for interval in t_a:
@@ -188,25 +197,58 @@ class Translation(object):
                     reverse_edges[rp2].append(rp1)
 
     def get_old_edges(self, subgraph):
+        """Find all edges in subgraph that are still valid
+        after this translation
+
+        :param subgraph: former subgraph
+        :returns: Adjacancy list of valid edges
+        :rtype: defaultdict(list)
+
+        """
         new_edges = subgraph.adj_list.copy()
-        for k, v in new_edges.items():
-            new_edges[k] = v[:]
+        new_rev_edges = subgraph.reverse_adj_list.copy()
+        # for k, v in new_edges.items():
+        #    new_edges[k] = v[:]
 
         for a in self._a_to_b:
             if a in new_edges:
                 del new_edges[a]
+            if a in new_rev_edges:
+                del new_rev_edges[a]
 
         for a in self._a_to_b:
             for v in subgraph.reverse_adj_list[a]:
                 if a not in new_edges[v]:
                     continue
+                new_edges[v] = new_edges[v][:]
                 new_edges[v].remove(a)
+<<<<<<< HEAD
 
         return new_edges
+=======
+            for v in subgraph.adj_list[a]:
+                if a not in new_rev_edges[v]:
+                    continue
+                new_rev_edges[v] = new_rev_edges[v][:]
+                new_rev_edges[v].remove(a)
+>>>>>>> 876a95cac725e53960cde747eacfd3bb84894733
 
-    def get_external_edges(self, subgraph, edges):
+        return new_edges, new_rev_edges
+
+    def get_external_edges(self, subgraph, edges, rev_edges):
+        """Get new external edges, i.e edges between
+        region paths that have been translated
+
+        :param subgraph: subgraph to be translated
+        :param edges: Adj list to update
+        :rtype: None (updates edges)
+
+        """
         for a in self._a_to_b:
-            lasts = [i.region_paths[-1] for i in self._translations(a, False)]
+            translations = self._translations(a, False)
+
+            # Edges from a
+            lasts = [i.region_paths[-1] for i in translations]
             for b in subgraph.adj_list[a]:
                 firsts = [b]
                 if b in self._a_to_b:
@@ -214,8 +256,12 @@ class Translation(object):
                               for i in self._translations(b, False)]
                 for l in lasts:
                     edges[l].extend([f for f in firsts if f != l])
+                for f in firsts:
+                    rev_edges[f].extend([l for l in lasts if l != f])
+
+            # Edges to a
             my_firsts = [i.region_paths[0] for i in
-                         self._translations(a, False)]
+                         translations]
             for b in subgraph.reverse_adj_list[a]:
                 lasts = [b]
                 if b in self._a_to_b:
@@ -223,6 +269,8 @@ class Translation(object):
                              for i in self._translations(b, False)]
                 for l in lasts:
                     edges[l].extend([f for f in my_firsts if f != l])
+                for f in my_firsts:
+                    edges[f].extend([l for l in lasts if f != l])
 
     def _translate_subgraph_edges(self, subgraph, copy_graph):
         edge_list_add = []
@@ -386,12 +434,17 @@ class Translation(object):
         #edge_list_add = self._translate_subgraph_edges(subgraph, copy_graph)
 
 
-        edges = self.get_old_edges(subgraph)
-        self.get_external_edges(subgraph, edges)
+        edges, rev_edges = self.get_old_edges(subgraph)
+        self.get_external_edges(subgraph, edges, rev_edges)
         self.get_internal_edges(subgraph, edges)
+<<<<<<< HEAD
 
         for k, v in edges.items():
             edges[k] = list(set(v))
+=======
+        # for k, v in edges.items():
+        #    edges[k] = list(set(v))
+>>>>>>> 876a95cac725e53960cde747eacfd3bb84894733
         # edge_list_add = self._translate_subgraph_edges(subgraph, copy_graph)
 
         new_blocks, edge_list_add = self._translate_subgraph_blocksv2(
@@ -404,8 +457,8 @@ class Translation(object):
         #             new_adj[edge[0]].append(edge[1])
         #     else:
         #         new_adj[edge[0]] = [edge[1]]
-        for k, v in edges.items():
-            assert k not in v, "%s, %s" % (k, v)
+        # for k, v in edges.items():
+        #    assert k not in v, "%s, %s" % (k, v)
         return self.graph1.__class__(new_blocks, edges)  # new_adj)
 
     # @takes(Interval)
