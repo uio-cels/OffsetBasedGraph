@@ -162,6 +162,15 @@ class Interval(object):
 
         return True
 
+    def approx_equals(self, other, tolerance=0):
+        if not self.region_paths == other.region_paths:
+            return False
+        if abs(self.start_position.offset-other.start_position.offset) > tolerance:
+            return False
+        if abs(self.end_position.offset-other.end_position.offset)>tolerance:
+            return False
+        return True
+
     def __deepcopy__(self, memo):
         return Interval(self.start_position, self.end_position,
                         self.region_paths, self.graph)
@@ -249,6 +258,19 @@ class Interval(object):
                 adjs.append((prev, rp))
             prev = rp
         return adjs
+
+    def partition_region_paths(self):
+        rps = self.region_paths
+        start = self.start_position.offset
+        partitions = []
+        for rp in rps:
+            if rp == rps[-1]:
+                end = self.end_position.offset
+            else:
+                end = self.graph.blocks[rp].length()
+            partitions.append(Interval(start, end, [rp]))
+            start = 0
+        return partitions
 
 
 def interval_factory(graph):
