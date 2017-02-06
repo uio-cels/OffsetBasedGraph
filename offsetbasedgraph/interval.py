@@ -47,6 +47,8 @@ class Interval(object):
         self.region_paths = region_paths
         self.graph = graph
 
+        self.length_cache = None
+
         # Sanity check interval
         # assert self.start_position.region_path_id in self.region_paths
         # assert self.end_position.region_path_id in self.region_paths
@@ -72,13 +74,19 @@ class Interval(object):
         :rtype: int
 
         """
+
+        if self.length_cache is not None:
+            return self.length_cache
+
         if not self.region_paths:
             return 0
         try:
             r_lengths = [self.graph.blocks[rp].length()
                          for rp in self.region_paths[:-1]]
             r_sum = sum(r_lengths)
-            return r_sum-self.start_position.offset+self.end_position.offset
+            length = r_sum-self.start_position.offset+self.end_position.offset
+            self.length_cache = length
+            return length
 
         except KeyError as e:
             print("Error on interval %s on graph %s" % (str(self), str(self.graph)))

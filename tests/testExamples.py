@@ -3,7 +3,7 @@ from offsetbasedgraph import Interval, Position, Graph, Translation, Block
 
 class testExamples(unittest.TestCase):
 
-    def _test_overlapping_alt_loci(self):
+    def test_overlapping_alt_loci(self):
         chrom_file = "examples/chrom.sizes.test"
         alt_loci = "examples/alt_loci_test"
 
@@ -47,7 +47,7 @@ class testExamples(unittest.TestCase):
 
         self.assertTrue(correct_graph_structure.has_identical_structure(new_numeric_graph))
 
-    def _test_merge_flanks_2x(self):
+    def test_merge_flanks_2x(self):
 
         # Merge flanks of two alt loci
         g = Graph({1: Block(8), 2: Block(3), 3: Block(5)}, {})
@@ -120,7 +120,7 @@ class testExamples(unittest.TestCase):
         )
         self.assertTrue(new_graph.has_identical_structure(correct_structure))
 
-    def _test_merge_flanks_2x_case2(self):
+    def test_merge_flanks_2x_case2(self):
 
         # Merge flanks of two alt loci
         g = Graph({1: Block(8), 2: Block(3), 3: Block(5)}, {})
