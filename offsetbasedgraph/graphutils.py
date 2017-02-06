@@ -865,7 +865,7 @@ def _merge_alt_using_cigar(original_grch38_graph, trans, alt_id, cigar, alt_seq,
         #print("Type/len: %s/%d" % (type, n))
 
         if type == "M":
-            print("Match %d" % (n))
+            # print("Match %d" % (n))
             # If sequences are identical, then merge
             seq_on_alt = alt_seq[alt_offset-alt_start:alt_offset-alt_start+n]
             seq_on_main = main_seq[main_offset-main_pos_start:main_offset+n-main_pos_start]
@@ -890,7 +890,7 @@ def _merge_alt_using_cigar(original_grch38_graph, trans, alt_id, cigar, alt_seq,
 
                     if i == n-1:
                         i += 1
-                    print("    Merging from %d to %d" % (prev, i))
+                    # print("    Merging from %d to %d" % (prev, i))
                     # Something is different, merge from prev to i
                     m_start = main_offset + prev
                     m_end = main_offset + i
