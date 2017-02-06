@@ -50,8 +50,11 @@ class Translation(object):
             #print(self._a_to_b)
         #else:
             #print("Graph2 is none")
-
-        self.block_cls = self.graph1.blocks.values()[0].__class__
+        if self.graph1 and self.graph1.blocks:
+            self.block_cls = list(self.graph1.blocks.values())[0].__class__
+        else:
+            from .graph import Block
+            self.block_cls = Block
 
     @classmethod
     def make_name_translation(cls, trans_dict, graph):
@@ -188,14 +191,10 @@ class Translation(object):
         return edge_list_add
 
     def _copy_blocks(self, subgraph):
-        #from .graph import Block
-        return copy.copy(subgraph.blocks)
-
-        #new_blocks = {}
         new_blocks = dict.fromkeys(set(subgraph.blocks.keys()))
         for b in subgraph.blocks:
             if b not in self._a_to_b:
-                new_blocks[b] = Block(subgraph.blocks[b].length())
+                new_blocks[b] = self.block_cls(subgraph.blocks[b].length())
             else:
                 del new_blocks[b]
 

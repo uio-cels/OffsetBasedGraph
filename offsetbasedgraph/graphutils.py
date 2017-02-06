@@ -200,8 +200,7 @@ class Gene(object):
         exons_partitions = [exon.partition_region_paths() for exon in self.exons]
         cur_rp = rps[0]
         for exon_partition in exons_partitions:
-            while
-        
+            pass
 
     def is_cut_version(self, other, tolerance=0):
         """Check if other is made from cutting self

@@ -59,18 +59,19 @@ class Graph(object):
         import copy
         #return copy.deepcopy(self)
 
-        #new_blocks = {}
+        new_blocks = {}
         new_adjs = {}
-        #for b in self.blocks:
-        #    new_blocks[b] = Block(self.blocks[b].length())
-        new_blocks = copy.copy(self.blocks)
+        for b in self.blocks:
+            new_blocks[b] = Block(self.blocks[b].length())
+        # new_blocks = copy.copy(self.blocks)
 
-        #for b in self.adj_list:
-        #    new_adjs[b] = list(self.adj_list[b])
-        new_adjs = self.adj_list.copy()
+        for b in self.adj_list:
+            new_adjs[b] = list(self.adj_list[b])
+        # new_adjs = self.adj_list.copy()
 
-        new_graph =  Graph(new_blocks, new_adjs, True)
-        #new_graph.reverse_adj_list = self.reverse_adj_list.copy()
+
+        new_graph = Graph(new_blocks, new_adjs, False)
+        new_graph.reverse_adj_list = self.reverse_adj_list.copy()
         return new_graph
 
     def _next_id(self):
@@ -295,7 +296,7 @@ class Graph(object):
                         new_edges[b] = [e]
         subgraph = Graph(new_blocks, new_edges)
         subgraph_without_critical = subgraph.copy()
-        return subgraph
+        # return subgraph
 
         # Append with prev critical and next critical
         first = subgraph.get_first_blocks()[0]
