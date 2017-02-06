@@ -739,55 +739,40 @@ def merge_alt_using_cigar(original_numeric_grch38_graph, trans, alt_id):
     except:
         print("Could not open alignment file alt_alignments/%s.alignment" % alt_id)
         return trans, trans.graph2
-
-    main_length = main_end - main_start
-    alt_length = alt_end - alt_start
-
-
-    """
-    alt_loci_fn = "grch38_alt_loci.txt"
-    f = open(alt_loci_fn)
-    for line in f.readlines():
-        if line.startswith("#"):
-            continue
-        l = line.split()
-        alt_locus_id = l[0]
-        if alt_locus_id == alt_id:
-            main_chr = l[1]
-            start = int(l[2])
-            end = int(l[3])
-            length = int(l[4])
-            break
-    """
     main_chr = alt_id.split("_")[0]
-
 
     # Get sequences
     print("Fetching alt sequence")
-    alt_seq = get_sequence_ucsc(alt_id, alt_start + 1, alt_end)  # uscs is 0 indexed and inclusive??
+
+    # uscs is 0 indexed and inclusive??
+    alt_seq = get_sequence_ucsc(alt_id, alt_start + 1, alt_end)
+
     print("Fetching main sequence")
     main_seq = get_sequence_ucsc(main_chr, main_start + 1, main_end)
-
-    #print(alt_seq[0:10])
-    #print(main_seq[0:10])
-    ##print(alt_seq[-10:])
-    #print(main_seq[-10:])
-    #print(len(alt_seq))
-    #print(alt_end - alt_start)
-    #print(main_end - main_start)
 
     assert len(alt_seq) == (alt_end - alt_start)
     assert len(main_seq) == (main_end - main_start)
 
-    #print(alt_seq[-10:])
-    #print(main_seq[-10:])
+    from .cigar_align import clean_cigar, align_cigar
+    cleaned_cigar = clean_cigar(cigar, alt_seq, main_seq)
+    alt_id = trans.translate_rp(alt_id)[0].region_paths[0]
+    main_id = trans.translate_rp(main_chr)[0].region_paths[0]
+    trans = align_cigar(cleaned_cigar,
+                        Interval(alt_start, alt_end, [alt_id]),
+                        Interval(main_start, main_end, [main_id]),
+                        original_numeric_grch38_graph)
 
-    #print(main_chr, start, end, length)
+    new_graph = trans.translate_subgraph(original_numeric_grch38_graph)
+    trans.set_graph2(new_graph)
 
-    return _merge_alt_using_cigar(original_numeric_grch38_graph, trans, alt_id, cigar, alt_seq, main_seq, main_chr, main_start, main_end, alt_start, alt_end)
+    return trans, new_graph
+
+# return _merge_alt_using_cigar(original_numeric_grch38_graph, trans, alt_id, cigar, alt_seq, main_seq, main_chr, main_start, main_end, alt_start, alt_end)
 
 
-def _merge_alt_using_cigar(original_grch38_graph, trans, alt_id, cigar, alt_seq, main_seq, main_chr, main_pos_start, main_pos_end, alt_start, alt_end):
+def _merge_alt_using_cigar(original_grch38_graph, trans, alt_id, cigar,
+                           alt_seq, main_seq, main_chr, main_pos_start,
+                           main_pos_end, alt_start, alt_end):
     """
 
     :param original_grch38_graph: Numeric grch38 graph (created by calling grch38_graph_to_numeric)
