@@ -186,12 +186,12 @@ def translate_genes_to_aligned_graph(args):
 
     print("Genes written")
 
+
 def analyse_multipath_genes(args):
 
     import pickle
     with open("%s" % args.multipath_genes_file_name, "rb") as f:
         genes = pickle.loads(f.read())
-
 
     # Create a simple dict index to speed up duplicate search
     genes_index = {}
