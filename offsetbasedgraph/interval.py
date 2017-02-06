@@ -23,49 +23,35 @@ class Position(object):
 
 class Interval(object):
 
+    def offset_init(self, start_offset, end_offset, region_paths):
+        assert region_paths, "No region paths given and start_position is int %s, %s, %s" % (start_position, end_position, region_paths)
+        self.start_position = Position(region_paths[0], start_offset)
+        self.end_position = Position(region_paths[-1], end_offset)
+        self.region_paths = region_paths
+
+    def position_init(self, start_position, end_position, region_paths):
+        self.start_position = start_position
+        self.end_position = end_position
+
+        if region_paths is None:
+            region_paths = [start_position.region_path_id]
+            if end_position.region_path_id != start_position.region_path_id:
+                region_paths.append(end_position.region_path_id)
+        self.region_paths = region_paths
+
     def __init__(self, start_position, end_position,
                  region_paths=None, graph=None):
         assert region_paths is None or isinstance(region_paths, list), "Region paths must be None or list"
 
         if isinstance(start_position, int):
-            assert region_paths, "No region paths given and start_position is int %s, %s, %s" % (start_position, end_position, region_paths)
-            self.start_position = Position(region_paths[0], start_position)
+            self.offset_init(start_position, end_position, region_paths)
         else:
-            self.start_position = start_position
-
-        if isinstance(end_position, int):
-            self.end_position = Position(region_paths[-1], end_position)
-        else:
-            self.end_position = end_position
+            self.position_init(start_position, end_position, region_paths)
 
         # By default include start and end region path
-        if region_paths is None:
-            region_paths = [start_position.region_path_id]
-            if end_position.region_path_id != start_position.region_path_id:
-                region_paths.append(end_position.region_path_id)
-
-        self.region_paths = region_paths
         self.graph = graph
 
         self.length_cache = None
-
-        # Sanity check interval
-        # assert self.start_position.region_path_id in self.region_paths
-        # assert self.end_position.region_path_id in self.region_paths
-
-        if self.graph is None:
-            return
-        # for rp in region_paths:
-        # assert rp in graph.blocks, "Region path %s not in graph \n%s" % (rp, graph)
-
-        # Check offsets
-#         max_offset = graph.blocks[self.region_paths[-1]].length()
-#         msg = "Offset %d in block %d with size %d. Interval: %s" % (
-#             self.end_position.offset,
-#             self.region_paths[-1],
-#             graph.blocks[self.region_paths[-1]].length(), self.__str__())
-#
-#         assert self.end_position.offset <= max_offset, msg
 
     def length(self):
         """
