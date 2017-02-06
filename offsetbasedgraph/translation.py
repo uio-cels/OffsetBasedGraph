@@ -181,6 +181,7 @@ class Translation(object):
             for interval in t_a:
                 for rp1, rp2 in zip(interval.region_paths[:-1],
                                     interval.region_paths[1:]):
+                    print("Add edge %s, %s" % (rp1, rp2))
                     edges[rp1].append(rp2)
 
     def get_old_edges(self, subgraph):
@@ -193,6 +194,7 @@ class Translation(object):
 #                     new_edges[v].remove(a)
 #         return new_edges
         new_edges = subgraph.adj_list.copy()
+        print("New edges: %s" % new_edges)
         for k, v in new_edges.items():
             new_edges[k] = v[:]
         for a in self._a_to_b:
@@ -204,6 +206,7 @@ class Translation(object):
                 if a not in new_edges[v]:
                     continue
                 new_edges[v].remove(a)
+
         return new_edges
 
     def get_external_edges(self, subgraph, edges):
@@ -384,6 +387,8 @@ class Translation(object):
 
         self.get_external_edges(subgraph, edges)
         self.get_internal_edges(subgraph, edges)
+        print("=== edges ====")
+        print(edges)
         edges = {k: list(set(v)) for k, v in edges.items()}
         # edge_list_add = self._translate_subgraph_edges(subgraph, copy_graph)
 

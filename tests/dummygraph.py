@@ -118,3 +118,35 @@ def get_merged_middle_translation():
         }
     )
     return graph1, graph2, trans
+
+
+
+def get_merged_middle_translation_extended_graph():
+    graph1 = Graph({1: Block(3), 2: Block(3)}, {})
+    graph2 = Graph(
+                {
+                    1: Block(1),
+                    2: Block(1),
+                    3: Block(1),
+                    4: Block(1),
+                    5: Block(1)
+                },
+                {   1: [5],
+                    2: [5],
+                    5: [3, 4]
+                }
+    )
+    trans = Translation(
+        {
+            1: [Interval(0, 1, [1, 5, 3], graph2)],
+            2: [Interval(0, 1, [2, 5, 4], graph2)]
+        },
+        {
+            1: [Interval(0, 1, [1], graph1)],
+            2: [Interval(0, 1, [2], graph1)],
+            5: [Interval(1, 2, [1], graph1), Interval(1, 2, [2], graph1)],
+            3: [Interval(2, 3, [1], graph1)],
+            4: [Interval(2, 3, [2], graph1)]
+        }
+    )
+    return graph1, graph2, trans
