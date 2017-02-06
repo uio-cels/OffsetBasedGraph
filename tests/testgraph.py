@@ -22,10 +22,12 @@ def disjoint_graph():
 class TestGraph(unittest.TestCase):
 
     def assert_graph_equals(self, graph, blocks, adj_list):
-        self.assertEqual(graph.blocks, blocks)
-        self.assertEqual(graph.adj_list, adj_list)
-        self.assertEqual(graph.reverse_adj_list,
-                         graph._get_reverse_edges(adj_list))
+        new_graph = Graph(blocks, adj_list)
+        self.assertEqual(new_graph, graph)
+        # self.assertEqual(graph.blocks, blocks)
+        # self.assertEqual(graph.adj_list, adj_list)
+        # self.assertEqual(graph.reverse_adj_list,
+        #                  graph._get_reverse_edges(adj_list))
 
     def test_graph_equals(self):
         # Case 1
@@ -427,9 +429,11 @@ class TestGraph(unittest.TestCase):
             Interval(8, 3, [1, 4, 3], graph),
             Interval(9, 5, [1, 2, 3], graph),
         ]
-
+        print(graph.adj_list)
         subgraph, trans = graph.create_subgraph_from_intervals(intervals, 2)
-
+        print(subgraph.blocks)
+        print(subgraph.adj_list)
+        print(subgraph.reverse_adj_list)
         self.assertEqual(subgraph.blocks[subgraph.get_first_blocks()[0]].length(), 4)
         self.assertEqual(subgraph.blocks[subgraph.get_last_blocks()[0]].length(), 7)
         self.assertEqual(len(subgraph.blocks), 4)

@@ -181,22 +181,16 @@ class Translation(object):
             for interval in t_a:
                 for rp1, rp2 in zip(interval.region_paths[:-1],
                                     interval.region_paths[1:]):
-                    print("Add edge %s, %s" % (rp1, rp2))
+
+                    assert rp1 != rp2
                     edges[rp1].append(rp2)
 
     def get_old_edges(self, subgraph):
-#         new_edges = defaultdict({k: v[:] for k, v in subgraph.adj_list.items() if
-#                                  k not in self._a_to_b}, )
-# 
-#         for a in self._a_to_b:
-#             for v in subgraph.reverse_adj_list[a]:
-#                 if a in new_edges[v]:
-#                     new_edges[v].remove(a)
-#         return new_edges
         new_edges = subgraph.adj_list.copy()
         print("New edges: %s" % new_edges)
         for k, v in new_edges.items():
             new_edges[k] = v[:]
+
         for a in self._a_to_b:
             if a in new_edges:
                 del new_edges[a]
@@ -218,7 +212,16 @@ class Translation(object):
                     firsts = [i.region_paths[0]
                               for i in self._translations(b, False)]
                 for l in lasts:
-                    edges[l].extend(firsts)
+                    edges[l].extend([f for f in firsts if f != l])
+            my_firsts = [i.region_paths[0] for i in
+                         self._translations(a, False)]
+            for b in subgraph.reverse_adj_list[a]:
+                lasts = [b]
+                if b in self._a_to_b:
+                    lasts = [i.region_paths[-1]
+                             for i in self._translations(b, False)]
+                for l in lasts:
+                    edges[l].extend([f for f in my_firsts if f != l])
 
     def _translate_subgraph_edges(self, subgraph, copy_graph):
         edge_list_add = []
@@ -350,7 +353,6 @@ class Translation(object):
 
         return new_blocks, edge_list_add
 
-
     def translate_subgraph(self, subgraph, copy_graph=True):
         """
         Translates a graph (forward). The graph has to be a subgraph of
@@ -384,12 +386,11 @@ class Translation(object):
 
 
         edges = self.get_old_edges(subgraph)
-
         self.get_external_edges(subgraph, edges)
         self.get_internal_edges(subgraph, edges)
-        print("=== edges ====")
-        print(edges)
-        edges = {k: list(set(v)) for k, v in edges.items()}
+
+        for k, v in edges.items():
+            edges[k] = list(set(v))
         # edge_list_add = self._translate_subgraph_edges(subgraph, copy_graph)
 
         new_blocks, edge_list_add = self._translate_subgraph_blocksv2(
@@ -402,7 +403,8 @@ class Translation(object):
         #             new_adj[edge[0]].append(edge[1])
         #     else:
         #         new_adj[edge[0]] = [edge[1]]
-
+        for k, v in edges.items():
+            assert k not in v, "%s, %s" % (k, v)
         return self.graph1.__class__(new_blocks, edges)  # new_adj)
 
     # @takes(Interval)
