@@ -1,8 +1,8 @@
-from .util import takes
+from collections import defaultdict
 from .interval import Interval, Position
 from .multipathinterval import GeneralMultiPathInterval, SingleMultiPathInterval, SimpleMultipathInterval
 import pickle
-import copy
+
 
 class Translation(object):
 
@@ -160,44 +160,62 @@ class Translation(object):
         for rp in rps:
             assert rp in self._b_to_a, "%s not in %s" % (rp, self._b_to_a)
 
+    def _translagte_subgraph_edgesv2(self, subgraph, copy_graph):
+        adj_list = subgraph.adj_list.copy()
+        rev_list = subgraph.reverse_adj_list()
+        for a in self._a_to_b:
+            del adj_list[a]
+            for r in rev_list[a]:
+                adj_list[r].remove(a)
 
-    def _translate_subgraph_edgesv2(self, subgraph, copy_graph):
-        new_edges = copy.copy(subgraph.adj_list)
+        for block1 in self._a_to_b:
+            interval = Interval(0, subgraph.blocks[block2].length(),
+                                [block1, block2], subgraph)
 
-        for b in self._a_to_b:
-            # Delete
-            if b in subgraph.blocks:
+            translated = self.translate_interval(
+                interval).get_single_path_intervals()            
 
-                # Translate all edges from and to b
-                # translate all edges from b
-                from_block = self._translations(b)[0].region_paths[-1]
-                to_blocks = []
-                for b2 in subgraph.adj_list[b]:
-                    to_block = self._translations(b2, inverse=False)[0].region_paths[0]
-                    to_blocks.append(to_block)
-                new_edges[from_block] = to_blocks
-                # Translate all edges to b
-                for b2 in subgraph.reverse_adj_list[b]:
-                    from_block = self._translations(b2)[0].region_paths[-1]
+    def get_internal_edges(self, subgraph, edges):
+        for a in self._a_to_b:
+            t_a = self._translations(a, inverse=False)
+            for interval in t_a:
+                for rp1, rp2 in zip(interval.region_paths[:-1],
+                                    interval.region_paths[1:]):
+                    edges[rp1].append(rp2)
 
-                    to_block = self._a_to_b[b][0].region_paths[0]
-                    if from_block in new_edges:
-                        new_edges[from_block].append(to_block)
-                    else:
-                        new_edges[from_block] = [to_block]
+    def get_old_edges(self, subgraph):
+#         new_edges = defaultdict({k: v[:] for k, v in subgraph.adj_list.items() if
+#                                  k not in self._a_to_b}, )
+# 
+#         for a in self._a_to_b:
+#             for v in subgraph.reverse_adj_list[a]:
+#                 if a in new_edges[v]:
+#                     new_edges[v].remove(a)
+#         return new_edges
+        new_edges = subgraph.adj_list.copy()
+        for k, v in new_edges.items():
+            new_edges[k] = v[:]
+        for a in self._a_to_b:
+            if a in new_edges:
+                del new_edges[a]
 
-
-                # Delete all old edges from and to b
-                if b in new_edges:
-                    del new_edges[b]
-
-                for b2 in subgraph.reverse_adj_list[b]:
-                    if b in new_edges[b2]:
-                        new_edges[b2].remove(b)
-
-
-
+        for a in self._a_to_b:
+            for v in subgraph.reverse_adj_list[a]:
+                if a not in new_edges[v]:
+                    continue
+                new_edges[v].remove(a)
         return new_edges
+
+    def get_external_edges(self, subgraph, edges):
+        for a in self._a_to_b:
+            lasts = [i.region_paths[-1] for i in self._translations(a, False)]
+            for b in subgraph.adj_list[a]:
+                firsts = [b]
+                if b in self._a_to_b:
+                    firsts = [i.region_paths[0]
+                              for i in self._translations(b, False)]
+                for l in lasts:
+                    edges[l].extend(firsts)
 
     def _translate_subgraph_edges(self, subgraph, copy_graph):
         edge_list_add = []
@@ -213,14 +231,14 @@ class Translation(object):
                 continue
             """
             if block1 not in self._a_to_b and block2 not in self._a_to_b:
-                #print("Identical")
                 edge_list_add.append((block1, block2))
                 continue
 
             interval = Interval(0, subgraph.blocks[block2].length(),
                                 [block1, block2], subgraph)
-            #print("Translating interval: " + str(interval))
-            translated = self.translate_interval(interval).get_single_path_intervals()
+
+            translated = self.translate_interval(
+                interval).get_single_path_intervals()
             assert len(translated) <= 1, \
                 "Only translations to one interval supported. %d returned" \
                 % len(translated)
@@ -361,21 +379,26 @@ class Translation(object):
         edge_list_add = []
         #edge_list_add = self._translate_subgraph_edges(subgraph, copy_graph)
 
-        new_adj = self._translate_subgraph_edgesv2(subgraph, copy_graph)
-        new_blocks, edge_list_add = self._translate_subgraph_blocksv3(subgraph, new_adj, copy_graph)
 
+        edges = self.get_old_edges(subgraph)
 
-        """
+        self.get_external_edges(subgraph, edges)
+        self.get_internal_edges(subgraph, edges)
+        edges = {k: list(set(v)) for k, v in edges.items()}
+        # edge_list_add = self._translate_subgraph_edges(subgraph, copy_graph)
+
+        new_blocks, edge_list_add = self._translate_subgraph_blocksv2(
+            subgraph, [], copy_graph)
+
         # Add all edges we have found
-        for edge in edge_list_add:
-            if edge[0] in new_adj:
-                if edge[1] not in new_adj[edge[0]]:
-                    new_adj[edge[0]].append(edge[1])
-            else:
-                new_adj[edge[0]] = [edge[1]]
-        """
+        # for edge in edge_list_add:
+        #     if edge[0] in new_adj:
+        #         if edge[1] not in new_adj[edge[0]]:
+        #             new_adj[edge[0]].append(edge[1])
+        #     else:
+        #         new_adj[edge[0]] = [edge[1]]
 
-        return self.graph1.__class__(new_blocks, new_adj)
+        return self.graph1.__class__(new_blocks, edges)  # new_adj)
 
     # @takes(Interval)
     def translate_interval(self, interval, inverse=False):
@@ -396,14 +419,53 @@ class Translation(object):
         trans_dict = self._b_to_a if inverse else self._a_to_b
 
         if not any(rp in trans_dict for rp in interval.region_paths):
-            return SingleMultiPathInterval(interval, self._get_other_graph(inverse))
+            return SingleMultiPathInterval(interval,
+                                           self._get_other_graph(inverse))
 
         if (interval.length() == 0):
-            start_poses = self.translate_position(interval.start_position, inverse)
-            return SimpleMultipathInterval([Interval(sp, sp, [sp.region_path_id], graph=self._get_other_graph(inverse))
-                                            for sp in start_poses])
+            start_poses = self.translate_position(interval.
+                                                  start_position,
+                                                  inverse)
+            return SimpleMultipathInterval(
+                [Interval(sp, sp, [sp.region_path_id],
+                          graph=self._get_other_graph(inverse))
+                 for sp in start_poses])
 
         return self._translate_interval_nontrivial(interval, inverse)
+
+    def tmp(self, region_path, intervalt, interval, inverse):
+        # Find out which of these rps should be added
+        # Do not add region paths before the original interval
+        intervalt_offset = intervalt.start_position.offset
+        offset = 0
+        new_region_paths = []
+        for rp in intervalt.region_paths:
+            if inverse:
+                assert intervalt.graph is not None, intervalt
+                assert rp in intervalt.graph.blocks, \
+                    "region path %s in interval %s does not exist in graph %s" % (
+                        rp, intervalt, intervalt.graph)
+                length = intervalt.graph.blocks[rp].length()
+            else:
+                length = self._translations(rp, True)[0].length()
+
+            # If first region path
+            is_first = interval.region_paths[0] == region_path
+            is_tmp = offset + length - intervalt_offset <= interval.start_position.offset
+            if is_first and is_tmp:
+                offset += length
+                continue
+
+            # If last region path
+            is_last = interval.region_paths[-1] == region_path
+            if is_last and offset >= interval.end_position.offset:
+                offset += length
+                continue
+            new_region_paths.append(rp)
+
+            offset += length
+
+        return new_region_paths
 
     def _translate_interval_nontrivial(self, interval, inverse=False):
         new_starts = self.translate_position(interval.start_position, inverse)
@@ -423,51 +485,19 @@ class Translation(object):
             intervals = self._translations(region_path, inverse)
             is_simple = is_simple and len(intervals) == 1
             for intervalt in intervals:
-                #print("Adding " + str(intervalt.region_paths))
-
                 # Find out which of these rps should be added
                 # Do not add region paths before the original interval
-                intervalt_offset = intervalt.start_position.offset
-                offset = 0
-                for rp in intervalt.region_paths:
-                    if inverse:
-                        assert intervalt.graph is not None, "interval %s has graph None" % (intervalt)
-                        assert rp in intervalt.graph.blocks, \
-                                "region path %s in interval %s does not exist in graph %s" % (rp, intervalt, intervalt.graph)
-                        length = intervalt.graph.blocks[rp].length()
-                    else:
-                        length = self._translations(rp, True)[0].length()
-
-                    # If first region path
-                    if interval.region_paths[0] == region_path and offset + length - intervalt_offset <= interval.start_position.offset:
-                        #print("Cont on first")
-                        #print(offset + length - intervalt_offset)
-                        #print(length)
-                        offset += length
-                        continue
-                    # If last region path
-                    elif interval.region_paths[-1] == region_path and offset >= interval.end_position.offset:
-                        offset += length
-                        continue
-                    new_region_paths.append(rp)
-
-                    offset += length
-
-                #new_region_paths.extend(intervalt.region_paths)
+                new_region_paths.extend(
+                    self.tmp(region_path, intervalt, interval, inverse))
 
         if is_simple:
-            #print("Is simple. New region paths: ")
-            #print(new_region_paths)
-            new_interval = SingleMultiPathInterval(
+            return SingleMultiPathInterval(
                 Interval(new_starts[0], new_ends[0], new_region_paths,
                          graph=self._get_other_graph(inverse)))
 
-        else:
-            new_interval = GeneralMultiPathInterval(
-                new_starts, new_ends,
-                new_region_paths, self._get_other_graph(inverse))
-
-        return new_interval
+        return GeneralMultiPathInterval(
+            new_starts, new_ends,
+            new_region_paths, self._get_other_graph(inverse))
 
     # @takes(Position)
     def translate_position(self, position, inverse=False):
@@ -581,7 +611,7 @@ class Translation(object):
         new_b_to_a = new_translate_dict
 
         # Set b_to_a graph to graph1
-        copied_graph = self.graph1#.copy()  # Should not be necsesary to copy here??
+        copied_graph = self.graph1 #.copy()  # Should not be necsesary to copy here??
         for intvs in new_b_to_a.values():
             for intv in intvs:
                 intv.graph = copied_graph

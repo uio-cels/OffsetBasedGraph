@@ -2,7 +2,6 @@ from collections import defaultdict
 from .interval import Interval, Position
 from .util import takes
 from .translation import Translation
-import sys
 import pickle
 import os
 
