@@ -809,51 +809,18 @@ def _merge_alt_using_cigar(original_grch38_graph, trans, alt_id, cigar, alt_seq,
     main_seq = np.array(list(main_seq))
 
     length = main_pos_end - main_pos_start
-    #print("Merging %s" % alt_id)
 
     """
     Algorithm:
         go through cigar. For every cigar element, modify graph.
         If cigar is m,
     """
-    #print(cigar)
     cigar = cigar.split(" ")
-    #print("Alt start: %d" % alt_start)
     main_offset = main_pos_start
     alt_offset = alt_start
-
-    #
-    #print("alt offset: %d" % alt_offset)
-
-    ab = {}
-    ba = {}
-    #print("=== Merge alt ===")
     graph = original_grch38_graph.copy()
 
-
-
-
-    #print("== Numeric graph ===")
-    #print(graph)
-    """
-    graph, t = graph.connect_postitions(
-                        trans.translate(Position(main_chr, main_pos_start - 1)),
-                        trans.translate(Position(alt_id, 0)))
-    trans += t
-    graph, t = graph.connect_postitions(
-                        trans.translate(Position(alt_id, alt_length - 1)),
-                        trans.translate(Position(main_chr, main_pos_end + 1)))
-    trans += t
-    """
-
-
-    #print("=== Graph before cigar ===")
-    #print(graph)
-
-    #print(cigar)
     for c in cigar:
-        print("Graph size: %d" % len(graph.blocks))
-
         first = c[0]
         if first == "M" or first == "D" or first == "I":
             type = first
@@ -862,83 +829,42 @@ def _merge_alt_using_cigar(original_grch38_graph, trans, alt_id, cigar, alt_seq,
             type = c[-1]
             n = int(c[:-1])
 
-        #print("Type/len: %s/%d" % (type, n))
+        if type == "I":
+            alt_offset += n
+            continue
+        if type == "D":
+            main_offset += n
+            continue
 
-        if type == "M":
-            # print("Match %d" % (n))
-            # If sequences are identical, then merge
-            seq_on_alt = alt_seq[alt_offset-alt_start:alt_offset-alt_start+n]
-            seq_on_main = main_seq[main_offset-main_pos_start:main_offset+n-main_pos_start]
+        # If sequences are identical, then merge
+        assert type == "M"
+        seq_on_alt = alt_seq[alt_offset-alt_start:alt_offset-alt_start+n]
+        seq_on_main = main_seq[main_offset-main_pos_start:main_offset+n-main_pos_start]
+        prev = 0
+        for i in range(0, len(seq_on_alt)):
+            if seq_on_alt[i] != seq_on_main[i] or i == n - 1:
+                if i <= prev:
+                    continue
 
-            #print(seq_on_alt)
-            #print(seq_on_main)
-            """
-            print(seq_on_alt[0:10])
-            print(seq_on_alt[-10:])
-            print(seq_on_main[0:10])
-            print(seq_on_main[-10:])
-            """
-            prev = 0
-            match = True
-            for i in range(0, len(seq_on_alt)):
-                #print(i)
+                if i == n-1:
+                    i += 1
 
-
-                if seq_on_alt[i] != seq_on_main[i] or i == n - 1:
-                    if i <= prev:
-                        continue
-
-                    if i == n-1:
-                        i += 1
-                    # print("    Merging from %d to %d" % (prev, i))
-                    # Something is different, merge from prev to i
-                    m_start = main_offset + prev
-                    m_end = main_offset + i
-                    a_start = alt_offset + prev
-                    a_end = alt_offset + i
-                    #print("Merging alt %d,%d with main %d,%d, prev: %d, i: %i" % (a_start, a_end, m_start, m_end, prev, i))
-                    intv1 = trans.translate(Interval(m_start, m_end, [main_chr], original_grch38_graph))
-                    intv2 = trans.translate(Interval(a_start, a_end, [alt_id], original_grch38_graph))
-                    #print("Merging %s with %s" % (intv1, intv2))
-                    graph, mtrans = graph.merge([intv1, intv2])
-
-                    trans = trans + mtrans
-                    trans.graph2 = graph
-                    prev = i+1
-                    #print ("  Finished merging")
-
-
-            """
-            if seq_on_alt == seq_on_main:
-                print("Merging match")
-                #print(trans)
-                intv1 = trans.translate(Interval(main_offset, main_offset+n, [main_chr], graph))
-                intv2 = trans.translate(Interval(alt_offset, alt_offset+n, [alt_id], graph))
-                #print("Merging %s with %s" % (intv1, intv2))
+                # Something is different, merge from prev to i
+                m_start = main_offset + prev
+                m_end = main_offset + i
+                a_start = alt_offset + prev
+                a_end = alt_offset + i
+                intv1 = trans.translate(Interval(m_start, m_end, [main_chr],
+                                                 original_grch38_graph))
+                intv2 = trans.translate(Interval(a_start, a_end, [alt_id],
+                                                 original_grch38_graph))
                 graph, mtrans = graph.merge([intv1, intv2])
 
                 trans = trans + mtrans
                 trans.graph2 = graph
-
-                #print(trans)
-                #print(graph)
-
-            else:
-                print("Not merging, different")
-                #continue
-                # Just connect ?
-                #graph.connect_postitions()
-            """
-            main_offset += n
-            alt_offset += n
-            #print("Offsets alt/main: %d/%d" % (alt_offset, main_offset))
-
-        elif type == "I":
-            #print("Insertion")
-            alt_offset += n
-        elif type == "D":
-            #print("Deletion")
-            main_offset += n
+                prev = i+1
+        main_offset += n
+        alt_offset += n
 
     # Should be correct if cigar is correct:
 
@@ -954,9 +880,6 @@ def _merge_alt_using_cigar(original_grch38_graph, trans, alt_id, cigar, alt_seq,
 
     assert alt_offset - alt_start == len(alt_seq)
     assert main_offset - main_pos_start == len(main_seq)
-
-    #print("=== Final trans ===")
-    #print(trans)
 
     # Final translation should make final graph from original
     assert graph == trans.graph2 # (original_grch38_graph)
