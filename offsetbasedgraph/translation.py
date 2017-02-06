@@ -191,6 +191,7 @@ class Translation(object):
         return edge_list_add
 
     def _copy_blocks(self, subgraph):
+        return copy.copy(subgraph.blocks)
         new_blocks = dict.fromkeys(set(subgraph.blocks.keys()))
         for b in subgraph.blocks:
             if b not in self._a_to_b:
@@ -227,8 +228,8 @@ class Translation(object):
 
             edge_list_add.extend(translated.get_adj_list())  # Add these later
 
-            if not copy_graph:
-                del new_blocks[block]
+            #if not copy_graph:
+            #del new_blocks[block]
 
         return new_blocks, edge_list_add
 
