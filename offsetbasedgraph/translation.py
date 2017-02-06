@@ -160,6 +160,45 @@ class Translation(object):
         for rp in rps:
             assert rp in self._b_to_a, "%s not in %s" % (rp, self._b_to_a)
 
+
+    def _translate_subgraph_edgesv2(self, subgraph, copy_graph):
+        new_edges = copy.copy(subgraph.adj_list)
+
+        for b in self._a_to_b:
+            # Delete
+            if b in subgraph.blocks:
+
+                # Translate all edges from and to b
+                # translate all edges from b
+                from_block = self._translations(b)[0].region_paths[-1]
+                to_blocks = []
+                for b2 in subgraph.adj_list[b]:
+                    to_block = self._translations(b2, inverse=False)[0].region_paths[0]
+                    to_blocks.append(to_block)
+                new_edges[from_block] = to_blocks
+                # Translate all edges to b
+                for b2 in subgraph.reverse_adj_list[b]:
+                    from_block = self._translations(b2)[0].region_paths[-1]
+
+                    to_block = self._a_to_b[b][0].region_paths[0]
+                    if from_block in new_edges:
+                        new_edges[from_block].append(to_block)
+                    else:
+                        new_edges[from_block] = [to_block]
+
+
+                # Delete all old edges from and to b
+                if b in new_edges:
+                    del new_edges[b]
+
+                for b2 in subgraph.reverse_adj_list[b]:
+                    if b in new_edges[b2]:
+                        new_edges[b2].remove(b)
+
+
+
+        return new_edges
+
     def _translate_subgraph_edges(self, subgraph, copy_graph):
         edge_list_add = []
 
@@ -195,6 +234,44 @@ class Translation(object):
         for b in self._a_to_b:
             del new_blocks[b]
         return new_blocks
+
+    def _translate_subgraph_blocksv3(self, subgraph, new_adj, copy_graph):
+        # from .graph import Block
+
+        if copy_graph:
+            new_blocks = self._copy_blocks(subgraph)
+        else:
+            new_blocks = subgraph.blocks
+
+
+        # Add blocks sthat should be translated
+        for block in self._a_to_b:
+
+            if block not in subgraph.blocks:
+                continue
+
+            translated = self._translations(block, inverse=False)
+            assert len(translated) <= 1, \
+                "Only translations to max 1 interval supported. %d returned" \
+                % (len(translated))
+            translated = translated[0]
+            for rp in translated.region_paths:
+                if rp not in new_blocks:
+                    new_blocks[rp] = self.block_cls(
+                        self._translations(rp, inverse=True)[0].length())
+
+            #edge_list_add.extend(translated.get_adj_list())  # Add these later
+            for e1, e2 in translated.get_adj_list():
+                if e1 in new_adj:
+                    new_adj[e1].append(e2)
+                else:
+                    new_adj[e1] = [e2]
+
+
+            #if not copy_graph:
+            #del new_blocks[block]
+
+        return new_blocks, new_adj
 
     def _translate_subgraph_blocksv2(self, subgraph, edge_list_add, copy_graph):
         # from .graph import Block
@@ -281,13 +358,14 @@ class Translation(object):
         Add every region path in translated interval and every edge
         Also, translate every region path and add edges and region paths found
         """
+        edge_list_add = []
+        #edge_list_add = self._translate_subgraph_edges(subgraph, copy_graph)
 
-        edge_list_add = self._translate_subgraph_edges(subgraph, copy_graph)
-
-        new_blocks, edge_list_add = self._translate_subgraph_blocksv2(subgraph, edge_list_add, copy_graph)
-
+        new_adj = self._translate_subgraph_edgesv2(subgraph, copy_graph)
+        new_blocks, edge_list_add = self._translate_subgraph_blocksv3(subgraph, new_adj, copy_graph)
 
 
+        """
         # Add all edges we have found
         for edge in edge_list_add:
             if edge[0] in new_adj:
@@ -295,6 +373,7 @@ class Translation(object):
                     new_adj[edge[0]].append(edge[1])
             else:
                 new_adj[edge[0]] = [edge[1]]
+        """
 
         return self.graph1.__class__(new_blocks, new_adj)
 
@@ -411,13 +490,8 @@ class Translation(object):
         positions = []
         #print("Translating position %s, %d, region path: %d" % (str(position), inverse, position.region_path_id))
         for interval in intervals:
-            if True or (not inverse and self.graph2 is None) \
-                    or (inverse and self.graph1 is None):
-                #print("Finding rp lens for interval %s" % interval)
-                rp_lens = [self._translations(rp, inverse=not inverse)[0].length()
+            rp_lens = [self._translations(rp, inverse=not inverse)[0].length()
                            for rp in interval.region_paths]
-            else:
-                rp_lens = [interval.graph.blocks[rp].length() for rp in interval.region_paths] #[self._get_other_graph(inverse).blocks[rp].length() for rp in interval.region_paths]
 
             found_pos = interval.get_position_from_offset(
                 position.offset, rp_lens)

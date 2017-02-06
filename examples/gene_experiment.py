@@ -72,7 +72,7 @@ def merge_all_alignments(args):
     #trans = Translation({}, {}, graph=graph)
     i = 0
     #for b in text_graph.blocks:
-    for b in ['chr12_GL383552v1_alt']: #text_graph.blocks:
+    for b in ['chr6_GL000250v2_alt']: #text_graph.blocks:
         if "alt" in b:
             print("Merging %s" % b)
             trans, new_graph = merge_alt_using_cigar(new_graph, trans, b)
