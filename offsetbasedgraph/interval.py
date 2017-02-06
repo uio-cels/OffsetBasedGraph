@@ -79,19 +79,15 @@ class Interval(object):
             return self.length_cache
 
         if not self.region_paths:
+            self.length_cache = 0
             return 0
-        try:
-            r_lengths = [self.graph.blocks[rp].length()
-                         for rp in self.region_paths[:-1]]
-            r_sum = sum(r_lengths)
-            length = r_sum-self.start_position.offset+self.end_position.offset
-            self.length_cache = length
-            return length
 
-        except KeyError as e:
-            print("Error on interval %s on graph %s" % (str(self), str(self.graph)))
-            print(str(e))
-            raise
+        r_lengths = [self.graph.blocks[rp].length()
+                     for rp in self.region_paths[:-1]]
+        r_sum = sum(r_lengths)
+        length = r_sum-self.start_position.offset+self.end_position.offset
+        self.length_cache = length
+        return length
 
     def starts_at_rp(self):
         return self.start_position.offset == 0
