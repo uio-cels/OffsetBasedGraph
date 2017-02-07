@@ -740,7 +740,7 @@ class Graph(object):
             for interval in intvs:
                 interval.graph = graph
                 if prev_graph != None:
-                    interval.length_cache = prev_graph.blocks[block].length()
+                    interval.set_length_cache(prev_graph.blocks[block].length())
 
     def assert_position_in_graph(self, position, exclusive=False):
         assert position.region_path_id in self.blocks
@@ -772,6 +772,8 @@ class Graph(object):
         for interval in intervals[1:]:
             assert interval.length() == length, \
                 "All intervals should have the same length (%d, %d)" % (interval.length(), length)
+
+        print("Block lengths: %s" % block_lengths)
 
         # 1: Translate graph so that all intervals starts and ends at rps
         trans, graph1 = self._get_inslulate_translation(intervals, block_lengths)
@@ -808,7 +810,7 @@ class Graph(object):
             for rp in interval.region_paths:
                 offset += graph1.blocks[rp].length()
                 a_b[rp] = [Interval(prev_offset, offset, [large_block])]
-                a_b[rp][0].length_cache = offset - prev_offset
+                a_b[rp][0].set_length_cache(offset - prev_offset)
                 prev_offset = offset
 
         # Find new graph
@@ -826,10 +828,10 @@ class Graph(object):
 
         for block in new_blocks:
             a_b[block] = [Interval(0, length, [new_block])]
-            a_b[block][0].length_cache = length
+            a_b[block][0].set_length_cache(length)
             i = Interval(0, length, [block], graph2)
             b_a[new_block].append(i)
-            i.length_cache = length
+            i.set_length_cache(length)
 
         block_lengths[new_block] = length
 
@@ -859,28 +861,39 @@ class Graph(object):
         last_length = 0
         sum_len = 0
         for start in starts:
-            new_small = graph3._next_id()
+            new_small = graph3._next_id()  # graph3._next_id()
             new_blocks.append(new_small)
             i = Interval(prev_start, start, [new_block], graph3)
-            i.length_cache = start - prev_start
+            i.set_length_cache(start - prev_start)
             b_a[new_small] = [i]
             block_lengths[new_small] = start - prev_start
             last_length = start - prev_start
-            prev_start = start
             sum_len += (start - prev_start)
+            prev_start = start
 
         i2 = Interval(0, last_length, new_blocks)
-        i2.length_cache = sum_len
+        i2.set_length_cache(sum_len)
         a_b[new_block].append(i2)
 
-        trans4 = Translation(a_b, b_a, graph3, block_lengths)
+        trans4 = Translation(a_b, b_a, None, block_lengths)
+        print("==== Trans 4 ====")
+        print(trans4)
         graph4 = trans4.translate_subgraph(graph3)
         self._update_a_b_graph(a_b, graph4)
         trans4.graph2 = graph4
+
+
+        final_trans = trans + trans2
+        final_trans += trans3
+        final_trans += trans4
+        """
+
         final_trans = trans3 + trans4
         final_trans = trans2 + final_trans
         final_trans = trans + final_trans
+        """
         final_trans.graph1 = original_graph  # Should not be needed ?!
+
 
         final_graph = final_trans.translate_subgraph(self)
         final_trans.graph2 = final_graph

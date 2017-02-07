@@ -51,7 +51,15 @@ class Interval(object):
         # By default include start and end region path
         self.graph = graph
 
+        if self.graph is not None:
+            assert self.start_position.offset < self.graph.blocks[self.region_paths[0]].length()
+
+
         self.length_cache = None
+
+    def set_length_cache(self, l):
+        assert l > 0
+        self.length_cache = l
 
     def length(self):
         """
@@ -62,17 +70,23 @@ class Interval(object):
         """
 
         if self.length_cache is not None:
+            print("Returning cache")
             return self.length_cache
+
 
         if not self.region_paths:
             self.length_cache = 0
             return 0
+
+        assert self.graph is not None, "Graph is none and length cache is None"
 
         r_lengths = [self.graph.blocks[rp].length()
                      for rp in self.region_paths[:-1]]
         r_sum = sum(r_lengths)
         length = r_sum-self.start_position.offset+self.end_position.offset
         self.length_cache = length
+
+        assert length >= 0, "Length is %d for interval %s. r_lengths: %s. Graph: %s" % (length, self, r_lengths, self.graph)
         return length
 
     def starts_at_rp(self):
@@ -182,10 +196,10 @@ class Interval(object):
         graph = "Graph"
         if self.graph is None:
             graph = "None graph"
-        return "Intv(%s, %s, %s, %s)" % (
+        return "Intv(%s, %s, %s, %s, lc=%d)" % (
             self.start_position,
             self.end_position, self.region_paths,
-            graph)
+            graph, self.length_cache)
 
     def diff(self, other):
         codes = []
@@ -222,6 +236,7 @@ class Interval(object):
         :rtype: Position
 
         """
+        print("Get position from offset")
         total_offset = offset + self.start_position.offset
         if rp_lens is None:
             print("Finding rp_lens")
@@ -234,7 +249,7 @@ class Interval(object):
                 return Position(region_path, total_offset)
             total_offset -= rp_length
 
-        assert False, "No offset %d from interval %s" % (offset, self)
+        assert False, "No offset %d from interval %s using rp lens %s" % (offset, self, rp_lens)
 
     def get_adj_list(self):
         """
