@@ -102,7 +102,6 @@ def visualize_genes(args):
     # Find blocks that genes cover, create subgraph using them
     from offsetbasedgraph.graphutils import GeneList
     genes = GeneList.from_file(args.genes_file_name).gene_list
-    blocks = []
 
     trans_regions = [g.transcription_region for g in genes]
     subgraph, trans = graph.create_subgraph_from_intervals(trans_regions, 20)
@@ -130,27 +129,23 @@ def visualize_genes(args):
     from offsetbasedgraph import VisualizeHtml
     subgraph.start_block = start
     max_offset = sum([subgraph.blocks[b].length() for b in subgraph.blocks])
-    v = VisualizeHtml(subgraph, 0, max_offset , 0, levels, "", 800, genes)
+    v = VisualizeHtml(subgraph, 0, max_offset, 0, levels, "", 800, genes)
     print(v.get_wrapped_html())
+
 
 def translate_genes_to_aligned_graph(args):
     trans = Translation.from_file(args.merged_graph_file_name)
-    orig_graph = trans.graph1
-    complex_graph = trans.graph2
 
     # Creat critical path multipath intervals of genes by translating
     # to complex graph.
     # Represent by txStart, txEnd as start,end and exons as critical intervals
-    from offsetbasedgraph.graphutils import GeneList, parse_genes_file
+    from offsetbasedgraph.graphutils import GeneList
     from offsetbasedgraph import CriticalPathsMultiPathInterval
     genes = GeneList(get_gene_objects_as_intervals(args.genes, trans.graph1))
     mpgenes = []
     spgenes = []  # Also store single path for debugging
     n = 1
     for gene in genes.gene_list:
-        #if n % 1000 == 0:
-            #print("parsed %d genes" % n)
-
         n += 1
 
         if gene.name != "NM_001320412":
@@ -275,73 +270,102 @@ if __name__ == "__main__":
     sys.exit()
     """
 
-    parser = argparse.ArgumentParser(description='Interact with a graph created from GRCh38')
+    parser = argparse.ArgumentParser(
+        description='Interact with a graph created from GRCh38')
     subparsers = parser.add_subparsers(help='Subcommands')
 
     # Subcommand for create graph
-    parser_create_graph = subparsers.add_parser('create_graph', help='Create graph')
-    parser_create_graph.add_argument('chrom_sizes_file_name',
-                    help='Tabular file containing two columns, chrom/alt name and size')
-    parser_create_graph.add_argument('alt_locations_file_name',
-                    help='File containing alternative loci')
-    parser_create_graph.add_argument('out_file_name',
-                    help='Name of file to store graph and translation objects insize')
+    parser_create_graph = subparsers.add_parser(
+        'create_graph', help='Create graph')
+    parser_create_graph.add_argument(
+        'chrom_sizes_file_name',
+        help='Tabular file containing two columns, chrom/alt name and size')
+    parser_create_graph.add_argument(
+        'alt_locations_file_name',
+        help='File containing alternative loci')
+    parser_create_graph.add_argument(
+        'out_file_name',
+        help='Name of file to store graph and translation objects insize')
+
     parser_create_graph.set_defaults(func=create_graph)
 
     # Subcommand for genes
-    parser_genes = subparsers.add_parser('check_duplicate_genes', help='Check duplicate genes')
-    parser_genes.add_argument('translation_file_name',
-                                help='Translation file created by running create_graph')
+    parser_genes = subparsers.add_parser(
+        'check_duplicate_genes', help='Check duplicate genes')
+    parser_genes.add_argument(
+        'translation_file_name',
+        help='Translation file created by running create_graph')
+
     parser_genes.add_argument('genes_file_name', help='Genes')
     parser_genes.set_defaults(func=check_duplicate_genes)
 
     # Subcommand for merge alt loci using alignments
-    parser_merge_alignments = subparsers.add_parser('merge_alignment', help='Merge graph using alignments of alt locus')
-    parser_merge_alignments.add_argument('translation_file_name',
-                                help='Translation file created by running create_graph')
-    parser_merge_alignments.add_argument('alt_locus_id', help='Id of alt locus (e.g. chr2_KI270774v1_alt')
-    parser_merge_alignments.set_defaults(func=merge_alignment) # Subcommand for merge alt loci using alignments
+    parser_merge_alignments = subparsers.add_parser(
+        'merge_alignment', help='Merge graph using alignments of alt locus')
+
+    parser_merge_alignments.add_argument(
+        'translation_file_name',
+        help='Translation file created by running create_graph')
+    parser_merge_alignments.add_argument(
+        'alt_locus_id', help='Id of alt locus (e.g. chr2_KI270774v1_alt')
+
+    # Subcommand for merge alt loci using alignments
+    parser_merge_alignments.set_defaults(func=merge_alignment)
 
     # Merge all alignments
-    parser_merge_all_alignments = subparsers.add_parser('merge_all_alignments', help='Merge graph using alignments of ALL alt loci')
-    parser_merge_all_alignments.add_argument('chrom_sizes_file_name',
-                    help='Tabular file containing two columns, chrom/alt name and size')
-    parser_merge_all_alignments.add_argument('out_file_name',
-                                help='File name to store translation object for new graph')
+    parser_merge_all_alignments = subparsers.add_parser(
+        'merge_all_alignments',
+        help='Merge graph using alignments of ALL alt loci')
+
+    parser_merge_all_alignments.add_argument(
+        'chrom_sizes_file_name',
+        help='Tabular file containing two columns, chrom/alt name and size')
+    parser_merge_all_alignments.add_argument(
+        'out_file_name',
+        help='File name to store translation object for new graph')
     parser_merge_all_alignments.set_defaults(func=merge_all_alignments)
 
     # Translate genes to aligned graph
-    parser_translate_genes_to_aligned_graph = subparsers.add_parser('translate_genes_to_aligned_graph',
-                                                           help='Analyse genes on a merged graph, created by calling merge_all_alignments')
-    parser_translate_genes_to_aligned_graph.add_argument('merged_graph_file_name',
-                    help='Name of file created by running merge_all_alignments')
-    parser_translate_genes_to_aligned_graph.add_argument('genes',
-                    help='Tabular file containing genes')
-    parser_translate_genes_to_aligned_graph.add_argument('out_file_name',
-                    help='Name of file to write genes to')
-    parser_translate_genes_to_aligned_graph.set_defaults(func=translate_genes_to_aligned_graph)
+    parser_translate_genes_to_aligned_graph = subparsers.add_parser(
+        'translate_genes_to_aligned_graph',
+        help='Analyse genes on a merged graph, created by calling merge_all_alignments')
+
+    parser_translate_genes_to_aligned_graph.add_argument(
+        'merged_graph_file_name',
+        help='Name of file created by running merge_all_alignments')
+    parser_translate_genes_to_aligned_graph.add_argument(
+        'genes',
+        help='Tabular file containing genes')
+
+    parser_translate_genes_to_aligned_graph.add_argument(
+        'out_file_name',
+        help='Name of file to write genes to')
+    parser_translate_genes_to_aligned_graph.set_defaults(
+        func=translate_genes_to_aligned_graph)
 
     # Analyze multipaht_genes
-    parser_analyse_multipath_genes = subparsers.add_parser('analyse_multipath_genes',
-                                                           help='Analyse genes on a merged graph, created by calling merge_all_alignments')
-    parser_analyse_multipath_genes.add_argument('multipath_genes_file_name',
-                    help='Name of file generated by translate_genes_to_aligned_graph')
+    parser_analyse_multipath_genes = subparsers.add_parser(
+        'analyse_multipath_genes',
+        help='Analyse genes on a merged graph, created by calling merge_all_alignments')
+
+    parser_analyse_multipath_genes.add_argument(
+        'multipath_genes_file_name',
+        help='Name of file generated by translate_genes_to_aligned_graph')
     parser_analyse_multipath_genes.set_defaults(func=analyse_multipath_genes)
 
     # Visualize genes
-    parser_visualize_genes = subparsers.add_parser('visualize_genes', help='Produce html visualization (that can be saved and opened in a browser)')
+    parser_visualize_genes = subparsers.add_parser(
+        'visualize_genes',
+        help='Produce html visualization (that can be saved and opened in a browser)')
     parser_visualize_genes.add_argument('translation_file_name',
-                    help='')
+                                        help='')
     parser_visualize_genes.add_argument('genes_file_name',
-                                help='Pickled genes file')
+                                        help='Pickled genes file')
     parser_visualize_genes.set_defaults(func=visualize_genes)
 
-
-
-    if len(sys.argv)==1:
+    if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(1)
-
 
     args = parser.parse_args()
     if hasattr(args, 'func'):
