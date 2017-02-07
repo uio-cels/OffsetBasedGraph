@@ -39,6 +39,9 @@ class Interval(object):
                 region_paths.append(end_position.region_path_id)
         self.region_paths = region_paths
 
+        #if self.end_position.region_path_id not in self.region_paths:
+        #    self.region_paths.append(self.end_position.region_path_id)
+
     def __init__(self, start_position, end_position,
                  region_paths=None, graph=None):
         assert region_paths is None or isinstance(region_paths, list), "Region paths must be None or list"
@@ -54,6 +57,8 @@ class Interval(object):
         if self.graph is not None:
             assert self.start_position.offset < self.graph.blocks[self.region_paths[0]].length()
 
+        assert self.end_position.region_path_id == self.region_paths[-1]
+        assert self.start_position.region_path_id == self.region_paths[0]
 
         self.length_cache = None
 
@@ -70,15 +75,17 @@ class Interval(object):
         """
 
         if self.length_cache is not None:
-            print("Returning cache")
             return self.length_cache
 
+        if len(self.region_paths) == 1:
+            self.length_cache = self.end_position.offset - self.start_position.offset
+            return self.length_cache
 
         if not self.region_paths:
             self.length_cache = 0
             return 0
 
-        assert self.graph is not None, "Graph is none and length cache is None"
+        assert self.graph is not None, "Graph is none and length cache is None and interval has more than 1 rp. Cannot compute length"
 
         r_lengths = [self.graph.blocks[rp].length()
                      for rp in self.region_paths[:-1]]
@@ -180,8 +187,11 @@ class Interval(object):
                         self.region_paths, self.graph)
 
     def copy(self):
-        return Interval(self.start_position, self.end_position,
+        c = Interval(self.start_position, self.end_position,
                         self.region_paths, self.graph)
+        if self.length_cache is not None:
+            c.set_length_cache(self.length_cache)
+        return c
 
     def __eq__(self, other):
         eq = self.start_position == other.start_position
@@ -199,7 +209,7 @@ class Interval(object):
         return "Intv(%s, %s, %s, %s, lc=%d)" % (
             self.start_position,
             self.end_position, self.region_paths,
-            graph, self.length_cache)
+            graph, self.length_cache if self.length_cache is not None else 0)
 
     def diff(self, other):
         codes = []
@@ -236,10 +246,8 @@ class Interval(object):
         :rtype: Position
 
         """
-        print("Get position from offset")
         total_offset = offset + self.start_position.offset
         if rp_lens is None:
-            print("Finding rp_lens")
             rp_lens = [self.graph.blocks[rp].length()
                        for rp in self.region_paths]
 

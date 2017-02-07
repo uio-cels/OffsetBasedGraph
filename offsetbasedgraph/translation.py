@@ -91,11 +91,10 @@ class Translation(object):
             return pickle.loads(f.read())
 
     def _translations(self, rp, inverse=False):
-        print("_translations on %s" % rp)
         dict = self._b_to_a if inverse else self._a_to_b
         if rp in dict:
+            #print("   in dict")
             intervals = dict[rp]
-            #print("in dict, returning %s" % (intervals))
             return intervals
         # Not in dict, means translate to itself (return interval covering
         # itself)
@@ -501,7 +500,7 @@ class Translation(object):
 
             # If last region path
             is_last = interval.region_paths[-1] == region_path
-            if is_last and offset >= interval.end_position.offset:
+            if is_last and offset - intervalt_offset >= interval.end_position.offset:
                 offset += length
                 continue
             new_region_paths.append(rp)
@@ -563,17 +562,12 @@ class Translation(object):
         positions = []
         #print("Translating position %s, %d, region path: %d" % (str(position), inverse, position.region_path_id))
         for interval in intervals:
-            print("interval")
             if self.block_lengths != None:
-                print(" == block lengths ==")
-                print(self.block_lengths)
                 rp_lens = [self.block_lengths[rp] for rp in interval.region_paths]
 
             else:
-                print("Getting from graph")
                 rp_lens = [self._translations(rp, inverse=not inverse)[0].length()
                            for rp in interval.region_paths]
-            print(rp_lens)
 
             found_pos = interval.get_position_from_offset(
                 position.offset, rp_lens)
