@@ -142,13 +142,13 @@ def translate_genes_to_aligned_graph(args):
     from offsetbasedgraph.graphutils import GeneList
     from offsetbasedgraph import CriticalPathsMultiPathInterval
     genes = GeneList(get_gene_objects_as_intervals(args.genes, trans.graph1))
+    gene_name = args.gene_name
     mpgenes = []
     spgenes = []  # Also store single path for debugging
     n = 1
     for gene in genes.gene_list:
         n += 1
-
-        if gene.name != "NM_001320412":
+        if gene.name != gene_name:
             continue
 
         print("Found gene %s" % gene.name)
@@ -173,17 +173,20 @@ def translate_genes_to_aligned_graph(args):
 
         spgenes.append(Gene(gene.name,
                             trans.translate(gene.transcription_region),
-                            critical_intervals
+                            critical_intervals,
+                            trans.translate(gene.coding_region),
+                            gene.strand
                             )
                        )
-
-
-        #if n >= 5000:
-        #    break
 
     import pickle
     with open("%s" % args.out_file_name, "wb") as f:
         pickle.dump(mpgenes, f)
+
+    for gene in spgenes:
+        print("--------------")
+        for exon in gene.exons:
+            print(exon)
 
     gene_list = GeneList(spgenes)
     gene_list.to_file("%s_gene_list" % args.out_file_name)
@@ -338,8 +341,13 @@ if __name__ == "__main__":
         help='Tabular file containing genes')
 
     parser_translate_genes_to_aligned_graph.add_argument(
+        'gene_name',
+        help='Name of gene')
+
+    parser_translate_genes_to_aligned_graph.add_argument(
         'out_file_name',
         help='Name of file to write genes to')
+
     parser_translate_genes_to_aligned_graph.set_defaults(
         func=translate_genes_to_aligned_graph)
 

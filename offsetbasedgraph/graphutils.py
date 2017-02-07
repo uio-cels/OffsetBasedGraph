@@ -20,9 +20,11 @@ class GeneList(object):
 
     @staticmethod
     def from_file(file_name):
-
         with open("%s" % file_name, "rb") as f:
-            return pickle.loads(f.read())
+            o = pickle.loads(f.read())
+            if isinstance(o, list):
+                o = GeneList(o)
+            return o
 
 
 class Gene(object):
@@ -32,7 +34,7 @@ class Gene(object):
         self.transcription_region = transcription_region
         self.coding_region = coding_region
         self.exons = exons
-        self.strand
+        self.strand = strand
         self.chrom = transcription_region.region_paths[0]
         self.graph = self.transcription_region.graph
 
