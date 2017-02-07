@@ -235,8 +235,8 @@ class TestTranslation(unittest.TestCase):
 
         num_graph = trans.translate_subgraph(graph)
         trans.graph2 = num_graph
-        intervals = [Interval(5, 15, ["A"]),
-                     Interval(0, 10, ["B"])]
+        intervals = [Interval(5, 15, ["A"], graph),
+                     Interval(0, 10, ["B"], graph)]
 
         for interval in intervals:
             self.assertEqual(
