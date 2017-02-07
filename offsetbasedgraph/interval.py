@@ -54,8 +54,8 @@ class Interval(object):
         # By default include start and end region path
         self.graph = graph
 
-        if self.graph is not None:
-            assert self.start_position.offset < self.graph.blocks[self.region_paths[0]].length()
+        #if self.graph is not None:
+            #assert self.start_position.offset < self.graph.blocks[self.region_paths[0]].length()
 
         assert self.end_position.region_path_id == self.region_paths[-1]
         assert self.start_position.region_path_id == self.region_paths[0]
