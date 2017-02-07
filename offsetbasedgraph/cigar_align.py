@@ -25,10 +25,13 @@ def align_cigar(cigar, main_interval, alt_interval, graph):
     def AltInterval(start, end):
         return Interval(start, end, [alt_id], graph=graph)
 
+    alt_len = alt_interval.length()
+
     main_rps = []
     alt_rps = []
     b_to_a = {}
-    _id = 0
+    _id = graph._next_id()
+    print("#", _id)
 
     main_n = 0
     alt_n = 0
@@ -75,8 +78,9 @@ def align_cigar(cigar, main_interval, alt_interval, graph):
             alt_n = n
             alt_offset += n
             main_offset += n
-
+        assert alt_offset <= alt_interval.end_position.offset
         _id += 1
+
     if main_offset < graph.blocks[main_id].length():
         main_rps.append(_id)
         b_to_a[_id] = [MainInterval(main_offset,
@@ -85,11 +89,12 @@ def align_cigar(cigar, main_interval, alt_interval, graph):
         main_n = graph.blocks[main_id].length()-main_offset
         _id += 1
 
-    if alt_offset < graph.blocks[alt_id].length():
+    alt_len = graph.blocks[alt_id].length()
+    if alt_offset < alt_len:
         alt_rps.append(_id)
         b_to_a[_id] = [AltInterval(alt_offset,
-                                   graph.blocks[alt_id].length())]
-        alt_n = graph.blocks[alt_id].length()-alt_offset
+                                   alt_len)]  # graph.blocks[alt_id].length())]
+        alt_n = alt_len-alt_offset
         _id += 1
 
     a_to_b = {alt_id: [Interval(0, alt_n, alt_rps)],
@@ -127,6 +132,17 @@ def get_match_cigar(seq1, seq2):
         cur_symbol = "V" if cur_symbol == "M" else "M"
 
     return cigar
+
+
+def cigar_lens(cigar):
+    main_len = 0
+    alt_len = 0
+    for c, n in cigar:
+        if c in ("M", "V", "D"):
+            main_len += n
+        if c in ("M", "V", "I"):
+            alt_len += n
+    return main_len, alt_len
 
 
 def clean_cigar(cigar, alt_seq, main_seq):
@@ -168,5 +184,7 @@ def clean_cigar(cigar, alt_seq, main_seq):
         cleaned_cigar.extend(match_cigar)
         main_offset += n
         alt_offset += n
-
+    lens = cigar_lens(cleaned_cigar)
+    seq_lens = (len(main_seq), len(alt_seq))
+    assert lens == seq_lens, "%s %s" % (lens, seq_lens)
     return cleaned_cigar
