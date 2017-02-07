@@ -70,8 +70,9 @@ def merge_all_alignments(args):
     # Go through all alts in this graph
     new_graph = graph.copy()
     i = 0
-    # for b in ['chr8_KI270812v1_alt']:
-    for b in ['chr8_KI270822v1_alt']:
+    #for b in text_graph.blocks:
+    for b in ['chr8_KI270818v1_alt']: #['chr8_KI270812v1_alt']: #text_graph.blocks: # chr6_GL000251v2_alt
+
         if "alt" in b:
             print("Merging %s" % b)
             numeric_trans, new_graph = merge_alt_using_cigar(

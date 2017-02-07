@@ -6,7 +6,7 @@ import pickle
 
 class Translation(object):
 
-    def __init__(self, translate_dict={}, reverse_dict={}, graph=None):
+    def __init__(self, translate_dict={}, reverse_dict={}, graph=None, block_lengths = None):
         """
         Init the translation object with two dicts. Each dict has
         region path IDs as keys and a list of intervals as values.
@@ -16,6 +16,7 @@ class Translation(object):
         in graph 1
         :return:
         """
+        self.block_lengths = block_lengths
         self._a_to_b = translate_dict
         self._b_to_a = reverse_dict
         for k, intervals in translate_dict.items():
@@ -92,8 +93,8 @@ class Translation(object):
     def _translations(self, rp, inverse=False):
         dict = self._b_to_a if inverse else self._a_to_b
         if rp in dict:
+            #print("   in dict")
             intervals = dict[rp]
-            #print("in dict, returning %s" % (intervals))
             return intervals
         # Not in dict, means translate to itself (return interval covering
         # itself)
@@ -103,19 +104,18 @@ class Translation(object):
         else:
             g = self.graph1 if self.graph2 is None else self.graph2
 
-        assert(g is not None)
-        if rp not in g.blocks:
-            """
-            print(inverse)
-            if g == self.graph1:
-                print("Chose graph 1")
-            elif g == self.graph2:
-                 print("Chose graph 2")
-            """
-            raise Exception("Region path %d is not in graph" % rp)
+        #assert(g is not None)
+        #if rp not in g.blocks:
+        #    raise Exception("Region path %d is not in graph" % rp)
 
-        length = g.blocks[rp].length()
-        return [Interval(0, length, [rp], g)]
+        if g is None:
+            length = self.block_lengths[rp]
+        else:
+            length = g.blocks[rp].length()
+        i =  [Interval(0, length, [rp], g)]
+        #if g is None:
+        i[0].set_length_cache(length)
+        return i
 
     def _get_other_graph(self, inverse):
         if inverse:
@@ -499,7 +499,7 @@ class Translation(object):
 
             # If last region path
             is_last = interval.region_paths[-1] == region_path
-            if is_last and offset >= interval.end_position.offset:
+            if is_last and offset - intervalt_offset >= interval.end_position.offset:
                 offset += length
                 continue
             new_region_paths.append(rp)
@@ -561,7 +561,11 @@ class Translation(object):
         positions = []
         #print("Translating position %s, %d, region path: %d" % (str(position), inverse, position.region_path_id))
         for interval in intervals:
-            rp_lens = [self._translations(rp, inverse=not inverse)[0].length()
+            if self.block_lengths != None:
+                rp_lens = [self.block_lengths[rp] for rp in interval.region_paths]
+
+            else:
+                rp_lens = [self._translations(rp, inverse=not inverse)[0].length()
                            for rp in interval.region_paths]
 
             found_pos = interval.get_position_from_offset(
@@ -591,23 +595,28 @@ class Translation(object):
             For every (region path => inter) in c, translate recursviely back
             to all intervals using a.translate(inter, inverse). Replace in c
         """
-        assert other.graph1 is not None
-        assert self.graph1 is not None
+        #assert other.graph1 is not None
+        assert self.graph1 is not None, "Graph1 cannot be 1 when adding translations"
 
         # Maybe not necessary, but makes things simpler to require this:
-        assert self.graph2 is not None
+        #assert self.graph2 is not None
         # self.graph2 should be the same as other.graph1
+
+        '''
         assert self.graph2.blocks == other.graph1.blocks, \
                 """The translation added does not have graph1
                 identical to first translation's graph
                 %s\n!=\n%s""" % (self.graph2, other.graph1)
+        '''
 
+        """
         # Assert intervals have correct graphs
         for intervals in self._a_to_b.values():
             for interval in intervals:
                 assert interval.graph.blocks == self.graph2.blocks, \
                     "first translation object has interval %s with graph different than graph2" % (
                         interval)
+        """
 
         for intervals in self._b_to_a.values():
             for interval in intervals:
@@ -615,11 +624,13 @@ class Translation(object):
                     "interval %s has graph %s \n!=\n %s \nTranslation: %s" % (
                         interval, interval.graph, self.graph1, self)
 
+        """
         for intervals in other._b_to_a.values():
             for interval in intervals:
                 assert interval.graph == other.graph1, \
                     "%s \n != \n %s" % (interval.graph, other.graph1)
                 assert interval.graph.blocks == self.graph2.blocks
+        """
 
         new_trans = Translation(self._a_to_b, self._b_to_a, graph=self.graph1)
         region_paths = set(self._a_to_b.keys()).union(set(other._a_to_b.keys()))
