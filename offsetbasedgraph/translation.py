@@ -160,8 +160,7 @@ class Translation(object):
     def _assert_is_valid(self):
         rps = self._get_range()
         for rp in rps:
-            assert rp in self._b_to_a, "%s not in %s" % (rp, self._b_to_a)
-
+            assert rp in self._b_to_a, "%s not in %s" % (rp, self._b_to_a.keys())
 
     def get_internal_edges(self, subgraph, edges, reverse_edges):
         """Find new edges gotten from splitting region paths

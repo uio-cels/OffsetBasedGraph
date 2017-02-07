@@ -17,7 +17,7 @@ from offsetbasedgraph import Graph, Block, Translation, Interval, Position
 from offsetbasedgraph.graphutils import Gene, convert_to_numeric_graph, connect_without_flanks, \
     convert_to_text_graph, merge_flanks, connect_without_flanks, parse_genes_file, \
     get_genes_as_intervals, get_gene_objects_as_intervals, find_exon_duplicates, \
-    create_initial_grch38_graph, blast_test
+    create_initial_grch38_graph, blast_test, convert_cigar_graph_to_text
 
 
 def create_graph(args):
@@ -63,7 +63,8 @@ def merge_alignment(args):
 
 def merge_all_alignments(args):
     from offsetbasedgraph.graphutils import merge_alt_using_cigar, grch38_graph_to_numeric
-    text_graph = create_initial_grch38_graph(args.chrom_sizes_file_name)  # Text ids (chrom names and alt names)
+    # Text ids (chrom names and alt names)
+    text_graph = create_initial_grch38_graph(args.chrom_sizes_file_name)
     graph, name_trans = grch38_graph_to_numeric(text_graph)
 
     # Go through all alts in this graph
@@ -73,18 +74,26 @@ def merge_all_alignments(args):
     for b in ['chr8_KI270822v1_alt']:
         if "alt" in b:
             print("Merging %s" % b)
-            numeric_trans, new_graph = merge_alt_using_cigar(new_graph, name_trans, b)
+            numeric_trans, new_graph = merge_alt_using_cigar(
+                new_graph, name_trans, b)
             i += 1
             if i >= 1:
                 break
-    final_graph, trans2 = convert_to_text_graph(
-        new_graph, name_trans, numeric_trans)
-    for k in sorted(new_graph.adj_list.keys()):
-        print(k, new_graph.adj_list[k])
-    full_trans = name_trans + numeric_trans + trans2
-    full_trans.graph2 = final_graph
+
+    final_graph, trans2 = convert_cigar_graph_to_text(
+        new_graph,
+        name_trans,
+        numeric_trans)
+
+
+    trans_a = name_trans + numeric_trans
+    full_trans = trans_a + trans2
+
+    # full_trans = name_trans + numeric_trans + trans2
+    full_trans.set_graph2(final_graph)
     print("To file")
     full_trans.to_file(args.out_file_name)
+
 
 def visualize_genes(args):
     trans = Translation.from_file(args.translation_file_name)
