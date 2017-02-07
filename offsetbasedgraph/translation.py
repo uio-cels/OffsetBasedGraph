@@ -6,7 +6,7 @@ import pickle
 
 class Translation(object):
 
-    def __init__(self, translate_dict={}, reverse_dict={}, graph=None):
+    def __init__(self, translate_dict={}, reverse_dict={}, graph=None, block_lengths = None):
         """
         Init the translation object with two dicts. Each dict has
         region path IDs as keys and a list of intervals as values.
@@ -16,6 +16,7 @@ class Translation(object):
         in graph 1
         :return:
         """
+        self.block_lengths = block_lengths
         self._a_to_b = translate_dict
         self._b_to_a = reverse_dict
         for k, intervals in translate_dict.items():
@@ -561,7 +562,11 @@ class Translation(object):
         positions = []
         #print("Translating position %s, %d, region path: %d" % (str(position), inverse, position.region_path_id))
         for interval in intervals:
-            rp_lens = [self._translations(rp, inverse=not inverse)[0].length()
+
+            if self.block_lengths != None:
+                rp_lens = [self.block_lengths[rp] for rp in interval.region_paths]
+            else:
+                rp_lens = [self._translations(rp, inverse=not inverse)[0].length()
                            for rp in interval.region_paths]
 
             found_pos = interval.get_position_from_offset(
