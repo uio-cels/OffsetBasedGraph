@@ -7,6 +7,9 @@ import os
 
 class Block(object):
     def __init__(self, length):
+
+        assert length > 0
+
         self._length = length
 
     def length(self):
@@ -609,7 +612,7 @@ class Graph(object):
         trans, ng = new_graph._get_insulated_merge_translation(intervals)
         return full_trans+trans, ng
 
-    def _get_inslulate_translation(self, intervals):
+    def _get_inslulate_translation(self, intervals, block_lengths = {}):
         """Get translation for splitting the region paths
         at the start and end of the intervals such that
         all the intervals span complete region paths
@@ -649,10 +652,12 @@ class Graph(object):
             reverse_dict[id_a] = [Interval(Position(rp, 0),
                                            Position(rp, offset),
                                            graph=prev_graph)]
+            block_lengths[id_a] = offset
 
             reverse_dict[id_b] = [Interval(Position(rp, offset),
                                            Position(rp, L),
                                            graph=prev_graph)]
+            block_lengths[id_b] = L - offset
 
             tmp_trans = Translation(trans_dict, reverse_dict, graph=cur_graph)
             cur_graph = tmp_trans.translate_subgraph(cur_graph)
@@ -700,10 +705,12 @@ class Graph(object):
             reverse_dict[id_a] = [Interval(Position(rp, 0),
                                            Position(rp, offset),
                                            graph=prev_graph)]
+            block_lengths[id_a] = offset
 
             reverse_dict[id_b] = [Interval(Position(rp, offset),
                                            Position(rp, L),
                                            graph=prev_graph)]
+            block_lengths[id_b] = L - offset
 
             tmp_trans = Translation(trans_dict, reverse_dict, graph=prev_graph)
             cur_graph = tmp_trans.translate_subgraph(cur_graph)
@@ -731,10 +738,12 @@ class Graph(object):
             for interval in intervals:
                 assert interval.graph is not None
 
-    def _update_a_b_graph(self, a_b, graph):
-        for intvs in a_b.values():
+    def _update_a_b_graph(self, a_b, graph, prev_graph = None):
+        for block, intvs in a_b.items():
             for interval in intvs:
                 interval.graph = graph
+                if prev_graph != None:
+                    interval.set_length_cache(prev_graph.blocks[block].length())
 
     def assert_position_in_graph(self, position, exclusive=False):
         assert position.region_path_id in self.blocks
@@ -755,6 +764,10 @@ class Graph(object):
         :rtype: Graph, Translation
         """
 
+        block_lengths = self.blocks.copy()
+        for b in block_lengths:
+            block_lengths[b] = self.blocks[b].length()
+
         [self.assert_interval_in_graph(i) for i in intervals]
         original_graph = intervals[0].graph
         # Assume same lengths for all intervals
@@ -763,8 +776,10 @@ class Graph(object):
             assert interval.length() == length, \
                 "All intervals should have the same length (%d, %d)" % (interval.length(), length)
 
+        print("Block lengths: %s" % block_lengths)
+
         # 1: Translate graph so that all intervals starts and ends at rps
-        trans, graph1 = self._get_inslulate_translation(intervals)
+        trans, graph1 = self._get_inslulate_translation(intervals, block_lengths)
         trans.graph2 = graph1
         self._update_a_b_graph(trans._a_to_b, graph1)  # correct, a to b interval's graph is wrong for some reason
 
@@ -790,6 +805,7 @@ class Graph(object):
 
             # Back translation from block to interval
             b_a[large_block] = [interval]
+            block_lengths[large_block] = interval.length()
 
             # Find forward translations
             prev_offset = 0
@@ -797,30 +813,36 @@ class Graph(object):
             for rp in interval.region_paths:
                 offset += graph1.blocks[rp].length()
                 a_b[rp] = [Interval(prev_offset, offset, [large_block])]
+                a_b[rp][0].set_length_cache(offset - prev_offset)
                 prev_offset = offset
 
         # Find new graph
-        trans2 = Translation(a_b, b_a, graph1)
-        graph2 = trans2.translate_subgraph(graph1)
-        trans2.graph2 = graph2
+        trans2 = Translation(a_b, b_a, graph1, block_lengths)
+        #graph2 = trans2.translate_subgraph(graph1)
+        #trans2.graph2 = graph2
 
         # Update graph in a_b intervals to graph2 (which is now created)
-        self._update_a_b_graph(a_b, graph2)
+        #self._update_a_b_graph(a_b, graph2)
 
         # Step 3: Merge each block (representing one interval each) to one single block
-        new_block = graph2._next_id()
+        new_block = graph1._next_id()
         a_b = {}
         b_a = {new_block: []}
 
         for block in new_blocks:
             a_b[block] = [Interval(0, length, [new_block])]
-            b_a[new_block].append(Interval(0, length, [block], graph2))
+            a_b[block][0].set_length_cache(length)
+            i = Interval(0, length, [block])
+            b_a[new_block].append(i)
+            i.set_length_cache(length)
+
+        block_lengths[new_block] = length
 
         # Translate graph
-        trans3 = Translation(a_b, b_a, graph2)
-        graph3 = trans3.translate_subgraph(graph2)
-        self._update_a_b_graph(a_b, graph3)
-        trans3.graph2 = graph3
+        trans3 = Translation(a_b, b_a, None, block_lengths)
+        #graph3 = trans3.translate_subgraph(graph2)
+        #self._update_a_b_graph(a_b, graph3)
+        #trans3.graph2 = graph3
 
         # Step 4: Divide large middle block
         starts = []
@@ -840,23 +862,42 @@ class Graph(object):
         prev_start = 0
         new_blocks = []
         last_length = 0
+        sum_len = 0
         for start in starts:
-            new_small = graph3._next_id()
+            new_small = graph1._next_id()  # graph3._next_id()
             new_blocks.append(new_small)
-            b_a[new_small] = [Interval(prev_start, start, [new_block], graph3)]
+            i = Interval(prev_start, start, [new_block]) #, graph3)
+            i.set_length_cache(start - prev_start)
+            b_a[new_small] = [i]
+            block_lengths[new_small] = start - prev_start
             last_length = start - prev_start
+            sum_len += (start - prev_start)
             prev_start = start
 
-        a_b[new_block].append(Interval(0, last_length, new_blocks))
+        i2 = Interval(0, last_length, new_blocks)
+        i2.set_length_cache(sum_len)
+        a_b[new_block].append(i2)
 
-        trans4 = Translation(a_b, b_a, graph3)
-        graph4 = trans4.translate_subgraph(graph3)
-        self._update_a_b_graph(a_b, graph4)
-        trans4.graph2 = graph4
+
+        trans4 = Translation(a_b, b_a, None, block_lengths)
+        print("==== Trans 4 ====")
+        print(trans4)
+        #graph4 = trans4.translate_subgraph(graph3)
+        #self._update_a_b_graph(a_b, graph4)
+        #trans4.graph2 = graph4
+
+
+        final_trans = trans + trans2
+        final_trans += trans3
+        final_trans += trans4
+        """
+
         final_trans = trans3 + trans4
         final_trans = trans2 + final_trans
         final_trans = trans + final_trans
+        """
         final_trans.graph1 = original_graph  # Should not be needed ?!
+
 
         final_graph = final_trans.translate_subgraph(self)
         final_trans.graph2 = final_graph
