@@ -29,6 +29,7 @@ class Translation(object):
 
 
         # Store graph references
+
         self.graph1 = None
         self.graph2 = None
         if len(self._a_to_b) > 0:
@@ -696,3 +697,9 @@ class Translation(object):
         return "\n".join(["%s: %s" % (_id, ",".join(intervals))
                           for _id, intervals in
                           self._a_to_b.items()])
+
+    def set_graph2(self, graph2):
+        self.graph2 = graph2
+        for k, v in self._a_to_b.items():
+            for interval in v:
+                interval.graph = graph2
