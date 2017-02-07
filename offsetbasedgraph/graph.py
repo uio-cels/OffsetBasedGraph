@@ -45,7 +45,7 @@ class Graph(object):
         elif create_reverse_adj_list:
             self.reverse_adj_list = self._get_reverse_edges(adj_list)
 
-        self._id = max([b for b in blocks if isinstance(b, int)] + [0])
+        self._id = max([b for b in blocks if isinstance(b, int)] + [-1])
 
         if isinstance(self._id, str):
             self._id = 0

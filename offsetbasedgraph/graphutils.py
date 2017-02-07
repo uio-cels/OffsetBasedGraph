@@ -280,6 +280,38 @@ def convert_to_text_graph(graph, name_translation, numeric_translation):
     return new_graph, trans
 
 
+def convert_cigar_graph_to_text(align_graph, name_translation,
+                                numeric_translation):
+
+    def create_name(blocks):
+        names = [name_translation._b_to_a[block][0].region_paths[0]
+                 for block in blocks]
+        names = ["A" if "alt" in name else "M" for name in names]
+        if len(names) == 2:  # HACK
+            return "MA"
+
+        return "".join(names)
+
+    contributors = {block: [] for block in align_graph.blocks}
+    for block, intervals in numeric_translation._b_to_a.items():
+        for interval in intervals:
+            contributors[block].extend(interval.region_paths)
+
+    for block, conts in contributors.items():
+        if not conts:
+            contributors[block] = [block]
+
+    a_to_b = {block: create_name(conts)+str(block)
+              for block, conts in contributors.items()}
+    graph1 = numeric_translation.graph2
+    trans = Translation.make_name_translation(
+        a_to_b, graph1)
+
+    new_graph = trans.translate_subgraph(graph1)
+    trans.set_graph2(new_graph)
+    return new_graph, trans
+
+
 def merge_flanks(intervals, final_trans, new_graph, name_translation):
     """
     Merges the start and end flanks represented in intervals on the given graph
@@ -757,9 +789,11 @@ def merge_alt_using_cigar(original_numeric_grch38_graph, trans, alt_id):
     cleaned_cigar = clean_cigar(cigar, alt_seq, main_seq)
     alt_id = trans.translate_rp(alt_id)[0].region_paths[0]
     main_id = trans.translate_rp(main_chr)[0].region_paths[0]
+    print(alt_start, alt_end)
+    print(main_start, main_end)
     trans = align_cigar(cleaned_cigar,
-                        Interval(alt_start, alt_end, [alt_id]),
                         Interval(main_start, main_end, [main_id]),
+                        Interval(alt_start, alt_end, [alt_id]),
                         original_numeric_grch38_graph)
 
     new_graph = trans.translate_subgraph(original_numeric_grch38_graph)
