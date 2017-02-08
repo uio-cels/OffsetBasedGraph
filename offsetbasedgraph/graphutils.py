@@ -24,6 +24,11 @@ class GeneList(object):
         with open("%s" % file_name, "rb") as f:
             return pickle.loads(f.read())
 
+class MultiPathGene(object):
+    def __init__(self, name, multipath_interval):
+        self.name = name
+        self.interval = multipath_interval
+
 
 class Gene(object):
 
@@ -32,7 +37,7 @@ class Gene(object):
         self.transcription_region = transcription_region
         self.coding_region = coding_region
         self.exons = exons
-        self.strand
+        self.strand = strand
         self.chrom = transcription_region.region_paths[0]
         self.graph = self.transcription_region.graph
 
@@ -457,7 +462,7 @@ def get_genes_as_intervals(fn, graph):
     return out
 
 
-def get_gene_objects_as_intervals(fn, graph):
+def get_gene_objects_as_intervals(fn, graph=None):
     """
     Returns a dict. Keys are gene names and values are intervals
     representing the gene
@@ -774,12 +779,10 @@ def merge_alt_using_cigar(original_numeric_grch38_graph, trans, alt_id):
     main_chr = alt_id.split("_")[0]
 
     # Get sequences
-    print("Fetching alt sequence")
 
     # uscs is 0 indexed and inclusive??
     alt_seq = get_sequence_ucsc(alt_id, alt_start + 1, alt_end)
 
-    print("Fetching main sequence")
     main_seq = get_sequence_ucsc(main_chr, main_start + 1, main_end)
 
     assert len(alt_seq) == (alt_end - alt_start)
@@ -789,8 +792,8 @@ def merge_alt_using_cigar(original_numeric_grch38_graph, trans, alt_id):
     cleaned_cigar = clean_cigar(cigar, alt_seq, main_seq)
     alt_id = trans.translate_rp(alt_id)[0].region_paths[0]
     main_id = trans.translate_rp(main_chr)[0].region_paths[0]
-    print(alt_start, alt_end)
-    print(main_start, main_end)
+    #print(alt_start, alt_end)
+    #print(main_start, main_end)
     trans = align_cigar(cleaned_cigar,
                         Interval(main_start, main_end, [main_id]),
                         Interval(alt_start, alt_end, [alt_id]),
