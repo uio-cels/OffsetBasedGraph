@@ -9,10 +9,13 @@ python3 gene_experiment.py grch38.chrom.sizes-small grch38_alt_loci_small.txt ge
 
 """
 
+from collections import defaultdict
 import sys
 import argparse
 import csv
 from offsetbasedgraph import Graph, Block, Translation, Interval, Position
+from offsetbasedgraph.graphutils import MultiPathGene
+from offsetbasedgraph.graphutils import merge_alt_using_cigar, grch38_graph_to_numeric
 
 from offsetbasedgraph.graphutils import Gene, convert_to_numeric_graph, connect_without_flanks, \
     convert_to_text_graph, merge_flanks, connect_without_flanks, parse_genes_file, \
@@ -56,7 +59,6 @@ def check_duplicate_genes(args):
 def merge_alignment(args):
     trans = Translation.from_file(args.translation_file_name)
     graph = trans.graph1
-    from offsetbasedgraph.graphutils import merge_alt_using_cigar, grch38_graph_to_numeric
     graph, trans = grch38_graph_to_numeric(graph)
     merge_alt_using_cigar(graph, trans, args.alt_locus_id)
 
@@ -134,6 +136,26 @@ def visualize_genes(args):
     print(v.get_wrapped_html())
 
 
+def translate_single_gene_to_aligned_graph(gene, trans):
+    from offsetbasedgraph import CriticalPathsMultiPathInterval
+    start = gene.transcription_region.start_position
+    end = gene.transcription_region.end_position
+    end.offset = end.offset - 1
+    new_start = trans.translate(start)
+    new_end = trans.translate(end)
+    new_end.offset = new_end.offset + 1
+    critical_intervals = []
+    for exon in gene.exons:
+        critical_intervals.append(trans.translate(exon))
+
+    mpinterval = CriticalPathsMultiPathInterval(
+        new_start,
+        new_end,
+        critical_intervals
+    )
+
+    return MultiPathGene(gene.name, mpinterval)
+
 def translate_genes_to_aligned_graph(args):
     trans = Translation.from_file(args.merged_graph_file_name)
 
@@ -141,9 +163,9 @@ def translate_genes_to_aligned_graph(args):
     # to complex graph.
     # Represent by txStart, txEnd as start,end and exons as critical intervals
     from offsetbasedgraph.graphutils import GeneList
-    from offsetbasedgraph import CriticalPathsMultiPathInterval
     genes = GeneList(get_gene_objects_as_intervals(args.genes, trans.graph1))
     mpgenes = []
+    mpgene_objects = []
     spgenes = []  # Also store single path for debugging
     n = 1
     for gene in genes.gene_list:
@@ -155,36 +177,29 @@ def translate_genes_to_aligned_graph(args):
         print("Found gene %s" % gene.name)
         print(gene)
 
-        start = gene.transcription_region.start_position
-        end = gene.transcription_region.end_position
-        end.offset = end.offset - 1
-        new_start = trans.translate(start)
-        new_end = trans.translate(end)
-        new_end.offset = new_end.offset + 1
-        critical_intervals = []
-        for exon in gene.exons:
-            critical_intervals.append(trans.translate(exon))
+        mpgene = translate_single_gene_to_aligned_graph(gene, trans)
+        mpgene_objects.append(mpgene)
+        #mpgenes.append(mpinterval)
+        #mpgene_objects = MultiPathGene(gene.name, mpinterval)
 
-        mpinterval = CriticalPathsMultiPathInterval(
-            new_start,
-            new_end,
-            critical_intervals
-        )
-        mpgenes.append(mpinterval)
-
-        spgenes.append(Gene(gene.name,
-                            trans.translate(gene.transcription_region),
-                            critical_intervals
-                            )
-                       )
+        #spgenes.append(Gene(gene.name,
+        #                    trans.translate(gene.transcription_region),
+        #                    critical_intervals
+        #                    )
+        #               )
 
 
         #if n >= 5000:
         #    break
 
     import pickle
+
+    mpgenes_list = GeneList(mpgene_objects)
+    mpgenes_list.to_file(args.out_file_name)
+    """
     with open("%s" % args.out_file_name, "wb") as f:
         pickle.dump(mpgenes, f)
+    """
 
     gene_list = GeneList(spgenes)
     gene_list.to_file("%s_gene_list" % args.out_file_name)
@@ -193,6 +208,90 @@ def translate_genes_to_aligned_graph(args):
     print(spgenes[1])
 
     print("Genes written")
+
+
+def _analyse_multipath_genes_on_graph(genes_list, graph):
+    # Takes a list of mp genes and a graph
+    # Returns number of equal exons and equal genes
+    equal = 0
+    equal_exons = 0
+    n = 1
+    for g in genes_list:
+        if n % 1000 == 0:
+            print("Checked %d genes" % n)
+        n += 1
+
+        for g2 in genes_list:
+            if g is g2:
+                continue
+
+            if g == g2:
+                equal += 1
+
+            if g.faster_equal_critical_intervals(g2):
+                equal_exons += 1
+
+    return equal, equal_exons
+
+
+def analyse_multipath_genes2(args):
+    import pickle
+
+    from offsetbasedgraph.graphutils import GeneList
+    print("Reading in genes")
+    genes = GeneList(get_gene_objects_as_intervals(args.genes_file_name)).gene_list
+
+    print("Creating gene dict")
+    gene_name_dict = defaultdict(list)
+    for g in genes:
+        gene_name_dict[g.name].append(g)
+
+    # Find all genes on alt loci
+    alt_loci_genes = defaultdict(list)
+    n = 0
+    for g in genes:
+        if n % 1000 == 0:
+            print("Parsed %d genes" % n)
+        n += 1
+        chrom = g.transcription_region.region_paths[0]
+        if "alt" in chrom:
+            alt_loci_genes[chrom].append(g)
+
+    # Find all other genes with the same names and add to dict
+    n = 0
+    for alt, agenes in alt_loci_genes.items():
+        new_genes_list = []
+        for g in agenes:
+            new_genes_list.append(g)
+            same_names = gene_name_dict[g.name]
+            for same_name in same_names:
+                if same_name is not g \
+                        and not "alt" in same_name.transcription_region.region_paths[0]:
+                    new_genes_list.append(same_name)
+
+        alt_loci_genes[alt] = new_genes_list
+
+    # For every alt loci, create complex graph, translate genes and analyse them
+    text_graph = create_initial_grch38_graph(args.chrom_sizes_file_name)
+    graph, name_trans = grch38_graph_to_numeric(text_graph)
+
+    equal_total = 0
+    equal_exons_total = 0
+    for b in text_graph.blocks:
+        if "alt" in b:
+            print("Analysing %s" % b)
+            genes_here = alt_loci_genes[b]
+
+            trans, complex_graph = merge_alt_using_cigar(graph, name_trans, b)
+            genes_here = [translate_single_gene_to_aligned_graph(g, trans).interval for g in genes_here]
+            equal, equal_exons = _analyse_multipath_genes_on_graph(genes_here, complex_graph)
+            equal_total += equal
+            equal_exons_total += equal_exons
+
+            print("Equal: %d, equal exons: %d, total %d genes" % (equal, equal_exons, len(genes_here)))
+
+    print("SUM:")
+    print("Equal: %d, equal exons: %d" % (equal_total, equal_exons_total))
 
 
 def analyse_multipath_genes(args):
@@ -353,6 +452,19 @@ if __name__ == "__main__":
         'multipath_genes_file_name',
         help='Name of file generated by translate_genes_to_aligned_graph')
     parser_analyse_multipath_genes.set_defaults(func=analyse_multipath_genes)
+
+    # Analyze multipaht_genes2
+    parser_analyse_multipath_genes2 = subparsers.add_parser(
+        'analyse_multipath_genes2',
+        help='Analyse genes on a merged graph, created by calling merge_all_alignments')
+
+    parser_analyse_multipath_genes2.add_argument(
+        'genes_file_name',
+        help='Name of gene file (e.g. genes_refseq.txt)')
+    parser_analyse_multipath_genes2.add_argument(
+        'chrom_sizes_file_name',
+        help='Name of file with chrom sizes, used to build graph (e.g. grch38.chrom.sizes)')
+    parser_analyse_multipath_genes2.set_defaults(func=analyse_multipath_genes2)
 
     # Visualize genes
     parser_visualize_genes = subparsers.add_parser(
