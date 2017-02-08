@@ -136,33 +136,13 @@ def visualize_genes(args):
     print(v.get_wrapped_html())
 
 
-def translate_single_gene_to_aligned_graph(gene, trans):
-    from offsetbasedgraph import CriticalPathsMultiPathInterval
-    start = gene.transcription_region.start_position
-    end = gene.transcription_region.end_position
-    end.offset = end.offset - 1
-    new_start = trans.translate(start)
-    new_end = trans.translate(end)
-    new_end.offset = new_end.offset + 1
-    critical_intervals = []
-    for exon in gene.exons:
-        critical_intervals.append(trans.translate(exon))
-
-    mpinterval = CriticalPathsMultiPathInterval(
-        new_start,
-        new_end,
-        critical_intervals
-    )
-
-    return MultiPathGene(gene.name, mpinterval)
-
 def translate_genes_to_aligned_graph(args):
     trans = Translation.from_file(args.merged_graph_file_name)
 
     # Creat critical path multipath intervals of genes by translating
     # to complex graph.
     # Represent by txStart, txEnd as start,end and exons as critical intervals
-    from offsetbasedgraph.graphutils import GeneList
+    from offsetbasedgraph.graphutils import GeneList, translate_single_gene_to_aligned_graph
     genes = GeneList(get_gene_objects_as_intervals(args.genes, trans.graph1))
     gene_name = args.gene_name
     mpgenes = []
@@ -212,7 +192,7 @@ def translate_genes_to_aligned_graph(args):
     print("Genes written")
 
 
-def _analyse_multipath_genes_on_graph(genes_list, graph):
+def _analyse_multipath_genes_on_graph(genes_list, genes_against, graph):
     # Takes a list of mp genes and a graph
     # Returns number of equal exons and equal genes
     equal = 0
@@ -223,7 +203,7 @@ def _analyse_multipath_genes_on_graph(genes_list, graph):
             print("Checked %d genes" % n)
         n += 1
 
-        for g2 in genes_list:
+        for g2 in genes_against:
             if g is g2:
                 continue
 
@@ -233,38 +213,80 @@ def _analyse_multipath_genes_on_graph(genes_list, graph):
             if g.faster_equal_critical_intervals(g2):
                 equal_exons += 1
 
-    return equal/2, equal_exons/2
+    return equal, equal_exons
 
 def analyse_multipath_genes2(args):
     import pickle
 
-    from offsetbasedgraph.graphutils import GeneList, create_gene_dicts
+    from offsetbasedgraph.graphutils import GeneList, create_gene_dicts, translate_single_gene_to_aligned_graph
     print("Reading in genes")
     genes = GeneList(get_gene_objects_as_intervals(args.genes_file_name)).gene_list
 
-    alt_loci_genes, gene_name_dict = create_gene_dicts(genes)
+    alt_loci_genes, gene_name_dict, main_genes = create_gene_dicts(genes)
 
+    # alt loci genes are only genes on alt loci (nothing on main)
+    # exon_dict contains only genes on main, index by offset of first exon
 
     # For every alt loci, create complex graph, translate genes and analyse them
     text_graph = create_initial_grch38_graph(args.chrom_sizes_file_name)
     graph, name_trans = grch38_graph_to_numeric(text_graph)
 
+
     equal_total = 0
     equal_exons_total = 0
     for b in text_graph.blocks:
         if "alt" in b:
-            print("Analysing %s" % b)
+
+            #if b != "chr1_KI270762v1_alt":
+            #    continue
+
+            print("Analysing genes on alt locus %s" % b)
             genes_here = alt_loci_genes[b]
 
             trans, complex_graph = merge_alt_using_cigar(graph, name_trans, b)
-            genes_here = [translate_single_gene_to_aligned_graph(g, trans).interval for g in genes_here]
-            equal, equal_exons = _analyse_multipath_genes_on_graph(genes_here, complex_graph)
+
+            #print("Addign translation")
+            full_trans = name_trans + trans
+            #print(trans)
+
+            # Find candidates on main path to check against:
+            genes_against = main_genes[b]
+            genes_against_translated = []
+            #print(len(genes_against))
+            n = 0
+            for mg in genes_against:
+                #if n % 5 == 0 and n > 0:
+                #    print("  Translated %d/%d genes" % (n, len(genes_against)))
+                n += 1
+                genes_against_translated.append(translate_single_gene_to_aligned_graph(mg, full_trans).interval)
+                sys.stdout.write('\r  Translating main genes: ' + str(round(100 * n /len(genes_against)))  + ' % finished ' + ' ' * 20)
+                sys.stdout.flush()
+
+            print()
+            #print(genes_against)
+            #print("Genes here")
+
+            genes_here_translated = []
+            n = 0
+            for mg in  genes_here:
+                n += 1
+                genes_here_translated.append(translate_single_gene_to_aligned_graph(mg, full_trans).interval)
+                sys.stdout.write('\r  Translating alt genes: ' + str(round(100 * n /len(genes_here)))  + ' % finished ' + ' ' * 20)
+                sys.stdout.flush()
+
+            #print(genes_here)
+
+            print("\n  Candidates to check against: %d" % len(genes_against))
+
+            equal, equal_exons = _analyse_multipath_genes_on_graph(genes_here_translated,
+                                                                   genes_against_translated,
+                                                                   complex_graph)
             equal_total += equal
             equal_exons_total += equal_exons
 
             assert equal <= len(genes_here)
 
-            print("Equal: %d, equal exons: %d, total %d genes" % (equal, equal_exons, len(genes_here)))
+            print("  Equal: %d, equal exons: %d, total %d genes" % (equal, equal_exons, len(genes_here)))
 
     print("SUM:")
     print("Equal: %d, equal exons: %d" % (equal_total, equal_exons_total))

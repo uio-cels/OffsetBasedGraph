@@ -281,19 +281,21 @@ class TestExamples(unittest.TestCase):
 
         from offsetbasedgraph.graphutils import GeneList, create_gene_dicts, get_gene_objects_as_intervals
 
-        genes_file_name = "examples/genes_test.txt"
+        genes_file_name = "tests/genes_test.txt"
         genes = GeneList(get_gene_objects_as_intervals(genes_file_name)).gene_list
-        alt_loci_genes, gene_name_dict = create_gene_dicts(genes)
+        alt_loci_genes, gene_name_dict, main_genes = create_gene_dicts(genes)
 
         print(alt_loci_genes)
         print(gene_name_dict)
 
-        self.assertEqual(len(alt_loci_genes["chr1_KI270762v1_alt"]), 4)
-        self.assertEqual(len(alt_loci_genes["chr1_GL383518v1_alt"]), 2)
+        self.assertEqual(len(alt_loci_genes["chr1_KI270762v1_alt"]), 2)
+        self.assertEqual(len(alt_loci_genes["chr1_GL383518v1_alt"]), 1)
         self.assertEqual(len(gene_name_dict["gene1"]), 2)
         self.assertEqual(len(gene_name_dict["gene2"]), 2)
         self.assertEqual(len(gene_name_dict["gene3"]), 2)
-        self.assertEqual(sum([len(k) for v,k in alt_loci_genes.items()]), len(genes))
+        #self.assertEqual(len(gene_name_dict["chr1_KI270762v1_alt"]), 1)
+        #self.assertEqual(len(gene_name_dict["chr1_GL383518v1_alt"]), 1)
+        self.assertEqual(sum([len(k) for v,k in alt_loci_genes.items()]), len([g for g in genes if "alt" in g.transcription_region.start_position.region_path_id]))
 
     def test_parse_genes_from_file_and_translate_to_multipath(self):
         from offsetbasedgraph.graphutils import GeneList, create_gene_dicts, get_gene_objects_as_intervals
