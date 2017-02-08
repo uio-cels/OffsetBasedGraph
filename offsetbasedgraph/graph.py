@@ -776,7 +776,6 @@ class Graph(object):
             assert interval.length() == length, \
                 "All intervals should have the same length (%d, %d)" % (interval.length(), length)
 
-        print("Block lengths: %s" % block_lengths)
 
         # 1: Translate graph so that all intervals starts and ends at rps
         trans, graph1 = self._get_inslulate_translation(intervals, block_lengths)
@@ -880,8 +879,8 @@ class Graph(object):
 
 
         trans4 = Translation(a_b, b_a, None, block_lengths)
-        print("==== Trans 4 ====")
-        print(trans4)
+        #print("==== Trans 4 ====")
+        #print(trans4)
         #graph4 = trans4.translate_subgraph(graph3)
         #self._update_a_b_graph(a_b, graph4)
         #trans4.graph2 = graph4

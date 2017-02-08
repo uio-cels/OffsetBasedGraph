@@ -31,7 +31,7 @@ def align_cigar(cigar, main_interval, alt_interval, graph):
     alt_rps = []
     b_to_a = {}
     _id = graph._next_id()
-    print("#", _id)
+    #print("#", _id)
 
     main_n = 0
     alt_n = 0
