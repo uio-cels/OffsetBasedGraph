@@ -561,12 +561,12 @@ class Translation(object):
         positions = []
         #print("Translating position %s, %d, region path: %d" % (str(position), inverse, position.region_path_id))
         for interval in intervals:
-            if self.block_lengths != None:
+            if self.block_lengths is not None:
                 rp_lens = [self.block_lengths[rp] for rp in interval.region_paths]
 
             else:
-                rp_lens = [self._translations(rp, inverse=not inverse)[0].length()
-                           for rp in interval.region_paths]
+                rp_lens = (self._translations(rp, inverse=not inverse)[0].length()
+                           for rp in interval.region_paths)
 
             found_pos = interval.get_position_from_offset(
                 position.offset, rp_lens)
