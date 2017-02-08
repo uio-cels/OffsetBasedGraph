@@ -488,8 +488,8 @@ class VisualizeHtml(object):
                 self.width_used = max(self.width_used, y + width)
 
             # Hack
-            if width < 1:
-                continue
+            # if width < 1:
+            #    continue
 
             # PLot arrows from previous end positions (there are 1 or 2),
             # to these end positions (there are 1 or 2)

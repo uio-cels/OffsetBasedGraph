@@ -20,9 +20,11 @@ class GeneList(object):
 
     @staticmethod
     def from_file(file_name):
-
         with open("%s" % file_name, "rb") as f:
-            return pickle.loads(f.read())
+            o = pickle.loads(f.read())
+            if isinstance(o, list):
+                o = GeneList(o)
+            return o
 
 class MultiPathGene(object):
     def __init__(self, name, multipath_interval):
