@@ -186,6 +186,16 @@ class Gene(object):
                    my_reg, other_reg in zip(my_regions, other_regions))
 
     def contains(self, other, tolerance=0):
+        """Checks if self contains other. Allows
+        mismatch in start and end coordinated up to 
+        tolerance
+
+        :param other: Other gene
+        :param tolerance: bps allowed discrepancy
+        :returns: Wheter self contains other
+        :rtype: bool
+
+        """
         if not self.transcription_region.contains(
                 other.transcription_region, tolerance):
             return False
@@ -197,6 +207,17 @@ class Gene(object):
                     return False
             cur_i += 1
         return True
+
+    def get_contained_pairs(self, other, tolerance=0):
+        pairs = []
+        for exon in other.exons:
+            containers = [s_exon for s_exon in self.exons
+                          if s_exon.contains(exon, tolerance)]
+            if not containers:
+                continue
+            assert len(containers) == 1
+            pairs.append(containers[0], exon)
+        return pairs
 
     def partition_region_paths(self, region_paths=[]):
         """Partition the gene into one part for each

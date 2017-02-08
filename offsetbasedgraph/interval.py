@@ -39,9 +39,6 @@ class Interval(object):
                 region_paths.append(end_position.region_path_id)
         self.region_paths = region_paths
 
-        #if self.end_position.region_path_id not in self.region_paths:
-        #    self.region_paths.append(self.end_position.region_path_id)
-
     def __init__(self, start_position, end_position,
                  region_paths=None, graph=None):
         assert region_paths is None or isinstance(region_paths, list), "Region paths must be None or list"
@@ -53,9 +50,6 @@ class Interval(object):
 
         # By default include start and end region path
         self.graph = graph
-
-        #if self.graph is not None:
-            #assert self.start_position.offset < self.graph.blocks[self.region_paths[0]].length()
 
         assert self.end_position.region_path_id == self.region_paths[-1]
         assert self.start_position.region_path_id == self.region_paths[0]
@@ -102,6 +96,10 @@ class Interval(object):
     def ends_at_rp(self):
         rp_end = self.graph.blocks[self.end_position.region_path_id].length()
         self.end_position.offset == rp_end
+
+    def intersect(self, other):
+        """Should be implemented"""
+        raise NotImplementedError()
 
     def split(self, offsets):
         """Split the interval at the given offsets
@@ -251,8 +249,8 @@ class Interval(object):
             rp_lens = [self.graph.blocks[rp].length()
                        for rp in self.region_paths]
 
-        for i, region_path in enumerate(self.region_paths):
-            rp_length = rp_lens[i]
+        for i, rp_length in enumerate(rp_lens):
+            region_path = self.region_paths[i]
             if rp_length > total_offset:
                 return Position(region_path, total_offset)
             total_offset -= rp_length
@@ -272,7 +270,7 @@ class Interval(object):
             prev = rp
         return adjs
 
-    def partition_region_paths(self):
+    def partition_region_paths(self, region_paths=[]):
         """Split the interval into one interval
         for each region path
 
@@ -283,6 +281,7 @@ class Interval(object):
         rps = self.region_paths
         start = self.start_position.offset
         partitions = []
+
         for rp in rps:
             if rp == rps[-1]:
                 end = self.end_position.offset
