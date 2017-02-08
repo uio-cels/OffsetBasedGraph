@@ -273,6 +273,13 @@ class Interval(object):
         return adjs
 
     def partition_region_paths(self):
+        """Split the interval into one interval
+        for each region path
+
+        :returns: list of single-rp intervals
+        :rtype: list(Interval)
+
+        """
         rps = self.region_paths
         start = self.start_position.offset
         partitions = []
@@ -283,6 +290,7 @@ class Interval(object):
                 end = self.graph.blocks[rp].length()
             partitions.append(Interval(start, end, [rp]))
             start = 0
+
         return partitions
 
 
