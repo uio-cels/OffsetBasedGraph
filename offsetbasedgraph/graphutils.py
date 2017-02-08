@@ -5,6 +5,7 @@ import csv
 import pickle
 from genutils import flanks
 from gendatafetcher.sequences import get_sequence_ucsc
+from offsetbasedgraph import CriticalPathsMultiPathInterval
 
 from collections import defaultdict
 
@@ -68,9 +69,6 @@ class Gene(object):
         exon_ends = [int(i) for i in attr_dict["exonEnds"].split(",")[:-1]]
         exons = [Interval(start, end, [chrom]) for start, end in
                  zip(exon_starts, exon_ends)]
-        print("Exons:")
-        print(exons)
-        print(attr_dict["exonStarts"])
         strand = attr_dict["strand"]
 
         return cls(attr_dict["name"], transcription_region, exons,
@@ -812,6 +810,29 @@ def merge_alt_using_cigar(original_numeric_grch38_graph, trans, alt_id):
 # return _merge_alt_using_cigar(original_numeric_grch38_graph, trans, alt_id, cigar, alt_seq, main_seq, main_chr, main_start, main_end, alt_start, alt_end)
 
 
+def get_alt_loci_positions():
+    f = open("grch38_alt_loci.txt", "r")
+    alt_loci = {}
+    for line in f.readlines():
+        if line.startswith("#"):
+            continue
+        l = line.split()
+        alt_locus_id = l[0]
+        main_chr = l[1]
+        start = int(l[2])
+        end = int(l[3])
+        length = int(l[4])
+        alt_loci[alt_locus_id] = {
+                "main_chr": main_chr,
+                "start": start,
+                "end": end,
+                "length": length
+             }
+
+
+    return alt_loci
+
+
 def _merge_alt_using_cigar(original_grch38_graph, trans, alt_id, cigar,
                            alt_seq, main_seq, main_chr, main_pos_start,
                            main_pos_end, alt_start, alt_end):
@@ -914,7 +935,7 @@ def _merge_alt_using_cigar(original_grch38_graph, trans, alt_id, cigar,
     return trans, graph
 
 
-def create_gene_dicts(genes):
+def create_gene_dicts(genes, identical_names=False):
     """
     Takes a list of genes, and creates an alt loci dict and a gene name dict
     :param genes:
@@ -922,21 +943,41 @@ def create_gene_dicts(genes):
     """
     print("Creating gene dict")
     gene_name_dict = defaultdict(list)
+    exon_dict = defaultdict(list)
     for g in genes:
         gene_name_dict[g.name].append(g)
 
     # Find all genes on alt loci
     alt_loci_genes = defaultdict(list)
+    chrom_genes = defaultdict(list)
     n = 0
     for g in genes:
-        if n % 1000 == 0:
-            print("Parsed %d genes" % n)
+        #if n % 1000 == 0:
+        #    print("Parsed %d genes" % n)
         n += 1
         chrom = g.transcription_region.region_paths[0]
         if "alt" in chrom:
             alt_loci_genes[chrom].append(g)
+        else:
+            # Index non-alt loci genes using  offset of first exon
+            #exon_dict[g.exons[0].start_position.offset] = g
+            chrom_genes[chrom].append(g)
 
+    alt_infos = get_alt_loci_positions()
+    parallell_to_alt_loci_genes = defaultdict(list)  # Genes on  main path
+    for alt_locus in alt_loci_genes:
+        main_genes = chrom_genes[alt_locus.split("_")[0]]
+        # Find main genes parallell to alt locus
+        alt_info = alt_infos[alt_locus]
+        for g in main_genes:
+            start = g.transcription_region.start_position.offset
+            end = g.transcription_region.end_position.offset
 
+            if (start >= alt_info["start"] and start <= alt_info["end"]) or \
+                    (end <= alt_info["end"] and end >= alt_info["start"]):
+                parallell_to_alt_loci_genes[alt_locus].append(g)
+
+    """
     # Find all other genes with the same names and add to dict
     n = 0
     for alt, agenes in alt_loci_genes.items():
@@ -950,5 +991,27 @@ def create_gene_dicts(genes):
                     new_genes_list.append(same_name)
 
         alt_loci_genes[alt] = new_genes_list
+    """
 
-    return alt_loci_genes, gene_name_dict
+    return alt_loci_genes, gene_name_dict, parallell_to_alt_loci_genes
+
+
+def translate_single_gene_to_aligned_graph(gene, trans):
+    start = gene.transcription_region.start_position
+    end = gene.transcription_region.end_position
+    end.offset = end.offset - 1
+    new_start = trans.translate(start)
+    new_end = trans.translate(end)
+    new_end.offset = new_end.offset + 1
+    critical_intervals = []
+    for exon in gene.exons:
+        print("     Translating exon")
+        critical_intervals.append(trans.translate(exon))
+
+    mpinterval = CriticalPathsMultiPathInterval(
+        new_start,
+        new_end,
+        critical_intervals
+    )
+
+    return MultiPathGene(gene.name, mpinterval)
