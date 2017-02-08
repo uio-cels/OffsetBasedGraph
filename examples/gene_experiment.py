@@ -233,45 +233,17 @@ def _analyse_multipath_genes_on_graph(genes_list, graph):
             if g.faster_equal_critical_intervals(g2):
                 equal_exons += 1
 
-    return equal, equal_exons
-
+    return equal/2, equal_exons/2
 
 def analyse_multipath_genes2(args):
     import pickle
 
-    from offsetbasedgraph.graphutils import GeneList
+    from offsetbasedgraph.graphutils import GeneList, create_gene_dicts
     print("Reading in genes")
     genes = GeneList(get_gene_objects_as_intervals(args.genes_file_name)).gene_list
 
-    print("Creating gene dict")
-    gene_name_dict = defaultdict(list)
-    for g in genes:
-        gene_name_dict[g.name].append(g)
+    alt_loci_genes, gene_name_dict = create_gene_dicts(genes)
 
-    # Find all genes on alt loci
-    alt_loci_genes = defaultdict(list)
-    n = 0
-    for g in genes:
-        if n % 1000 == 0:
-            print("Parsed %d genes" % n)
-        n += 1
-        chrom = g.transcription_region.region_paths[0]
-        if "alt" in chrom:
-            alt_loci_genes[chrom].append(g)
-
-    # Find all other genes with the same names and add to dict
-    n = 0
-    for alt, agenes in alt_loci_genes.items():
-        new_genes_list = []
-        for g in agenes:
-            new_genes_list.append(g)
-            same_names = gene_name_dict[g.name]
-            for same_name in same_names:
-                if same_name is not g \
-                        and not "alt" in same_name.transcription_region.region_paths[0]:
-                    new_genes_list.append(same_name)
-
-        alt_loci_genes[alt] = new_genes_list
 
     # For every alt loci, create complex graph, translate genes and analyse them
     text_graph = create_initial_grch38_graph(args.chrom_sizes_file_name)
@@ -289,6 +261,8 @@ def analyse_multipath_genes2(args):
             equal, equal_exons = _analyse_multipath_genes_on_graph(genes_here, complex_graph)
             equal_total += equal
             equal_exons_total += equal_exons
+
+            assert equal <= len(genes_here)
 
             print("Equal: %d, equal exons: %d, total %d genes" % (equal, equal_exons, len(genes_here)))
 
