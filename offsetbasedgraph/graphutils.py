@@ -5,6 +5,7 @@ import csv
 import pickle
 from genutils import flanks
 from gendatafetcher.sequences import get_sequence_ucsc
+from itertools import chain
 
 from collections import defaultdict
 
@@ -29,7 +30,8 @@ class GeneList(object):
 
 class Gene(object):
 
-    def __init__(self, name, transcription_region, exons, coding_region, strand):
+    def __init__(self, name, transcription_region, exons,
+                 coding_region, strand):
         self.name = name
         self.transcription_region = transcription_region
         self.coding_region = coding_region
@@ -196,13 +198,34 @@ class Gene(object):
             cur_i += 1
         return True
 
-    def partition_region_paths(self):
+    def partition_region_paths(self, region_paths=[]):
+        """Partition the gene into one part for each
+        region paths. Splits the transcription_region and
+        the exons, but NB! not the coding region
+
+        :returns: list of gene-parts
+        :rtype: list(Gene)
+
+        """
         rps = self.transcription_region.region_paths
+        if len(rps) == 0:
+            return [self]
+
         transcription_regions = self.transcription_regions.partition_region_paths()
-        exons_partitions = [exon.partition_region_paths() for exon in self.exons]
-        cur_rp = rps[0]
-        for exon_partition in exons_partitions:
-            pass
+        exon_partitions = chain([exon.partition_region_paths()
+                                 for exon in self.exons])
+
+        rps = [tr.region_paths[0] for tr in transcription_regions]
+        exons_per_rp = {rp: [e for e in exon_partitions
+                             if e.region_paths[0] == rp]
+                        for rp in rps}
+        gene_partitions = []
+        for rp, tr in zip(rps, transcription_regions):
+            gene_partitions.append(
+                Gene(self.name, tr, exons_per_rp[rp],
+                     self.coding_region, self.strand))
+
+        return gene_partitions
 
     def is_cut_version(self, other, tolerance=0):
         """Check if other is made from cutting self
