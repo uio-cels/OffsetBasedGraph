@@ -68,6 +68,9 @@ class Gene(object):
         exon_ends = [int(i) for i in attr_dict["exonEnds"].split(",")[:-1]]
         exons = [Interval(start, end, [chrom]) for start, end in
                  zip(exon_starts, exon_ends)]
+        print("Exons:")
+        print(exons)
+        print(attr_dict["exonStarts"])
         strand = attr_dict["strand"]
 
         return cls(attr_dict["name"], transcription_region, exons,
@@ -909,3 +912,43 @@ def _merge_alt_using_cigar(original_grch38_graph, trans, alt_id, cigar,
     assert graph == trans.graph2 # (original_grch38_graph)
 
     return trans, graph
+
+
+def create_gene_dicts(genes):
+    """
+    Takes a list of genes, and creates an alt loci dict and a gene name dict
+    :param genes:
+    :return: alt loci dict, name dict
+    """
+    print("Creating gene dict")
+    gene_name_dict = defaultdict(list)
+    for g in genes:
+        gene_name_dict[g.name].append(g)
+
+    # Find all genes on alt loci
+    alt_loci_genes = defaultdict(list)
+    n = 0
+    for g in genes:
+        if n % 1000 == 0:
+            print("Parsed %d genes" % n)
+        n += 1
+        chrom = g.transcription_region.region_paths[0]
+        if "alt" in chrom:
+            alt_loci_genes[chrom].append(g)
+
+
+    # Find all other genes with the same names and add to dict
+    n = 0
+    for alt, agenes in alt_loci_genes.items():
+        new_genes_list = []
+        for g in agenes:
+            new_genes_list.append(g)
+            same_names = gene_name_dict[g.name]
+            for same_name in same_names:
+                if same_name is not g \
+                        and not "alt" in same_name.transcription_region.region_paths[0]:
+                    new_genes_list.append(same_name)
+
+        alt_loci_genes[alt] = new_genes_list
+
+    return alt_loci_genes, gene_name_dict
