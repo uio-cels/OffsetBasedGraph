@@ -278,6 +278,9 @@ def _analyse_multipath_genes_on_graph(genes_list, genes_against, graph):
                 equal += 1
 
             if g.faster_equal_critical_intervals(g2):
+                #print("=== Exon match ===")
+                #print(g)
+                #print(g2)
                 equal_exons += 1
 
     return equal, equal_exons
@@ -305,8 +308,8 @@ def analyse_multipath_genes2(args):
     for b in text_graph.blocks:
         if "alt" in b:
 
-            #if b != "chr17_GL000258v2_alt": #  chr17_GL000258v2_alt
-            #    continue
+            if b != "chr19_KI270929v1_alt" and b != "chr19_GL949747v2_alt" and b != "chr19_KI270887v1_alt" and b != "chr19_KI270938v1_alt": #  chr17_GL000258v2_alt
+                continue
             print()
             print("Analysing genes on alt locus %s (number %d of %d)" % (b, n_a, len([bl for bl in text_graph.blocks if "alt" in bl])))
             n_a += 1
