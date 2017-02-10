@@ -21,7 +21,7 @@ class Interval(object):
         self.start_position = start_position
         self.end_position = end_position
         self.region_paths = region_paths
-
+        self.rp_lens_tmp = None  # For caching of region path lengths
 
 class Translation(object):
     _a_to_b = {}  # Region paths to interval
