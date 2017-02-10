@@ -1,4 +1,5 @@
 from collections import defaultdict
+import pickle
 
 
 class GeneMatcher(object):
@@ -198,3 +199,14 @@ class GeneMatchings(object):
 
     def __repr__(self):
         return self.__str__()
+
+    def to_pickle(self, file_name):
+        with open("%s" % file_name, "wb") as f:
+            pickle.dump(self, f)
+
+    @classmethod
+    def from_pickle(cls, file_name):
+        with open("%s" % file_name, "rb") as f:
+            o = pickle.loads(f.read())
+        assert isinstance(o, cls)
+        return o
