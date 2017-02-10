@@ -1,7 +1,7 @@
 from .interval import Interval
 from .graph import Graph, Block
 from .translation import Translation
-from .genematcher import GeneMatcher
+from .genematcher import GeneMatcher, GeneMatchings
 import csv
 from genutils import flanks
 from gendatafetcher.sequences import get_sequence_ucsc
@@ -450,7 +450,7 @@ def classify_alt_genes(genes):
 
 
 def analyze_genes_on_merged_graph(genes, translation):
-    cashed = True
+    cashed = False
     translation.block_lengths = None
     if cashed:
         translated = GeneList.from_pickle("trans_genes").gene_list
@@ -461,16 +461,23 @@ def analyze_genes_on_merged_graph(genes, translation):
 
     graph = translated[0].transcription_region.graph
     graph.critical_blocks = graph.find_all_critical_blocks()
-
     main_chr_dict = defaultdict(list)
 
     alt_dict = defaultdict(list)
-
+    alt_genes = []
+    main_genes = []
     for gene, t_gene in zip(genes, translated):
         if "alt" in gene.chrom:
-            alt_dict[gene.chrom.split("_")[0]].append(t_gene)
+            alt_genes.append(t_gene)
+            # alt_dict[gene.chrom.split("_")[0]].append(t_gene)
         else:
-            main_chr_dict[gene.chrom].append(t_gene)
+            main_genes.append(t_gene)
+            # main_chr_dict[gene.chrom].append(t_gene)
+    alt_genes = GeneList(alt_genes)
+    main_genes = GeneList(main_genes)
+    matchings = GeneMatchings(alt_genes, main_genes)
+    print(matchings)
+    return
 
     print("N:", sum(len(v) for v in alt_dict.values()))
     gene_matches = []
