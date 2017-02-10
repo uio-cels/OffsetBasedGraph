@@ -9,18 +9,15 @@ python3 gene_experiment.py grch38.chrom.sizes-small grch38_alt_loci_small.txt ge
 
 """
 
-from collections import defaultdict
 import sys
 import argparse
-import csv
-from offsetbasedgraph import Graph, Block, Translation, Interval, Position
-from offsetbasedgraph.graphutils import MultiPathGene
+from offsetbasedgraph import Graph, Translation
 from offsetbasedgraph.graphutils import merge_alt_using_cigar, grch38_graph_to_numeric
 
 from offsetbasedgraph.graphutils import Gene, convert_to_numeric_graph, connect_without_flanks, \
     convert_to_text_graph, merge_flanks, connect_without_flanks, parse_genes_file, \
     get_genes_as_intervals, get_gene_objects_as_intervals, find_exon_duplicates, \
-    create_initial_grch38_graph, blast_test, convert_cigar_graph_to_text
+    create_initial_grch38_graph, blast_test, convert_cigar_graph_to_text, analyze_genes_on_merged_graph
 
 
 def create_graph(args):
@@ -52,7 +49,7 @@ def check_duplicate_genes(args):
     genes_file_name = args.genes_file_name
     final_trans = Translation.from_file(args.translation_file_name)
     genes = get_gene_objects_as_intervals(genes_file_name, final_trans.graph1)
-    find_exon_duplicates(genes, final_trans)
+    analyze_genes_on_merged_graph(genes, final_trans)
     # print(genes_file_name)
 
 

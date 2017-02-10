@@ -1,278 +1,13 @@
-from .interval import Interval, Position
+from .interval import Interval
 from .graph import Graph, Block
 from .translation import Translation
+from .genematcher import GeneMatcher
 import csv
-import pickle
 from genutils import flanks
 from gendatafetcher.sequences import get_sequence_ucsc
-from itertools import chain
 from offsetbasedgraph import CriticalPathsMultiPathInterval
-
 from collections import defaultdict
-
-
-class GeneList(object):
-    def __init__(self, gene_list):
-        assert isinstance(gene_list, list)
-        self.gene_list = gene_list
-
-    def to_file(self, file_name):
-        with open("%s" % file_name, "wb") as f:
-            pickle.dump(self, f)
-
-    @staticmethod
-    def from_file(file_name):
-        with open("%s" % file_name, "rb") as f:
-            o = pickle.loads(f.read())
-            if isinstance(o, list):
-                o = GeneList(o)
-            return o
-
-class MultiPathGene(object):
-    def __init__(self, name, multipath_interval):
-        self.name = name
-        self.interval = multipath_interval
-
-
-class Gene(object):
-
-    def __init__(self, name, transcription_region, exons,
-                 coding_region, strand):
-        self.name = name
-        self.transcription_region = transcription_region
-        self.coding_region = coding_region
-        self.exons = exons
-        self.strand = strand
-        self.chrom = transcription_region.region_paths[0]
-        self.graph = self.transcription_region.graph
-
-    @classmethod
-    def from_dict(cls, attr_dict):
-        """Create Gene object from gene dict obtained
-        from csv dict reader
-
-        :param attr_dict: gene dict
-        :returns: Gene object
-        :rtype: Gene
-
-        """
-        chrom = attr_dict["chrom"]
-        transcription_region = Interval(
-            Position(chrom, int(attr_dict["txStart"])),
-            Position(chrom, int(attr_dict["txEnd"])), [chrom]
-            )
-
-        coding_region = Interval(
-            Position(chrom, int(attr_dict["cdsStart"])),
-            Position(chrom, int(attr_dict["cdsEnd"])), [chrom]
-            )
-
-        exon_starts = [int(i) for i in attr_dict["exonStarts"].split(",")[:-1]]
-        exon_ends = [int(i) for i in attr_dict["exonEnds"].split(",")[:-1]]
-        exons = [Interval(start, end, [chrom]) for start, end in
-                 zip(exon_starts, exon_ends)]
-        strand = attr_dict["strand"]
-
-        return cls(attr_dict["name"], transcription_region, exons,
-                   coding_region, strand)
-
-    def translate(self, T):
-        """Translate transcription_region and exons and return
-        new gene
-
-        :param T: Translation object
-        :returns: Translated gene
-        :rtype: Gene
-
-        """
-
-        t_transcription_region = T.translate(self.transcription_region)
-        t_exons = [T.translate(exon) for exon in self.exons]
-        return Gene(self. name, t_transcription_region, t_exons)
-
-    def length(self):
-        return self.transcription_region.length()
-
-    def __str__(self):
-        exon_string = "\n\t".join(str(exon) for exon in self.exons)
-        return "Gene(%s: %s \n %s)" % (self.name,
-                                       self.transcription_region, exon_string)
-
-    def __eq__(self, other):
-        """Check if genes are equal up to name
-
-        :param other: other gene
-        :returns: Wheter genes are equal
-        :rtype: bool
-
-        """
-        if not self.transcription_region == other.transcription_region:
-            return False
-
-        if len(self.exons) != len(other.exons):
-            return False
-
-        for exon in self.exons:
-            if exon not in other.exons:
-                return False
-
-        return True
-
-    def to_file_line(self):
-        cur_rp = self.transcription_region.region_paths[0]
-        exon_strings = []
-        for exon in self.exons:
-            rps = [rp for rp in exon.region_paths if rp != cur_rp]
-            offsets = [exon.start_position.offset, exon.end_position.offset]
-            exon_string = ",".join(str(e) for e in rps+offsets)
-            exon_strings.append(exon_string)
-            cur_rp = exon.region_paths[-1]
-        transcript_string = ",".join(self.transcription_region.region_paths+[
-            str(self.transcription_region.start_position.offset),
-            str(self.transcription_region.end_position.offset)])
-        return "\t".join([self.name,
-                          transcript_string,
-                          " ".join(exon_strings)])
-
-    @classmethod
-    def parse_transcript_region(cls, transcript_string):
-        parts = transcript_string.split(",")
-        start_offset, end_offset = [int(n) for n in parts[-2:]]
-        region_paths = parts[:-2]
-        return Interval(start_offset, end_offset, region_paths)
-
-    @classmethod
-    def parse_exons(cls, exon_string, start_rp):
-        exons = exon_string.split(" ")
-        for exon in exons:
-            start_offset, end_offset = [int(n) for n in parts[-2:]]
-
-    @classmethod
-    def from_file_line(cls, line):
-        name, transcript_string, exons_string = line.split("\t")
-        transcription_region = cls.parse_transcript_region(transcript_string)
-        exons = cls.parse_exons(exons_string)
-
-    def start_and_end_diffs(self, other):
-        my_interval = self.transcription_region
-        other_interval = other.transcription_region
-        start_diff = 0
-        end_diff = 0
-        if my_interval.region_paths[0] == other_interval.region_paths[0]:
-            start_diff = abs(my_interval.start_position.offset - other_interval.start_position.offset)
-        else:
-            start_diff = -1
-
-        if my_interval.region_paths[-1] == other_interval.region_paths[-1]:
-            end_diff = abs(my_interval.end_position.offset - other_interval.end_position.offset)
-        else:
-            end_diff = -1
-        return (start_diff, end_diff)
-
-    def exon_diffs(self, other):
-        if len(self.exons) != len(other.exons):
-            return None
-        diff_sum = 0
-        for exon1, exon2 in zip(self.exons, other.exons):
-            if exon1.region_paths == exon2.region_paths:
-                s_diff = exon1.start_position.offset-exon2.start_position.offset
-                e_diff = exon1.end_position.offset-exon2.end_position.offset
-                diff_sum += abs(s_diff)+abs(e_diff)
-            else:
-                diff_sum += abs(exon1.length()-exon2.length())
-
-        return diff_sum/len(self.exons)
-
-    def approxEquals(self, other, tolerance=0):
-        if not len(self.exons) == len(other.exons):
-            return False
-        my_regions = [self.transcription_region] + self.exons
-        other_regions = [other.transcription_region] + other.exons
-        return all(my_reg.approxEquals(other_reg) for
-                   my_reg, other_reg in zip(my_regions, other_regions))
-
-    def contains(self, other, tolerance=0):
-        """Checks if self contains other. Allows
-        mismatch in start and end coordinated up to 
-        tolerance
-
-        :param other: Other gene
-        :param tolerance: bps allowed discrepancy
-        :returns: Wheter self contains other
-        :rtype: bool
-
-        """
-        if not self.transcription_region.contains(
-                other.transcription_region, tolerance):
-            return False
-        cur_i = 0
-        for exon in other.exons:
-            while not self.exons[cur_i].contains(exon, tolerance):
-                cur_i += 1
-                if cur_i == len(self.exons):
-                    return False
-            cur_i += 1
-        return True
-
-    def get_contained_pairs(self, other, tolerance=0):
-        pairs = []
-        for exon in other.exons:
-            containers = [s_exon for s_exon in self.exons
-                          if s_exon.contains(exon, tolerance)]
-            if not containers:
-                continue
-            assert len(containers) == 1
-            pairs.append(containers[0], exon)
-        return pairs
-
-    def partition_region_paths(self, region_paths=[]):
-        """Partition the gene into one part for each
-        region paths. Splits the transcription_region and
-        the exons, but NB! not the coding region
-
-        :returns: list of gene-parts
-        :rtype: list(Gene)
-
-        """
-        rps = self.transcription_region.region_paths
-        if len(rps) == 0:
-            return [self]
-
-        transcription_regions = self.transcription_regions.partition_region_paths()
-        exon_partitions = chain([exon.partition_region_paths()
-                                 for exon in self.exons])
-
-        rps = [tr.region_paths[0] for tr in transcription_regions]
-        exons_per_rp = {rp: [e for e in exon_partitions
-                             if e.region_paths[0] == rp]
-                        for rp in rps}
-        gene_partitions = []
-        for rp, tr in zip(rps, transcription_regions):
-            gene_partitions.append(
-                Gene(self.name, tr, exons_per_rp[rp],
-                     self.coding_region, self.strand))
-
-        return gene_partitions
-
-    def is_cut_version(self, other, tolerance=0):
-        """Check if other is made from cutting self
-        at the edge of the alt loci
-
-        :param other: alt-gene
-        :param tolerance: number of base-pair tolerance
-        :returns: whether other is cut
-        :rtype: bool
-
-        """
-        # Check transcription_region
-
-        f_tx_region = other.transcription_region.filter_to_main()
-        if f_tx_region is None:
-            return False
-        f_exons = [e.filter_to_main() for e in other.exons]
-        f_exons = [e for e in f_exons if e is not None]
-        f_gene = Gene("f" + other.name, f_tx_region, f_exons)
-        return self.contains(f_gene, tolerance)
+from .gene import GeneList, Gene
 
 
 def convert_to_numeric_graph(graph):
@@ -435,7 +170,7 @@ def merge_flanks(intervals, final_trans, new_graph, name_translation):
     return new_graph, final_trans
 
 
-def connect_without_flanks(graph, alt_loci_fn, name_translation):
+def _connect_without_flanks(graph, alt_loci_fn, name_translation):
     """
     Connects the alternative loci in the given file to the grch38 graph,
     without flanks.
@@ -462,7 +197,7 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
                                       main_chr, start-1, end)
         for interval in intervals:
             print(interval)
-            
+
         n_starts = len([b for b in new_graph.blocks if not
                         new_graph.reverse_adj_list[b]])
         new_graph, final_trans = merge_flanks(intervals, final_trans,
@@ -471,7 +206,31 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation):
         new_n_starts = len([b for b in new_graph.blocks if not
                             new_graph.reverse_adj_list[b]])
         assert new_n_starts == n_starts-1, line
+
     f.close()
+    return new_graph, final_trans
+
+
+def connect_without_flanks(graph, alt_loci_fn, name_translation):
+    """
+    Connects the alternative loci in the given file to the grch38 graph,
+    without flanks.
+    :param alt_loci_fn: Filename of file containing alternative loci.
+    One alt locus on each line.
+    Four columns: alt_locus_id  chr chr_start   chr_stop
+    :return: Returns the new graph
+    """
+    from .GRCH38 import AltLoci
+    alt_loci = AltLoci.from_file(alt_loci_fn)
+    new_graph = graph
+    final_trans = Translation(graph=graph)
+    final_trans.graph2 = graph
+
+    for alt_locus in alt_loci.alt_loci:
+        new_graph, final_trans = merge_flanks(
+            [alt_locus.main_start_flank, alt_locus.start_flank,
+             alt_locus.main_end_flank, alt_locus.end_flank],
+            final_trans, new_graph, name_translation)
     return new_graph, final_trans
 
 
@@ -541,103 +300,107 @@ def find_unequal_sibling_genes(main_genes, alt_genes):
     gene_categories = defaultdict(list)
     for gene in main_genes:
         main_dict[gene.name].append(gene)
+    gene_matches = []
     for gene in alt_genes:
-        scores = []
         if gene.name not in main_dict:
             continue
-        if gene in main_dict[gene.name]:
-            gene_categories[11].append((gene, gene))
-            continue
-        for m_gene in main_dict[gene.name]:
-            diffs = gene.start_and_end_diffs(m_gene)
-            m_code = m_gene.transcription_region.diff(
-                gene.transcription_region)
-            exon_diffs = gene.exon_diffs(m_gene)
-            if m_gene.contains(gene, 13):
-                scores.append(9.1)
-                continue
-            elif m_gene.is_cut_version(gene, 13):
-                # print("------------------")
-                # print(gene.to_file_line())
-                # print(m_gene.to_file_line())
-                scores.append(8.1)
-                continue
-            if exon_diffs is None:
-                scores.append(-3)
-                continue
-            if all(c == "E" for c in m_code):
-                if diffs[0] == 0 and diffs[1] == 0:
-                    scores.append(10)
-                    assert exon_diffs <= 40, "%s\n%s\n%s" % (exon_diffs, gene.to_file_line(), m_gene.to_file_line())
-                    break
-                elif max(diffs) < 5:
-                    scores.append(9)
-                    assert exon_diffs <= 2, "%s\n%s\n%s" % (exon_diffs, gene.to_file_line(), m_gene.to_file_line())
-                    continue
-                else:
-                    scores.append(4)
-                continue
-            if m_code[0] == "E" and m_code[-1] == "E":
-                if diffs[0] == 0 and diffs[1] == 0:
-                    scores.append(8)
-                    assert exon_diffs <= 2
-                elif max(diffs) < 5:
-                    scores.append(7)
-                    assert exon_diffs <= 2
-                else:
-                    scores.append(3)
-                continue
-            if m_code[0] == "E":
-                if diffs[0] == 0:
-                    scores.append(6.1)
-                    if not exon_diffs <= 2:
-                        pass # print("%s\n%s\n%s" % (exon_diffs, gene.to_file_line(), m_gene.to_file_line()))
-                elif diffs[0] < 5:
-                    scores.append(5.1)
-                    assert exon_diffs <= 2
-                else:
-                    scores.append(2.1)
-                continue
+        gene_matches.append(GeneMatcher(gene, main_dict[gene.name]))
 
-            if m_code[-1] == "E":
-                if diffs[1] == 0:
-                    scores.append(6)
-                    if not exon_diffs <= 2:
-                        pass # print("%s\n%s\n%s" % (exon_diffs, gene.to_file_line(), m_gene.to_file_line()))
-                elif diffs[1] < 5:
-                    scores.append(5)
-                    assert exon_diffs <= 2
-                else:
-                    scores.append(2)
-                continue
-            if all(c == "P" for c in m_code):
-                if exon_diffs < 5:
-                    scores.append(4.5)
-                else:
-                    scores.append(1)
-                continue
-            if "N" in m_code:
-                scores.append(0)
-                continue
-            scores.append(-1)
-        gene_scores = zip(scores, main_dict[gene.name])
-        gene_scores = list(sorted(gene_scores, key=lambda x: x[0]))
-        score = gene_scores[-1]
-        if score[0] == 0:
-            prev_blocks = graph.reverse_adj_list[gene.transcription_region.region_paths[0]]
-            prev_critical = graph.find_previous_critical_block(gene.transcription_region.region_paths[0])
-            if prev_blocks and False:
-                print("______________________________")
-                print(gene.length(), gene.to_file_line())
-                print(prev_blocks, prev_critical)
-                for m_gene in main_dict[gene.name]:
-                    print(m_gene.length(), m_gene.to_file_line())
-                    prev_blocks = graph.reverse_adj_list[m_gene.transcription_region.region_paths[0]]
-                    prev_critical = graph.find_previous_critical_block(m_gene.transcription_region.region_paths[0])
-                    print(prev_blocks, prev_critical)
-                print(m_code)
-        gene_categories[gene_scores[-1][0]].append((gene, gene_scores[-1][1]))
-    return gene_categories
+    return gene_matches
+#        
+#        if gene in main_dict[gene.name]:
+#            gene_categories[11].append((gene, gene))
+#            continue
+#        for m_gene in main_dict[gene.name]:
+#            diffs = gene.start_and_end_diffs(m_gene)
+#            m_code = m_gene.transcription_region.diff(
+#                gene.transcription_region)
+#            exon_diffs = gene.exon_diffs(m_gene)
+#            if m_gene.contains(gene, 13):
+#                scores.append(9.1)
+#                continue
+#            elif m_gene.is_cut_version(gene, 13):
+#                # print("------------------")
+#                # print(gene.to_file_line())
+#                # print(m_gene.to_file_line())
+#                scores.append(8.1)
+#                continue
+#            if exon_diffs is None:
+#                scores.append(-3)
+#                continue
+#            if all(c == "E" for c in m_code):
+#                if diffs[0] == 0 and diffs[1] == 0:
+#                    scores.append(10)
+#                    assert exon_diffs <= 40, "%s\n%s\n%s" % (exon_diffs, gene.to_file_line(), m_gene.to_file_line())
+#                    break
+#                elif max(diffs) < 5:
+#                    scores.append(9)
+#                    assert exon_diffs <= 2, "%s\n%s\n%s" % (exon_diffs, gene.to_file_line(), m_gene.to_file_line())
+#                    continue
+#                else:
+#                    scores.append(4)
+#                continue
+#            if m_code[0] == "E" and m_code[-1] == "E":
+#                if diffs[0] == 0 and diffs[1] == 0:
+#                    scores.append(8)
+#                    assert exon_diffs <= 2
+#                elif max(diffs) < 5:
+#                    scores.append(7)
+#                    assert exon_diffs <= 2
+#                else:
+#                    scores.append(3)
+#                continue
+#            if m_code[0] == "E":
+#                if diffs[0] == 0:
+#                    scores.append(6.1)
+#                    if not exon_diffs <= 2:
+#                        pass # print("%s\n%s\n%s" % (exon_diffs, gene.to_file_line(), m_gene.to_file_line()))
+#                elif diffs[0] < 5:
+#                    scores.append(5.1)
+#                    assert exon_diffs <= 2
+#                else:
+#                    scores.append(2.1)
+#                continue
+#
+#            if m_code[-1] == "E":
+#                if diffs[1] == 0:
+#                    scores.append(6)
+#                    if not exon_diffs <= 2:
+#                        pass # print("%s\n%s\n%s" % (exon_diffs, gene.to_file_line(), m_gene.to_file_line()))
+#                elif diffs[1] < 5:
+#                    scores.append(5)
+#                    assert exon_diffs <= 2
+#                else:
+#                    scores.append(2)
+#                continue
+#            if all(c == "P" for c in m_code):
+#                if exon_diffs < 5:
+#                    scores.append(4.5)
+#                else:
+#                    scores.append(1)
+#                continue
+#            if "N" in m_code:
+#                scores.append(0)
+#                continue
+#            scores.append(-1)
+#        gene_scores = zip(scores, main_dict[gene.name])
+#        gene_scores = list(sorted(gene_scores, key=lambda x: x[0]))
+#        score = gene_scores[-1]
+#        if score[0] == 0:
+#            prev_blocks = graph.reverse_adj_list[gene.transcription_region.region_paths[0]]
+#            prev_critical = graph.find_previous_critical_block(gene.transcription_region.region_paths[0])
+#            if prev_blocks and False:
+#                print("______________________________")
+#                print(gene.length(), gene.to_file_line())
+#                print(prev_blocks, prev_critical)
+#                for m_gene in main_dict[gene.name]:
+#                    print(m_gene.length(), m_gene.to_file_line())
+#                    prev_blocks = graph.reverse_adj_list[m_gene.transcription_region.region_paths[0]]
+#                    prev_critical = graph.find_previous_critical_block(m_gene.transcription_region.region_paths[0])
+#                    print(prev_blocks, prev_critical)
+#                print(m_code)
+#        gene_categories[gene_scores[-1][0]].append((gene, gene_scores[-1][1]))
+#    return gene_categories
 
 
 def classify_alt_gene(gene):
@@ -686,6 +449,45 @@ def classify_alt_genes(genes):
     return class_lists
 
 
+def analyze_genes_on_merged_graph(genes, translation):
+    cashed = True
+    translation.block_lengths = None
+    if cashed:
+        translated = GeneList.from_pickle("trans_genes").gene_list
+    else:
+        translated = [gene.translate(translation) for gene in genes]
+        gene_list = GeneList(translated)
+        gene_list.to_file("trans_genes")
+
+    graph = translated[0].transcription_region.graph
+    graph.critical_blocks = graph.find_all_critical_blocks()
+
+    main_chr_dict = defaultdict(list)
+
+    alt_dict = defaultdict(list)
+
+    for gene, t_gene in zip(genes, translated):
+        if "alt" in gene.chrom:
+            alt_dict[gene.chrom.split("_")[0]].append(t_gene)
+        else:
+            main_chr_dict[gene.chrom].append(t_gene)
+
+    print("N:", sum(len(v) for v in alt_dict.values()))
+    gene_matches = []
+    for chrom, genes in alt_dict.items():
+        gene_matches.extend(
+            find_unequal_sibling_genes(main_chr_dict[chrom], genes))
+
+    print("M", len(gene_matches))
+    for gene_category in ["ALT", "FLANK", "START", "END", "BUBBLE"]:
+        category_mathes = [m for m in gene_matches
+                           if m.category == gene_category]
+        score_dict = defaultdict(int)
+        for match in category_mathes:
+            score_dict[match.score] += 1
+        print(gene_category, score_dict)
+
+
 def find_exon_duplicates(genes, translation):
     """Find and count duplicate genes on flanks of
     alt loci
@@ -693,11 +495,13 @@ def find_exon_duplicates(genes, translation):
     :param genes: genes on original graph
     :param translation: translation object
     """
-    # translated = [gene.translate(translation) for gene in genes]
-    # gene_list = GeneList(translated)
-    # gene_list.to_file("trans_genes")
-
-    translated = GeneList.from_file("trans_genes").gene_list
+    translation.block_lengths = None
+    translated = [gene.translate(translation) for gene in genes]
+    gene_list = GeneList(translated)
+    gene_list.to_file("trans_genes")
+    print([g.transcription_region for g in genes])
+    print([g.transcription_region for g in translated])
+    # translated = GeneList.from_file("trans_genes").gene_list
     graph = translated[0].transcription_region.graph
     graph.critical_blocks = graph.find_all_critical_blocks()
 
@@ -715,8 +519,11 @@ def find_exon_duplicates(genes, translation):
 
     print("N:", sum(len(v) for v in alt_dict.values()))
     s = 0
+    gene_matches = []
     for chrom, genes in alt_dict.items():
-        new_things = find_unequal_sibling_genes(main_chr_dict[chrom], genes)
+        gene_matches.extend(
+            find_unequal_sibling_genes(main_chr_dict[chrom], genes))
+        continue
         for k, v in new_things.items():
             gene_categories[k].extend(v)
         continue
@@ -734,11 +541,6 @@ def find_exon_duplicates(genes, translation):
     #         print(g.to_file_line())
     #         print(g2.to_file_line())
     # return
-    for gene_category in ["ALT", "FLANK", "START", "END", "BUBBLE"]:
-        print(gene_category)
-        for category, v in gene_categories.items():
-            print(category, len([g for g in v if
-                                 classify_alt_gene(g[0]) == gene_category]))
 
 
 def blast_test():

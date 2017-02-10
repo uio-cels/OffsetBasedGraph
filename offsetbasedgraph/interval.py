@@ -68,7 +68,7 @@ class Interval(object):
 
         """
 
-        if self.length_cache is not None:
+        if hasattr(self, "length_cache") and self.length_cache is not None:
             return self.length_cache
 
         if len(self.region_paths) == 1:
