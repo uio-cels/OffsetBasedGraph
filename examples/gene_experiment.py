@@ -9,6 +9,7 @@ python3 gene_experiment.py grch38.chrom.sizes-small grch38_alt_loci_small.txt ge
 
 """
 
+from collections import defaultdict
 import sys
 import argparse
 from offsetbasedgraph import Graph, Translation
@@ -18,7 +19,6 @@ from offsetbasedgraph.graphutils import Gene, convert_to_numeric_graph, connect_
     convert_to_text_graph, merge_flanks, connect_without_flanks, parse_genes_file, \
     get_genes_as_intervals, get_gene_objects_as_intervals, find_exon_duplicates, \
     create_initial_grch38_graph, blast_test, convert_cigar_graph_to_text, analyze_genes_on_merged_graph
-
 
 def create_graph(args):
     graph = create_initial_grch38_graph(args.chrom_sizes_file_name)
