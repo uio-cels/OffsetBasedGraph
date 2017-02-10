@@ -88,7 +88,7 @@ class Gene(object):
 
         t_transcription_region = T.translate(self.transcription_region)
         t_exons = [T.translate(exon) for exon in self.exons]
-        return Gene(self. name, t_transcription_region, t_exons)
+        return Gene(self.name, t_transcription_region, t_exons, None, self.strand)
 
     def length(self):
         return self.transcription_region.length()
@@ -1049,7 +1049,6 @@ def translate_single_gene_to_aligned_graph(gene, trans):
     new_end.offset = new_end.offset + 1
     critical_intervals = []
     for exon in gene.exons:
-        print("     Translating exon")
         critical_intervals.append(trans.translate(exon))
 
     mpinterval = CriticalPathsMultiPathInterval(

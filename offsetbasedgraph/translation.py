@@ -472,7 +472,7 @@ class Translation(object):
                           graph=self._get_other_graph(inverse))
                  for sp in start_poses])
 
-        return self._translate_interval_nontrivial(interval, inverse)
+        return self._translate_interval_nontrivialv2(interval, inverse)
 
     def tmp(self, region_path, intervalt, interval, inverse):
         # Find out which of these rps should be added
@@ -508,6 +508,101 @@ class Translation(object):
 
         return new_region_paths
 
+    def tmp2(self, region_path, intervalt, interval, inverse):
+        # Find out which of these rps should be added
+        # Do not add region paths before the original interval
+        intervalt_offset = intervalt.start_position.offset
+        offset = 0
+        new_region_paths = list(intervalt.region_paths[1:-1])
+        # Check only first
+        for rp in intervalt.region_paths:
+            if inverse:
+                assert intervalt.graph is not None, intervalt
+                assert rp in intervalt.graph.blocks, \
+                    "region path %s in interval %s does not exist in graph %s" % (
+                        rp, intervalt, intervalt.graph)
+                length = intervalt.graph.blocks[rp].length()
+            else:
+                length = self._translations(rp, True)[0].length()
+
+            # If first region path
+            is_first = interval.region_paths[0] == region_path
+            is_tmp = offset + length - intervalt_offset <= interval.start_position.offset
+            if is_first and is_tmp:
+                offset += length
+                continue
+
+            # If last region path
+            is_last = interval.region_paths[-1] == region_path
+            if is_last and offset - intervalt_offset >= interval.end_position.offset:
+                offset += length
+                continue
+            new_region_paths.append(rp)
+
+            offset += length
+
+        return new_region_paths
+
+    def _translate_interval_nontrivialv2(self, interval, inverse=False):
+        # New faster version: Get all rps, but remove the ones before start and after end rp
+        new_starts = self.translate_position(interval.start_position, inverse)
+        # Hack: Convert to inclusive end coordinate
+        interval.end_position.offset -= 1
+        new_ends = self.translate_position(interval.end_position, inverse)
+        # Hack: Convert back to exclusive
+        interval.end_position.offset += 1
+        for new_end in new_ends:
+            if new_end != interval.end_position:
+                new_end.offset += 1
+
+
+        is_simple = len(new_ends) == 1 and len(new_starts) == 1
+
+        if len(new_ends) == len(new_starts):
+            #print("Same start and end lengths")
+            new_region_paths = [[] for i in range(0, len(new_starts))]
+            for region_path in interval.region_paths:
+                intervals = self._translations(region_path, inverse)
+                for i in range(0, len(intervals)):
+                    new_region_paths[i].extend(intervals[i].region_paths)
+
+            #print("New region paths")
+            #print(new_region_paths)
+
+            # Remove all rps before start rp and after end rp
+            new_region_paths_sliced = []
+            for i in range(0, len(new_starts)):
+                start_rp = new_starts[i].region_path_id
+                end_rp = new_ends[i].region_path_id
+                start_index = new_region_paths[i].index(start_rp)
+                end_index = new_region_paths[i].index(end_rp)
+                new_region_paths_sliced.extend(new_region_paths[i][start_index:end_index+1])
+
+            new_region_paths = new_region_paths_sliced
+            #print(new_region_paths)
+
+        else:
+            new_region_paths = []
+
+            for region_path in interval.region_paths:
+                # Find all region paths that this region path follows
+                intervals = self._translations(region_path, inverse)
+                is_simple = is_simple and len(intervals) == 1
+                for intervalt in intervals:
+                    # Find out which of these rps should be added
+                    # Do not add region paths before the original interval
+                    new_region_paths.extend(
+                        self.tmp(region_path, intervalt, interval, inverse))
+
+        if is_simple:
+            return SingleMultiPathInterval(
+                Interval(new_starts[0], new_ends[0], new_region_paths,
+                         graph=self._get_other_graph(inverse)))
+
+        return GeneralMultiPathInterval(
+            new_starts, new_ends,
+            new_region_paths, self._get_other_graph(inverse))
+
     def _translate_interval_nontrivial(self, interval, inverse=False):
         new_starts = self.translate_position(interval.start_position, inverse)
         # Hack: Convert to inclusive end coordinate
@@ -520,6 +615,11 @@ class Translation(object):
                 new_end.offset += 1
 
         new_region_paths = []
+        #new_region_paths.extend([s.region_path_id for s in new_starts])
+        #new_region_paths.extend([e.region_path_id for e in new_ends])
+
+
+
         is_simple = len(new_ends) == 1 and len(new_starts) == 1
         for region_path in interval.region_paths:
             # Find all region paths that this region path follows
@@ -565,8 +665,12 @@ class Translation(object):
                 rp_lens = [self.block_lengths[rp] for rp in interval.region_paths]
 
             else:
-                rp_lens = (self._translations(rp, inverse=not inverse)[0].length()
-                           for rp in interval.region_paths)
+                if interval.rp_lens_tmp is not None:
+                    rp_lens = interval.rp_lens_tmp
+                else:
+                    rp_lens = [self._translations(rp, inverse=not inverse)[0].length()
+                           for rp in interval.region_paths]
+                    interval.rp_lens_tmp = list(rp_lens)
 
             found_pos = interval.get_position_from_offset(
                 position.offset, rp_lens)
