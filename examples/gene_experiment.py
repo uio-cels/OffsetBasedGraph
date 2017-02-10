@@ -29,12 +29,12 @@ def create_graph(args):
     new_numeric_graph, numeric_translation = connect_without_flanks(
         numeric_graph, args.alt_locations_file_name, name_translation)
     n_starts3 = len([b for b in new_numeric_graph.blocks if not new_numeric_graph.reverse_adj_list[b]])
-    print("################", n_starts2-n_starts3)
+    #print("################", n_starts2-n_starts3)
     name_graph, new_name_translation = convert_to_text_graph(
         new_numeric_graph, name_translation, numeric_translation)
     n_starts4 = len([b for b in name_graph.blocks if not name_graph.reverse_adj_list[b]])
-    for k, v in name_graph.adj_list.items():
-        print(k, v)
+    #for k, v in name_graph.adj_list.items():
+    #    print(k, v)
     assert n_starts3 == n_starts4
     final_translation = name_translation + numeric_translation + new_name_translation
     final_translation.graph2 = name_graph
@@ -54,11 +54,31 @@ def check_duplicate_genes(args):
 
 
 def merge_alignment(args):
-    trans = Translation.from_file(args.translation_file_name)
-    graph = trans.graph1
-    graph, trans = grch38_graph_to_numeric(graph)
-    merge_alt_using_cigar(graph, trans, args.alt_locus_id)
+    from offsetbasedgraph.graphutils import GeneList, create_gene_dicts, translate_single_gene_to_aligned_graph
 
+    # For every alt loci, create complex graph, translate genes and analyse them
+    text_graph = create_initial_grch38_graph(args.chrom_sizes_file_name)
+    graph, name_trans = grch38_graph_to_numeric(text_graph)
+    alt_locus = args.alt_locus_id
+    trans, complex_graph = merge_alt_using_cigar(graph, name_trans, alt_locus)
+
+    full_trans = name_trans + trans
+    full_trans.to_file(args.out_file_name)
+
+    # Read genes and translate to graph
+    genes = GeneList(get_gene_objects_as_intervals(args.genes)).gene_list
+    genes_on_alt = []
+    for g in genes:
+        if g.transcription_region.start_position.region_path_id == alt_locus:
+            genes_on_alt.append(g.translate(full_trans))
+
+    genes_on_alt = GeneList(genes_on_alt)
+    genes_on_alt.to_file("genes_%s" % args.out_file_name)
+    print("Genes on alt")
+    print(genes_on_alt)
+
+    full_trans.to_file(args.out_file_name)
+    print("Saved trans to file %s" % args.out_file_name)
 
 def merge_all_alignments(args):
     from offsetbasedgraph.graphutils import merge_alt_using_cigar, grch38_graph_to_numeric
@@ -93,6 +113,50 @@ def merge_all_alignments(args):
     full_trans.set_graph2(final_graph)
     print("To file")
     full_trans.to_file(args.out_file_name)
+
+
+def visualize_alt_locus(args):
+    from offsetbasedgraph.graphutils import GeneList, create_gene_dicts, merge_alt_using_cigar, grch38_graph_to_numeric
+    trans = Translation.from_file(args.translation_file_name)
+    graph = trans.graph2
+
+    # Find all genes on this graph
+    genes = GeneList(get_gene_objects_as_intervals(args.genes)).gene_list
+    alt_loci_genes, gene_name_dict, main_genes = create_gene_dicts(genes)
+
+    alt = args.alt_locus
+    genes = alt_loci_genes[args.alt_locus] + main_genes[args.alt_locus]
+
+    genes = [g.translate(trans) for g in genes]
+    trans_regions = [g.transcription_region for g in genes]
+
+    subgraph, trans = graph.create_subgraph_from_intervals(trans_regions, 20000)
+
+    genes = [g.translate(trans) for g in genes]
+
+    if len(genes) > 3:
+        genes.sort(key=lambda g: g.length(), reverse=True)
+        genes = genes[0:3]
+
+    levels = Graph.level_dict(subgraph.blocks)
+
+    # Find start block by choosing a block having no edges in
+    start = None
+    for b in subgraph.blocks:
+        if len(subgraph.reverse_adj_list[b]) == 0:
+            start = b
+            break
+
+    print("== Subgraph ==")
+    print(subgraph)
+
+    assert start is not None
+
+    from offsetbasedgraph import VisualizeHtml
+    subgraph.start_block = start
+    max_offset = sum([subgraph.blocks[b].length() for b in subgraph.blocks])
+    v = VisualizeHtml(subgraph, 0, max_offset, 0, levels, "", 800, genes)
+    print(v.get_wrapped_html())
 
 
 def visualize_genes(args):
@@ -205,9 +269,15 @@ def _analyse_multipath_genes_on_graph(genes_list, genes_against, graph):
                 continue
 
             if g == g2:
+                #print("Match between")
+                #print(g)
+                #print(g2)
                 equal += 1
 
             if g.faster_equal_critical_intervals(g2):
+                #print("=== Exon match ===")
+                #print(g)
+                #print(g2)
                 equal_exons += 1
 
     return equal, equal_exons
@@ -231,13 +301,15 @@ def analyse_multipath_genes2(args):
 
     equal_total = 0
     equal_exons_total = 0
+    n_a = 1
     for b in text_graph.blocks:
         if "alt" in b:
 
-            #if b != "chr1_KI270762v1_alt":
-            #    continue
-
-            print("Analysing genes on alt locus %s" % b)
+            if b != "chr19_KI270929v1_alt" and b != "chr19_GL949747v2_alt" and b != "chr19_KI270887v1_alt" and b != "chr19_KI270938v1_alt": #  chr17_GL000258v2_alt
+                continue
+            print()
+            print("Analysing genes on alt locus %s (number %d of %d)" % (b, n_a, len([bl for bl in text_graph.blocks if "alt" in bl])))
+            n_a += 1
             genes_here = alt_loci_genes[b]
 
             trans, complex_graph = merge_alt_using_cigar(graph, name_trans, b)
@@ -270,8 +342,12 @@ def analyse_multipath_genes2(args):
                 genes_here_translated.append(translate_single_gene_to_aligned_graph(mg, full_trans).interval)
                 sys.stdout.write('\r  Translating alt genes: ' + str(round(100 * n /len(genes_here)))  + ' % finished ' + ' ' * 20)
                 sys.stdout.flush()
+            print()
+            #[print("\n\nGENE " + g.name + ":\n" + str(g.transcription_region) + "\n" + str(g.exons)) for g in genes_here]
+            #[print(g) for g in genes_against_translated]
+            #print("===================================== Here ======================================================")
+            #[print(g) for g in genes_here_translated]
 
-            #print(genes_here)
 
             print("\n  Candidates to check against: %d" % len(genes_against))
 
@@ -396,13 +472,18 @@ if __name__ == "__main__":
 
     # Subcommand for merge alt loci using alignments
     parser_merge_alignments = subparsers.add_parser(
-        'merge_alignment', help='Merge graph using alignments of alt locus')
+        'merge_alignment', help='Merge graph using alignments of alt locus, and save resulting graph to file')
 
     parser_merge_alignments.add_argument(
-        'translation_file_name',
-        help='Translation file created by running create_graph')
+        'chrom_sizes_file_name',
+        help='Name of chrom sizes file')
+    parser_merge_alignments.add_argument(
+        'out_file_name',
+        help='File name of translation file')
     parser_merge_alignments.add_argument(
         'alt_locus_id', help='Id of alt locus (e.g. chr2_KI270774v1_alt')
+    parser_merge_alignments.add_argument(
+        'genes', help='Name of genes file (e.g. genes.txt')
 
     # Subcommand for merge alt loci using alignments
     parser_merge_alignments.set_defaults(func=merge_alignment)
@@ -475,6 +556,20 @@ if __name__ == "__main__":
     parser_visualize_genes.add_argument('genes_file_name',
                                         help='Pickled genes file')
     parser_visualize_genes.set_defaults(func=visualize_genes)
+
+    # Def visualize alt locus
+    parser_visualize_alt_locus = subparsers.add_parser(
+        'visualize_alt_locus',
+            help='Produce html visualization (that can be saved and opened in a browser)')
+    parser_visualize_alt_locus.add_argument('translation_file_name',
+            help='Translation with graph to visualize')
+    parser_visualize_alt_locus.add_argument('genes',
+                                        help='Genes file (e. g. genes_refseq.txt)')
+    parser_visualize_alt_locus.add_argument('alt_locus',
+                                        help='Alt locus id (e. g. chr2_KI270774v1_alt)')
+    parser_visualize_alt_locus.set_defaults(func=visualize_alt_locus)
+
+
 
     if len(sys.argv) == 1:
         parser.print_help()

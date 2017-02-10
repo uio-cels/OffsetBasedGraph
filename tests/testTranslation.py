@@ -28,12 +28,12 @@ class TestTranslation(unittest.TestCase):
         # Run some other cases back and forth
         for i in range(0, 10):
             self.assertEqual(trans.translate_position(
-                                trans.translate_position(pos_graph1)[0],
-                                True
-                            )[0], pos_graph1,
-                            "Position %s not translated correctly back and forth"
-                            % pos_graph1
-            )
+                trans.translate_position(pos_graph1)[0],
+                True
+            )[0], pos_graph1,
+                             "Position %s not translated correctly back and forth"
+                             % pos_graph1
+                             )
 
     def testSimpleTranslateInterval(self):
         graph, graph2, trans = dummygraph.get_translation_single_block()
@@ -48,20 +48,20 @@ class TestTranslation(unittest.TestCase):
         translated_intervals = translated.get_single_path_intervals()
         t = translated_intervals[0]
         self.assertEqual(t, interval_graph2,
-                "Translated interval %s not equal to %s" % (t, interval_graph2))
+                         "Translated interval %s not equal to %s" % (t, interval_graph2))
         translated_back = trans.translate_interval(t, True)
         t_back = translated_back.get_single_path_intervals()[0]
 
         self.assertEqual(t_back, interval_graph1,
-                "Translated back interval %s != to %s" % (t_back, interval_graph1))
+                         "Translated back interval %s != to %s" % (t_back, interval_graph1))
 
     def test_translate_interval_special_case(self):
         graph = Graph({1: Block(4)}, {})
         graph2 = Graph({2: Block(2), 3: Block(2)}, {2: [3]})
         trans = Translation(
-                    {1: [Interval(0, 2, [2, 3], graph2)]},
-                    {2: [Interval(0, 2, [1], graph)],
-                     3: [Interval(2, 4, [1], graph)]})
+            {1: [Interval(0, 2, [2, 3], graph2)]},
+            {2: [Interval(0, 2, [1], graph)],
+             3: [Interval(2, 4, [1], graph)]})
         interval = Interval(3, 4, [1], graph)
 
         translated = trans.translate_interval(interval).get_single_path_intervals()[0]
@@ -113,13 +113,13 @@ class TestTranslation(unittest.TestCase):
         trans2 = Translation({2: [intervalgraph3]},
                              {4: [Interval(0, 3, [2], graph2)],
                               5: [Interval(3, 5, [2], graph2)]}
-                            )
+                             )
         trans3 = trans + trans2
         correct_trans = Translation({1: [Interval(0, 5, [4, 5, 3], graph3)]},
                                     {4: [Interval(0, 3, [1], graph)],
                                      5: [Interval(3, 5, [1], graph)],
                                      3: [Interval(5, 10,[1], graph)]
-                                    })
+                                     })
 
         self.assertTrue(trans3, correct_trans)
 
@@ -264,7 +264,7 @@ class TestTranslation(unittest.TestCase):
             2: Block(1),
             3: Block(1),
             4: Block(1),
-            },
+        },
             {
                 0: [1],
                 1: [2],
@@ -294,9 +294,63 @@ class TestTranslation(unittest.TestCase):
         self.assertEqual(old_edges[11], [3])
         self.assertEqual(old_edges[3], [4])
 
+    def test_translate_interval_special_case(self):
+        # Special case with start of interval not being in start of RP
+        graph = Graph(
+            {1: Block(5),
+             2: Block(5),
+             3: Block(5)
+            },
+            {
+             1: [2],
+             2: [3],
+            })
 
+        ab = {
+            1: [Interval(0, 1, [11, 12, 13, 14, 15])],
+            2: [Interval(0, 5, [16])],
+            3: [Interval(0, 1, [21, 22, 23, 24, 25])]
+        }
 
+        ba = {
+            11: [Interval(0, 1, [1])],
+            12: [Interval(1, 2, [1])],
+            13: [Interval(2, 3, [1])],
+            14: [Interval(3, 4, [1])],
+            15: [Interval(4, 5, [1])],
+            16: [Interval(0, 5, [2])],
+            21: [Interval(0, 1, [3])],
+            22: [Interval(1, 2, [3])],
+            23: [Interval(2, 3, [3])],
+            24: [Interval(3, 4, [3])],
+            25: [Interval(4, 5, [3])]
+        }
 
+        trans = Translation(ab, ba, graph=graph)
+
+        graph2 = trans.translate_subgraph(graph)
+        trans.graph2 = graph2
+
+        # Translate intervals starting in rp 1 with different offsets
+        for i in range(0, 5):
+            interval = Interval(i, 3, [1, 2, 3], graph)
+            correct_length = (5-i) + 5 + 3
+            self.assertEqual(interval.length(), correct_length)
+
+            translated = trans.translate(interval)
+            self.assertEqual(translated.length(), correct_length)
+            self.assertEqual(translated.start_position.region_path_id, 11 + i)
+
+        # Change end pos
+        for i in range(0, 5):
+            interval = Interval(2, i+1, [1, 2, 3], graph)
+            correct_length = i + 1 + 5 + 3
+            self.assertEqual(interval.length(), correct_length)
+
+            translated = trans.translate(interval)
+            self.assertEqual(translated.length(), correct_length)
+            self.assertEqual(translated.start_position.region_path_id, 13)
+            self.assertEqual(translated.end_position.region_path_id, 21 + i)
 
 
 if __name__ == "__main__":

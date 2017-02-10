@@ -91,7 +91,7 @@ class VisualizeHtml(object):
             self.html += """
                 <span style='background-color: %s; width: 30px; height: 12px; display: inline-block'></span>
                  <font color='black'>%s</font><br>
-                """ % (self.gene_colors[i], "Gene: " + gene.name + " (" + gene.name + ")")
+                """ % (self.gene_colors[i%len(self.gene_colors)], "Gene: " + gene.name + " (" + gene.name + ")")
             i += 1
 
         self.html += """
@@ -128,14 +128,14 @@ class VisualizeHtml(object):
             #plot_info = self.offset_positions[block]
             pos = self.block_positions[block]
             start = pos[0]
-            print("<p>Start pos is %d</p>" % start)
+            #print("<p>Start pos is %d</p>" % start)
             end = pos[0] + pos[2]
             if block == interval.region_paths[0]:
                 start += interval.start_position.offset * self.width_ratio
-                print("<p>Setting exon start to %d after adding %d</p>" % (start, interval.start_position.offset * self.width_ratio))
+                #print("<p>Setting exon start to %d after adding %d</p>" % (start, interval.start_position.offset * self.width_ratio))
             if block == interval.end_position.region_path_id:
                 end = pos[0] + interval.end_position.offset * self.width_ratio
-                print("<p>Fixing exon end: %d (offset: %d)</p>" % (end, interval.end_position.offset))
+                #print("<p>Fixing exon end: %d (offset: %d)</p>" % (end, interval.end_position.offset))
             if is_exon:
                 #self._plot_exon(start, end, pos[1], interval, name)
                 self._plot_interval_in_block(start, end, pos[1], interval, name, True)
@@ -149,8 +149,8 @@ class VisualizeHtml(object):
         :param intervals: A list of Genes (of type offsetbasedgraph.graphutils.Gene)
         """
         for gene in self.genes:
-            print("<p>Visualizing gene</p>")
-            print("gene")
+            #print("<p>Visualizing gene</p>")
+            #print("gene")
 
             interval = gene.transcription_region
             self._plot_interval(interval, gene.name)

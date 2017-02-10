@@ -851,7 +851,6 @@ def translate_single_gene_to_aligned_graph(gene, trans):
     new_end.offset = new_end.offset + 1
     critical_intervals = []
     for exon in gene.exons:
-        print("     Translating exon")
         critical_intervals.append(trans.translate(exon))
 
     mpinterval = CriticalPathsMultiPathInterval(

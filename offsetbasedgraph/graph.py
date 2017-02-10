@@ -225,7 +225,7 @@ class Graph(object):
             if i.region_paths[0] == first:
                 first_start = min(i.start_position.offset, first_start)
 
-        padding_first = max(0, (first_length - first_start) + padding)
+        padding_first = max(1, (first_length - first_start) + padding)
         trans = Translation({}, {}, graph=subgraph)
         trans.graph2 = subgraph
         if first_length > padding:
@@ -239,6 +239,7 @@ class Graph(object):
                  new_second: [Interval(new_first_length, first_length,
                                        [first], subgraph)]}, graph=subgraph)
             #print(trans_first._a_to_b)
+            print(trans_first)
             subgraph = trans_first.translate_subgraph(subgraph)
             trans = trans + trans_first
 
@@ -257,7 +258,7 @@ class Graph(object):
             if i.region_paths[-1] == last:
                 last_end = max(i.end_position.offset, last_end)
 
-        padding_end = min(last_length, last_end + padding)
+        padding_end = min(last_length - 1, last_end + padding)
 
         if last_length > padding:
             # Divide last block
@@ -287,20 +288,16 @@ class Graph(object):
         blocks = set(blocks)
         # add prev and next critical
 
-        new_edges = {}
+        new_edges = defaultdict(list)
         new_blocks = {}
         for b in blocks:
             new_blocks[b] = Block(self.blocks[b].length())
 
-
-
         for b in blocks:
             for e in self.adj_list[b]:
                 if e in new_blocks:
-                    if b in new_edges:
-                        new_edges[b].append(e)
-                    else:
-                        new_edges[b] = [e]
+                    new_edges[b].append(e)
+
         subgraph = Graph(new_blocks, new_edges)
         subgraph_without_critical = subgraph.copy()
         # return subgraph

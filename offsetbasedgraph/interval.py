@@ -50,6 +50,7 @@ class Interval(object):
 
         # By default include start and end region path
         self.graph = graph
+        self.rp_lens_tmp = None
 
         assert self.end_position.region_path_id == self.region_paths[-1]
         assert self.start_position.region_path_id == self.region_paths[0]
@@ -255,7 +256,7 @@ class Interval(object):
                 return Position(region_path, total_offset)
             total_offset -= rp_length
 
-        assert False, "No offset %d from interval %s using rp lens %s" % (offset, self, rp_lens)
+        assert False, "No offset %d from interval %s using rp lens %s" % (offset, self, list(rp_lens))
 
     def get_adj_list(self):
         """
