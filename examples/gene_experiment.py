@@ -278,9 +278,9 @@ def _analyse_multipath_genes_on_graph(genes_list, genes_against, graph):
                 equal += 1
 
             if g.faster_equal_critical_intervals(g2):
-                #print("=== Exon match ===")
-                #print(g)
-                #print(g2)
+                print("=== Exon match ===")
+                print(g)
+                print(g2)
                 equal_exons += 1
 
     return equal, equal_exons
@@ -301,6 +301,7 @@ def analyse_multipath_genes2(args):
     text_graph = create_initial_grch38_graph(args.chrom_sizes_file_name)
     graph, name_trans = grch38_graph_to_numeric(text_graph)
 
+    orig_graph = graph.copy()
 
     equal_total = 0
     equal_exons_total = 0
@@ -317,6 +318,8 @@ def analyse_multipath_genes2(args):
 
             trans, complex_graph = merge_alt_using_cigar(graph, name_trans, b)
 
+            assert graph == orig_graph
+
             #print("Addign translation")
             full_trans = name_trans + trans
             #print(trans)
@@ -331,7 +334,7 @@ def analyse_multipath_genes2(args):
                 #    print("  Translated %d/%d genes" % (n, len(genes_against)))
                 n += 1
                 genes_against_translated.append(translate_single_gene_to_aligned_graph(mg, full_trans).interval)
-                sys.stdout.write('\r  Translating main genes: ' + str(round(100 * n /len(genes_against)))  + ' % finished ' + ' ' * 20)
+                sys.stdout.write('\r  Translating main genes: ' + str(round(100 * n / len(genes_against)))  + ' % finished ' + ' ' * 20)
                 sys.stdout.flush()
 
             print()
