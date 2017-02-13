@@ -70,6 +70,9 @@ class CriticalPathsMultiPathInterval(MultiPathInterval):
             return False
         return self.faster_equal_critical_intervals(other)
 
+    def str_without_critical(self):
+        out = "%s, %s" % (str(self.start_pos), str(self.end_pos))
+        return out
 
     def __str__(self):
         out = "Start: "  + str(self.start_pos) + "\n"

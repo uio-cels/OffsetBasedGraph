@@ -28,6 +28,21 @@ class GeneList(object):
                 o = GeneList(o)
             return o
 
+    def __eq__(self, other):
+        if len(self.gene_list) != len(other.gene_list):
+            print("Different lengths")
+            return False
+
+        for g in self.gene_list:
+            if g not in other.gene_list:
+                return False
+
+        for g in other.gene_list:
+            if g not in self.gene_list:
+                return False
+
+        return True
+
 class MultiPathGene(object):
     def __init__(self, name, multipath_interval):
         self.name = name
@@ -45,6 +60,16 @@ class Gene(object):
         self.strand = strand
         self.chrom = transcription_region.region_paths[0]
         self.graph = self.transcription_region.graph
+
+    def copy(self):
+        coding_region = None
+        if self.coding_region is not None:
+            coding_region = self.coding_region.copy()
+        return Gene(self.name, self.transcription_region.copy(),
+                    [ex.copy() for ex in self.exons],
+                    coding_region,
+                    self.strand,
+                    )
 
     @classmethod
     def from_dict(cls, attr_dict):
@@ -779,7 +804,7 @@ def grch38_graph_to_numeric(original_grch38_graph):
     num_ba = {}
     i = 0
     graph = original_grch38_graph.copy()
-    for b in graph.blocks:
+    for b in sorted(list(graph.blocks), reverse=True):
         i += 1
         num_ab[b] = [Interval(0, graph.blocks[b].length(), [i])]
         num_ba[i] = [Interval(0, graph.blocks[b].length(), [b])]
@@ -802,6 +827,8 @@ def merge_alt_using_cigar(original_numeric_grch38_graph, trans, alt_id):
     :param alt_id: Alt id (e.g. chr2_KI270774v1_alt)
     :return: Returns the new graph and a translation object between the original grch38 graph and the new graph
     """
+
+    #trans = trans.copy()
 
     # Find position of alt locus
     main_chr = ""

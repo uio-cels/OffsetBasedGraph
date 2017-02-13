@@ -294,6 +294,33 @@ class TestTranslation(unittest.TestCase):
         self.assertEqual(old_edges[11], [3])
         self.assertEqual(old_edges[3], [4])
 
+    def test_translation_equal(self):
+        graph1, graph2, trans = dummygraph.get_merged_middle_translation()
+
+        self.assertEqual(trans, trans.copy())
+        trans2 = Translation({}, {})
+        self.assertTrue(trans != trans2)
+
+        trans2 = trans.copy()
+        trans2._a_to_b[1] = [Interval(1, 1, [1, 5, 3], graph2)]
+
+        self.assertTrue(trans != trans2)
+
+        trans2 = trans.copy()
+        trans2._a_to_b[1] = [Interval(0, 1, [1, 5, 3], graph2)]
+        self.assertTrue(trans == trans2)
+
+        new_ab =  {
+            2: [Interval(0, 1, [2, 5, 4], graph2)],
+            1: [Interval(0, 1, [1, 5, 3], None)]
+        }
+
+        trans2 = trans.copy()
+        trans2._a_to_b = new_ab
+
+        self.assertEqual(trans, trans2)
+
+
     def test_translate_interval_special_case(self):
         # Special case with start of interval not being in start of RP
         graph = Graph(

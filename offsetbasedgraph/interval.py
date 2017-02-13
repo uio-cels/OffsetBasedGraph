@@ -17,6 +17,9 @@ class Position(object):
     def __repr__(self):
         return self.__str__()
 
+    def copy(self):
+        return Position(self.region_path_id, self.offset)
+
     def __deepcopy__(self, memo):
         return Position(self.region_path_id, self.offset)
 
@@ -186,8 +189,8 @@ class Interval(object):
                         self.region_paths, self.graph)
 
     def copy(self):
-        c = Interval(self.start_position, self.end_position,
-                        self.region_paths, self.graph)
+        c = Interval(self.start_position.copy(), self.end_position.copy(),
+                     list(self.region_paths), self.graph)
         if self.length_cache is not None:
             c.set_length_cache(self.length_cache)
         return c

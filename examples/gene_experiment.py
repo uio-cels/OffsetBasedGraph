@@ -278,9 +278,9 @@ def _analyse_multipath_genes_on_graph(genes_list, genes_against, graph):
                 equal += 1
 
             if g.faster_equal_critical_intervals(g2):
-                print("=== Exon match ===")
-                print(g)
-                print(g2)
+                #print("=== Exon match ===")
+                #print(g)
+                #print(g2)
                 equal_exons += 1
 
     return equal, equal_exons
@@ -302,30 +302,71 @@ def analyse_multipath_genes2(args):
     graph, name_trans = grch38_graph_to_numeric(text_graph)
 
     orig_graph = graph.copy()
+    name_trans_copy = name_trans.copy()
 
     equal_total = 0
     equal_exons_total = 0
     n_a = 1
+
+    t1 = Translation.from_file("tmp_name_trans_single")
+    t2 = Translation.from_file("name_trans_tmp")
+
+    t1.diff(name_trans)
+    #assert t1 == name_trans
+
+    #print(t1)
+    #print(t2)
+
+    #t3 = Translation.from_file("tmp_full_trans_single")
+    #t4 = Translation.from_file("tmp_full_trans")
+
+    #assert t3 == t4
+    #t3.diff(t4)
+    #genes_tmp_main = GeneList.from_file("gene_list_main")
+    #genes_tmp = GeneList.from_file("gene_list_here")
+
     for b in text_graph.blocks:
+    #for b in ["chr19_GL949747v2_alt", "chr19_KI270929v1_alt"]: #text_graph.blocks:
+    #for b in ["chr19_KI270929v1_alt"]:
         if "alt" in b:
 
-            if b != "chr19_KI270929v1_alt" and b != "chr19_GL949747v2_alt" and b != "chr19_KI270887v1_alt" and b != "chr19_KI270938v1_alt": #  chr17_GL000258v2_alt
-                continue
+            #if b != "chr19_KI270929v1_alt" and b != "chr19_GL949747v2_alt": # and b != "chr19_KI270887v1_alt" and b != "chr19_KI270938v1_alt": #  chr17_GL000258v2_alt
+            #    continue
+
+            text_graph = create_initial_grch38_graph(args.chrom_sizes_file_name)
+            graph, name_trans = grch38_graph_to_numeric(text_graph)
+
+
             print()
             print("Analysing genes on alt locus %s (number %d of %d)" % (b, n_a, len([bl for bl in text_graph.blocks if "alt" in bl])))
             n_a += 1
             genes_here = alt_loci_genes[b]
 
+            #assert name_trans == name_trans_copy
+            #assert name_trans == t1
+            #assert graph == orig_graph
+
             trans, complex_graph = merge_alt_using_cigar(graph, name_trans, b)
 
-            assert graph == orig_graph
+            #assert name_trans == t1
+
+            #name_trans.to_file("tmp_name_trans_single")
+            #if b == "chr19_KI270929v1_alt":
+            #    trans.to_file("tmp_name_trans_single")
+            #    name_trans_copy.to_file("name_trans_copy_tmp_single")
+
+
 
             #print("Addign translation")
             full_trans = name_trans + trans
+
+            #if b == "chr19_KI270929v1_alt":
+            #    full_trans.to_file("tmp_full_trans_single")
+
             #print(trans)
 
             # Find candidates on main path to check against:
-            genes_against = main_genes[b]
+            genes_against = [g.copy() for g in main_genes[b]]
             genes_against_translated = []
             #print(len(genes_against))
             n = 0
@@ -334,7 +375,7 @@ def analyse_multipath_genes2(args):
                 #    print("  Translated %d/%d genes" % (n, len(genes_against)))
                 n += 1
                 genes_against_translated.append(translate_single_gene_to_aligned_graph(mg, full_trans).interval)
-                sys.stdout.write('\r  Translating main genes: ' + str(round(100 * n / len(genes_against)))  + ' % finished ' + ' ' * 20)
+                sys.stdout.write('\r  Translating main genes: ' + str(round(100 * n / len(genes_against))) + ' % finished ' + ' ' * 20)
                 sys.stdout.flush()
 
             print()
@@ -343,12 +384,26 @@ def analyse_multipath_genes2(args):
 
             genes_here_translated = []
             n = 0
-            for mg in  genes_here:
+            for mg in genes_here:
                 n += 1
                 genes_here_translated.append(translate_single_gene_to_aligned_graph(mg, full_trans).interval)
-                sys.stdout.write('\r  Translating alt genes: ' + str(round(100 * n /len(genes_here)))  + ' % finished ' + ' ' * 20)
+                sys.stdout.write('\r  Translating alt genes: ' + str(round(100 * n / len(genes_here))) + ' % finished ' + ' ' * 20)
                 sys.stdout.flush()
             print()
+
+            """
+            main_list = GeneList(genes_against_translated)
+            here_list = GeneList(genes_here_translated)
+            if b == "chr19_KI270929v1_alt":
+                assert genes_tmp == here_list
+                #assert genes_tmp_main == main_list, "%s \n != %s" % (str(genes_tmp_main.gene_list), str(main_list.gene_list))
+                #[print(g.str_without_critical()) for g in genes_tmp_main.gene_list]
+                #print()
+                #[print(g.str_without_critical()) for g in main_list.gene_list]
+                assert genes_tmp_main == main_list, "Not equal main list"
+                 #main_list.to_file("gene_list_main")
+            """
+
             #[print("\n\nGENE " + g.name + ":\n" + str(g.transcription_region) + "\n" + str(g.exons)) for g in genes_here]
             #[print(g) for g in genes_against_translated]
             #print("===================================== Here ======================================================")
@@ -363,7 +418,7 @@ def analyse_multipath_genes2(args):
             equal_total += equal
             equal_exons_total += equal_exons
 
-            assert equal <= len(genes_here)
+            #assert equal <= len(genes_here)
 
             print("  Equal: %d, equal exons: %d, total %d genes" % (equal, equal_exons, len(genes_here)))
 

@@ -798,6 +798,39 @@ class Translation(object):
         eq &= self._b_to_a == other._b_to_a
         return eq
 
+    def copy(self):
+        new_ab = {}
+        new_ba = {}
+        for a in self._a_to_b:
+            new_ab[a] = [i.copy() for i in self._a_to_b[a]]
+
+        for a in self._b_to_a:
+            new_ba[a] = [i.copy() for i in self._b_to_a[a]]
+
+        g = self.graph1
+        if g is not None:
+            g = self.graph1.copy()
+
+        return Translation(new_ab, new_ba, graph=g)
+
+    def diff(self, other):
+        """
+        Find and print all differences between this and the other Translation
+        :param other:
+        :return:
+        """
+        print("=== Forward differences ===")
+        for a in self._a_to_b:
+            if a not in other._a_to_b:
+                print("RP %s not in other" % a)
+            else:
+                for i in self._a_to_b[a]:
+                    if i not in other._a_to_b[a]:
+                        print("RP %s has interval not in other (%d, %d). Interval: %s" % (a, len(self._a_to_b[a]), len(other._a_to_b[a]), str(i)))
+                        print(str(self._a_to_b[a]))
+                        print(str(other._a_to_b[a]))
+
+
     def __str__(self):
         return self.__repr__()
 
