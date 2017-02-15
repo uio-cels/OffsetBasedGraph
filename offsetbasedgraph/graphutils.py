@@ -196,8 +196,8 @@ def _connect_without_flanks(graph, alt_loci_fn, name_translation):
 
         intervals = flanks.get_flanks(alt_locus_id, length,
                                       main_chr, start-1, end)
-        for interval in intervals:
-            print(interval)
+        #for interval in intervals:
+        #    print(interval)
 
         n_starts = len([b for b in new_graph.blocks if not
                         new_graph.reverse_adj_list[b]])
@@ -797,7 +797,6 @@ def create_gene_dicts(genes, identical_names=False):
     :param genes:
     :return: alt loci dict, name dict
     """
-    print("Creating gene dict")
     gene_name_dict = defaultdict(list)
     exon_dict = defaultdict(list)
     for g in genes:

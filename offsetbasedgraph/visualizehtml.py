@@ -117,8 +117,8 @@ class VisualizeHtml(object):
 
     def _plot_interval(self, interval, name, is_exon = False):
 
-        if is_exon:
-            print("<p><b>Plotting exon: %s</b></p>" % interval)
+        #if is_exon:
+            #print("<p><b>Plotting exon: %s</b></p>" % interval)
 
         for block in interval.region_paths:
             if not block in self.block_positions:
@@ -414,8 +414,6 @@ class VisualizeHtml(object):
 
         if b == g.start_block:
             return 0
-        print("Start block: %s" % g.start_block)
-        print("Finding back for %s" % b)
 
         back_block = g.reverse_adj_list[b][0]
         #print("Finding back for %s" % b)
@@ -425,8 +423,6 @@ class VisualizeHtml(object):
             distance += self.padding / self.width_ratio + block_size
             if back_block == g.start_block:
                 break
-            print(back_block)
-            print(g.reverse_adj_list[back_block])
             back_block = g.reverse_adj_list[back_block][0]
         return distance
 
@@ -447,9 +443,8 @@ class VisualizeHtml(object):
             xend, y, width, xstart = self._plot(start, end, self.levels[b], self.colors[self.levels[b] + 1], b)
 
             self.block_positions[b] = (xstart, y, width)
-            print("<p>PLotted %s at %d,%d with width %d, ending at %d</p>" % (b, xstart, y, width, xend))
+            #print("<p>PLotted %s at %d,%d with width %d, ending at %d</p>" % (b, xstart, y, width, xend))
 
-        print(self.block_positions)
 
         # Plot arrows using all edges
         g = self.graph
@@ -461,7 +456,6 @@ class VisualizeHtml(object):
                 xend = self.block_positions[edge][0]
                 yend = self.block_positions[edge][1]
                 self._plot_arrow(xstart, ystart, xend, yend)
-                print("Plotted arrow")
 
 
         return

@@ -227,10 +227,8 @@ class Graph(object):
 
         remove = []  # Blocks to remove in the end
 
-        print("Prune")
         # Prune graph from beginning
         while True:
-            print("Pruning")
             intervals = [trans.translate(i) for i in intervals]
             # Find first block, has no genes and only one edge out: Delete
             # If contains genes: Prune
@@ -243,11 +241,9 @@ class Graph(object):
                 # If only one edge out, delete this one
                 if len(self.adj_list[first_rp]) == 1:
                     subgraph.remove(first_rp)
-                    print("Deleted %s" % first_rp)
                     continue
 
 
-            print("=== PRUNING RP %s===" % first_rp)
             # Prune this rp
             first = first_rp
             first_length = subgraph.blocks[first].length()
@@ -258,7 +254,6 @@ class Graph(object):
                 if i.region_paths[0] == first:
                     first_start = min(i.start_position.offset, first_start)
 
-            print("First start: %d" % first_start)
 
             padding_first = max(1, (first_length - first_start) + padding)
             split_trans = Translation({}, {}, graph=subgraph)
@@ -275,7 +270,7 @@ class Graph(object):
                      new_second: [Interval(new_first_length, first_length,
                                            [first], subgraph)]}, graph=subgraph)
                 #print(trans_first._a_to_b)
-                print(trans_first)
+                #print(trans_first)
                 subgraph = trans_first.translate_subgraph(subgraph)
                 split_trans = split_trans + trans_first
                 #subgraph.remove(new_first)
@@ -285,10 +280,8 @@ class Graph(object):
             break
 
 
-        print("Prune end")
         # Prune from end
         while True:
-            print("Pruning")
             intervals = [trans.translate(i) for i in intervals]
             # Find first block, has no genes and only one edge out: Delete
             # If contains genes: Prune
@@ -304,7 +297,6 @@ class Graph(object):
                     continue
 
 
-            print("=== PRUNING last RP %s===" % last_rp)
             # Prune this rp
             last = last_rp
             last_length = subgraph.blocks[last].length()
@@ -334,7 +326,6 @@ class Graph(object):
 
         for r in remove:
             subgraph.remove(r)
-        print("Remove: %s" % remove)
         starts = subgraph.get_first_blocks()
         assert len(starts) == 1, " %s has not len 1" % (str(starts))
 
@@ -371,7 +362,6 @@ class Graph(object):
                  new_second: [Interval(new_first_length, first_length,
                                        [first], subgraph)]}, graph=subgraph)
             #print(trans_first._a_to_b)
-            print(trans_first)
             subgraph = trans_first.translate_subgraph(subgraph)
             trans = trans + trans_first
 
@@ -464,21 +454,21 @@ class Graph(object):
                     continue
 
                 new_blocks[before] = Block(self.blocks[before].length())
-                print("Adding before: %s" % before)
+                #print("Adding before: %s" % before)
                 new_edges[before].append(f)
-                print("  adding edge from %s to %s" % (before, f))
+                #print("  adding edge from %s to %s" % (before, f))
 
         subgraph = Graph(new_blocks, new_edges)
 
         # If two last rps, they should be going to the same next
-        print(subgraph)
+        #print(subgraph)
         lasts = subgraph.get_last_blocks()
         assert len(lasts) == 1 or len(lasts) == 2, "%s is lasts" % lasts
 
         if len(lasts) == 2:
             # Connect the two last to next
-            print("Last")
-            print(lasts)
+            #print("Last")
+            #print(lasts)
             assert self.adj_list[lasts[0]][0] == self.adj_list[lasts[1]][0], "Not identical next: %s != %s" % (self.adj_list[lasts[0]][0], self.adj_list[lasts[1]][0])
             next = self.adj_list[lasts[0]]
             assert len(next) == 1
@@ -508,11 +498,6 @@ class Graph(object):
         """
         lasts = subgraph.get_last_blocks()
 
-        print("=== Graph ===")
-        print(subgraph)
-
-        print("=== Lasts ===")
-        print(lasts)
         assert len(lasts) == 1 or len(lasts) == 2
 
         if len(lasts) == 2:
@@ -547,9 +532,6 @@ class Graph(object):
                 new_edges[prev_critical] = [f]
         """
         subgraph2 = Graph(new_blocks, new_edges)
-
-        print("=== Graph 2 ===")
-        print(subgraph2)
 
         return subgraph2
 
