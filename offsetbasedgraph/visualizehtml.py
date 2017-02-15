@@ -253,7 +253,7 @@ class VisualizeHtml(object):
         self.html += "background-color: %s;" % color
         self.html += "' "
         self.html += "data-interval-id='%d'" % self.gene_counter
-        self.html += "data-notation='%s'" % str(interval_obj)
+        self.html += "data-notation='%s'" % interval_obj.notation()
         self.html += "data-gene-name='%s'" % name
         self.html += "data-gene-name2='%s'" % name
         self.html += "data-graph-id='%d'></div>" % self.vis_id
