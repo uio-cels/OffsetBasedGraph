@@ -204,6 +204,15 @@ class Interval(object):
     def __repr__(self):
         return self.__str__()
 
+    def notation(self):
+        """
+        :return: Returns a human readable notation of the interval
+        """
+        return "%s, %s, %s" % (
+            self.start_position,
+            self.end_position,
+            self.region_paths)
+
     def __str__(self):
         graph = "Graph"
         if self.graph is None:
