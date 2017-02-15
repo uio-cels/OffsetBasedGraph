@@ -121,10 +121,10 @@ def visualize_alt_locus_wrapper(args):
     chrom = args.alt_locus.split("_")[0]
     args.genes = "genes/genes_%s.txt" % (chrom)
     args.translation_file_name = "g_merged_flanks2"
-    visualize_alt_locus(args)
+    visualize_alt_locus(args, True)
 
 
-def visualize_alt_locus(args):
+def visualize_alt_locus(args, skip_wrapping=False):
     from offsetbasedgraph.graphutils import GeneList, create_gene_dicts, merge_alt_using_cigar, grch38_graph_to_numeric
     trans = Translation.from_file(args.translation_file_name)
     graph = trans.graph2
@@ -175,7 +175,11 @@ def visualize_alt_locus(args):
     subgraph.start_block = start
     max_offset = sum([subgraph.blocks[b].length() for b in subgraph.blocks])
     v = VisualizeHtml(subgraph, 0, max_offset, 0, levels, "", 800, genes)
-    print(v.get_wrapped_html())
+
+    if skip_wrapping:
+        print(str(v))
+    else:
+        print(v.get_wrapped_html())
 
 
 def visualize_genes(args):
