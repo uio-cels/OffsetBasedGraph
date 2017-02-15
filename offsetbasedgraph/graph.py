@@ -195,7 +195,18 @@ class Graph(object):
 
         return lasts
 
-    def create_subgraph_from_intervals(self, intervals, padding = 10000):
+    @staticmethod
+    def intervals_contains_rp(rp, intervals):
+        """
+        Returns true if any of the intervals cover rp
+        """
+        for i in intervals:
+            if rp in i.region_paths:
+                return True
+
+        return False
+
+    def create_subgraph_from_intervals(self, intervals, padding = 10000, alt_locus=None):
         """
         Creates a subgraph containing all the intervals
         :param intervals: list of intervals. All region paths in the intervals must create a connected subgraph.
@@ -210,10 +221,131 @@ class Graph(object):
         for i in intervals:
             blocks.extend(i.region_paths)
 
-        subgraph = self.create_subgraph_from_blocks(blocks)
+        subgraph = self.create_subgraph_from_blocks(blocks, alt_locus=alt_locus)
+
+        trans = Translation({}, {}, graph=subgraph)
+
+        remove = []  # Blocks to remove in the end
+
+        print("Prune")
+        # Prune graph from beginning
+        while True:
+            print("Pruning")
+            intervals = [trans.translate(i) for i in intervals]
+            # Find first block, has no genes and only one edge out: Delete
+            # If contains genes: Prune
+            # IF contains no genes, but multiple edges out: Prune
+            first_rps = subgraph.get_first_blocks()
+            assert len(first_rps) == 1 , "%s has not length 1" % (first_rps)
+            first_rp = first_rps[0]
+
+            if not Graph.intervals_contains_rp(first_rp, intervals):
+                # If only one edge out, delete this one
+                if len(self.adj_list[first_rp]) == 1:
+                    subgraph.remove(first_rp)
+                    print("Deleted %s" % first_rp)
+                    continue
+
+
+            print("=== PRUNING RP %s===" % first_rp)
+            # Prune this rp
+            first = first_rp
+            first_length = subgraph.blocks[first].length()
+
+            # Find lowest start in this region path
+            first_start = first_length
+            for i in intervals:
+                if i.region_paths[0] == first:
+                    first_start = min(i.start_position.offset, first_start)
+
+            print("First start: %d" % first_start)
+
+            padding_first = max(1, (first_length - first_start) + padding)
+            split_trans = Translation({}, {}, graph=subgraph)
+            split_trans.graph2 = subgraph
+            if first_length > padding:
+
+                # Divide first block
+                new_first = subgraph._next_id()
+                new_first_length = first_length - padding_first
+                new_second = subgraph._next_id()
+                trans_first = Translation(
+                    {first: [Interval(0, padding_first, [new_first, new_second])]},
+                    {new_first: [Interval(0, new_first_length, [first], subgraph)],
+                     new_second: [Interval(new_first_length, first_length,
+                                           [first], subgraph)]}, graph=subgraph)
+                #print(trans_first._a_to_b)
+                print(trans_first)
+                subgraph = trans_first.translate_subgraph(subgraph)
+                split_trans = split_trans + trans_first
+                #subgraph.remove(new_first)
+                remove.append(new_first)
+            subgraph = trans.translate_subgraph(subgraph)
+            trans = trans + split_trans
+            break
+
+
+        print("Prune end")
+        # Prune from end
+        while True:
+            print("Pruning")
+            intervals = [trans.translate(i) for i in intervals]
+            # Find first block, has no genes and only one edge out: Delete
+            # If contains genes: Prune
+            # IF contains no genes, but multiple edges out: Prune
+            last_rps = subgraph.get_last_blocks()
+            assert len(last_rps) == 1 , "%s is more than one last rp" % last_rps
+            last_rp = last_rps[0]
+
+            if not Graph.intervals_contains_rp(last_rp, intervals):
+                # If only one edge out, delete this one
+                if len(self.reverse_adj_list[last_rp]) == 1:
+                    subgraph.remove(last_rp)
+                    continue
+
+
+            print("=== PRUNING last RP %s===" % last_rp)
+            # Prune this rp
+            last = last_rp
+            last_length = subgraph.blocks[last].length()
+
+            # Find last end in end rp
+            last_end = 0
+            for i in intervals:
+                if i.region_paths[-1] == last:
+                    last_end = max(i.end_position.offset, last_end)
+
+            padding_end = min(last_length - 1, last_end + padding)
+
+            if last_length > padding:
+                # Divide last block
+                new_last = subgraph._next_id()
+                new_last_length  = last_length - padding_end
+                new_second = subgraph._next_id()
+                trans_last = Translation({last: [Interval(0, padding_end, [new_second, new_last])]},
+                                    {new_last: [Interval(padding_end, last_length, [last], subgraph)],
+                                     new_second: [Interval(0, padding_end, [last], subgraph)]}, graph=subgraph)
+                subgraph = trans_last.translate_subgraph(subgraph)
+
+                trans = trans + trans_last
+                #subgraph.remove(new_second)
+                remove.append(new_last)
+            break
+
+        for r in remove:
+            subgraph.remove(r)
+        print("Remove: %s" % remove)
+        starts = subgraph.get_first_blocks()
+        assert len(starts) == 1, " %s has not len 1" % (str(starts))
+
+        #assert False
+        return subgraph, trans
+        #########################
+
         # Find first block
         first = subgraph.get_first_blocks()
-        assert len(first) == 1 , "Found multiple first blocks: %s, Graph: \n %s" % (first, subgraph)
+        #assert len(first) == 1 , "Found multiple first blocks: %s, Graph: \n %s" % (first, subgraph)
+        assert len(first) > 0,  "No first in graph, Graph: \n %s" % (subgraph)
         first = first[0]
 
         first_length = subgraph.blocks[first].length()
@@ -246,7 +378,7 @@ class Graph(object):
 
         # Last block
         lasts = subgraph.get_last_blocks()
-        assert len(lasts) == 1, "%s is more than 1 last region path. Graph: \n %s" % (lasts, subgraph)
+        assert len(lasts) >= 1, "Found no last rps in. Graph: \n %s" % (subgraph)
 
         last = lasts[0]
 
@@ -277,12 +409,15 @@ class Graph(object):
             subgraph.remove(new_last)
 
 
+
         return subgraph, trans
 
-    def create_subgraph_from_blocks(self, blocks):
+    def create_subgraph_from_blocks(self, blocks, alt_locus=None):
         """
         Creates a subgraph using existing edges and only the blocks send as argument
         :param blocks: list of block ids
+        :param alt_locus: If not None, alt loci blocks not from this alt locus will not be added to graph
+        This wil typically be parallell alt loci that potentially can be added
         :return: Returns a new graph
         """
         blocks = set(blocks)
@@ -295,38 +430,126 @@ class Graph(object):
 
         for b in blocks:
             for e in self.adj_list[b]:
-                if e in new_blocks:
-                    new_edges[b].append(e)
+                #if e in new_blocks:
+
+                if alt_locus is not None and Graph.block_origin(e) == "alt" and alt_locus not in e:
+                    continue
+
+                new_edges[b].append(e)
+                if e not in new_blocks:
+                    new_blocks[e] = Block(self.blocks[e].length())
+
+                    """
+                    print("Adding block %s" % e)
+                    # If this block has edges into any existing blocks, add them:
+                    for edge in self.adj_list[e]:
+                        if edge in new_blocks:
+                            new_edges[e].append(edge)
+                    """
+        # Go through all added blocks, add edges into other added blocks
+        for b in new_blocks:
+            for edge in self.adj_list[b]:
+                if edge in new_blocks and edge not in new_edges[b]:
+                    new_edges[b].append(edge)
 
         subgraph = Graph(new_blocks, new_edges)
         subgraph_without_critical = subgraph.copy()
-        # return subgraph
 
-        # Append with prev critical and next critical
-        first = subgraph.get_first_blocks()[0]
+        # Add all blocks going into first blocks in graph
+        firsts = subgraph.get_first_blocks()
+        for f in firsts:
+            for before in self.reverse_adj_list[f]:
+
+                if alt_locus is not None and Graph.block_origin(before) == "alt" and alt_locus not in before:
+                    continue
+
+                new_blocks[before] = Block(self.blocks[before].length())
+                print("Adding before: %s" % before)
+                new_edges[before].append(f)
+                print("  adding edge from %s to %s" % (before, f))
+
+        subgraph = Graph(new_blocks, new_edges)
+
+        # If two last rps, they should be going to the same next
+        print(subgraph)
+        lasts = subgraph.get_last_blocks()
+        assert len(lasts) == 1 or len(lasts) == 2, "%s is lasts" % lasts
+
+        if len(lasts) == 2:
+            # Connect the two last to next
+            print("Last")
+            print(lasts)
+            assert self.adj_list[lasts[0]][0] == self.adj_list[lasts[1]][0], "Not identical next: %s != %s" % (self.adj_list[lasts[0]][0], self.adj_list[lasts[1]][0])
+            next = self.adj_list[lasts[0]]
+            assert len(next) == 1
+            next = next[0]
+            new_blocks.append(self.adj_list[lasts[0]])
+            new_edges[lasts[0]].append(next)
+            new_edges[lasts[1]].append(next)
+
+        subgraph2 = Graph(new_blocks, new_edges)
+        return subgraph2
+
+        # Delete everything below here
+
+
+        # Append with prev critical and next critical (only if first/last is not critical)
+
+        """
+        first_blocks = subgraph.get_first_blocks()
+        assert len(first_blocks) > 0, "Subgraph has no first blocks. %s" % (subgraph)
+        first = first_blocks[0]
         critical = self.find_critical_blocks(first)
         critical.append(self.get_last_blocks()[0])
         critical = set(critical)
 
         prev_critical = self.find_previous_critical_block(first, critical)
         new_blocks[prev_critical] = Block(self.blocks[prev_critical].length())
-        last = subgraph.get_last_blocks()[0]
-        next_critical = self.find_next_critical_block(last, critical)
-        new_blocks[next_critical] = Block(self.blocks[next_critical].length())
+        """
+        lasts = subgraph.get_last_blocks()
 
-        critical = set(critical)
+        print("=== Graph ===")
+        print(subgraph)
 
-        # Create new edges to the new blocks
-        for l in subgraph_without_critical.get_last_blocks():
-            if l != next_critical:
-                new_edges[l] = [next_critical]
+        print("=== Lasts ===")
+        print(lasts)
+        assert len(lasts) == 1 or len(lasts) == 2
+
+        if len(lasts) == 2:
+            # Connect the two last to next
+            assert self.adj_list[lasts[0]] == self.adj_list[lasts[1]], "Not identical next: %s != %s" % (self.adj_list[lasts[0]], self.adj_list[lasts[0]])
+            next = self.adj_list[lasts[0]]
+            assert len(next) == 1
+            next = next[0]
+            new_blocks.append(self.adj_list[lasts[0]])
+            new_edges[lasts[0]].append(next)
+            new_edges[lasts[1]].append(next)
+
+        """
+        if len(lasts) > 1:
+
+            last = lasts[0]
+            next_critical = self.find_next_critical_block(last, critical)
+            print("Next critical block: %s" % next_critical)
+            new_blocks[next_critical] = Block(self.blocks[next_critical].length())
+
+            # Create new edges to the new blocks
+            for l in subgraph_without_critical.get_last_blocks():
+                print("Connecting edges from %s" % l)
+                if l != next_critical and next_critical in self.adj_list[l]:
+                    new_edges[l] = [next_critical]
+                    print(" Connecting %s to %s" % (l, next_critical))
+
 
         for f in subgraph_without_critical.get_first_blocks():
 
             if f != prev_critical:
                 new_edges[prev_critical] = [f]
+        """
+        subgraph2 = Graph(new_blocks, new_edges)
 
-        subgraph2 =  Graph(new_blocks, new_edges)
+        print("=== Graph 2 ===")
+        print(subgraph2)
 
         return subgraph2
 

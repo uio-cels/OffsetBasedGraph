@@ -80,6 +80,25 @@ class Gene(object):
                     self.strand,
                     )
 
+    def multiple_alt_loci(self):
+        """
+        Returns true if gene stretches over multiple alt loci.
+        NB: Works only when gene is represented on a graph where
+        alt loci blocks have names with alt loci in them
+        """
+        from .graph import Graph
+        #print("=== Checking %s ===" % self.name)
+        unique_loci = []
+        for b in self.transcription_region.region_paths:
+            if Graph.block_origin(b) == "alt":
+                unique_loci.append(b)
+
+        #print(unique_loci)
+        if len(set(unique_loci)) > 1:
+            return True
+        else:
+            return False
+
     @classmethod
     def from_dict(cls, attr_dict):
         """Create Gene object from gene dict obtained

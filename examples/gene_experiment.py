@@ -75,8 +75,8 @@ def merge_alignment(args):
 
     genes_on_alt = GeneList(genes_on_alt)
     genes_on_alt.to_file("genes_%s" % args.out_file_name)
-    print("Genes on alt")
-    print(genes_on_alt)
+    #print("Genes on alt")
+    #print(genes_on_alt)
 
     full_trans.to_file(args.out_file_name)
     print("Saved trans to file %s" % args.out_file_name)
@@ -125,15 +125,42 @@ def visualize_alt_locus(args):
     genes = GeneList(get_gene_objects_as_intervals(args.genes)).gene_list
     alt_loci_genes, gene_name_dict, main_genes = create_gene_dicts(genes)
 
+
     alt = args.alt_locus
     genes = alt_loci_genes[args.alt_locus] + main_genes[args.alt_locus]
+    genes = main_genes[args.alt_locus]
 
+
+
+
+    print("Number of genes: %d" % (len(genes)))
     genes = [g.translate(trans) for g in genes]
     trans_regions = [g.transcription_region for g in genes]
 
-    subgraph, trans = graph.create_subgraph_from_intervals(trans_regions, 20000)
+
+    #print("=== Genes ===")
+    #for g in genes:
+    #    print(g)
+
+
+    if len(trans_regions) == 0:
+        raise Exception("No genes in area")
+
+    print("Creating subgraph")
+    subgraph, trans = graph.create_subgraph_from_intervals(trans_regions, 200000, args.alt_locus)
+
+
+    print("<br><br><br>")
+    print("<p><b>Subgraph</b></p>")
+    print(subgraph)
+    print("<br><br><br>")
 
     genes = [g.translate(trans) for g in genes]
+
+    genes = [g for g in genes if not g.multiple_alt_loci()]
+
+    print("<h3>Genes</h3>")
+    [print(g.transcription_region) for g in genes]
 
     if len(genes) > 3:
         genes.sort(key=lambda g: g.length(), reverse=True)
