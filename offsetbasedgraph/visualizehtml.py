@@ -275,7 +275,7 @@ class VisualizeHtml(object):
         """
 
         length = self.graph.blocks[rp].length()
-        return (rp, "0", rp, "0", str(length))
+        return (str(rp), "0", str(rp), "0", str(length))
 
         # Sequential coordinates are always id and the first offset is 0
         seqID = rp.id
