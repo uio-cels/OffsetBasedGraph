@@ -243,7 +243,14 @@ class VisualizeHtml(object):
         if is_exon:
             height = self.exon_height
 
-        self.html += "<div class='interval interval_%d'" % self.gene_counter
+        classname = "interval"
+        classname2 = "interval_%d" % self.gene_counter
+        if is_exon:
+            classname = "exon"
+            classname2 = "interval_%d" % self.gene_counter
+
+
+        self.html += "<div class='%s %s'" % (classname, classname2)
 
         self.html += " style='z-index: 10; position: absolute;"
         self.html += "left: %.2fpx;" % start
@@ -278,10 +285,15 @@ class VisualizeHtml(object):
         return (str(rp), "0", str(rp), "0", str(length))
 
         # Sequential coordinates are always id and the first offset is 0
-        seqID = rp.id
+        seqID = rp
         seqOf = 0
         # Hierarchical coordinates is same as sequential if this is alternative
         # block. Else, it is the same as on hg38
+
+        #origin = Graph.block_origin(rp)
+        #if origin == "main":
+
+
         if len(rp.linear_references) == 1 and \
                 not "alt" in list(rp.linear_references.values())[0].chromosome:
             hierID = list(rp.linear_references.values())[0].chromosome
