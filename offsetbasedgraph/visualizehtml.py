@@ -361,7 +361,7 @@ class VisualizeHtml(object):
         """
 
     def _pretty_alt_loci_name(self, id):
-        return id
+        return id 
         return self.graph.pretty_alt_loci_name(id)
 
 
