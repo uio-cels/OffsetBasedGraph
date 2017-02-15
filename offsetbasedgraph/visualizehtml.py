@@ -274,8 +274,8 @@ class VisualizeHtml(object):
         Returns the hierarhcial and sequential coordinates of a region path
         """
 
-
-        return (rp, 0, rp, 0, rp.length())
+        length = self.graph.blocks[rp].length()
+        return (rp, 0, rp, 0, length)
 
         # Sequential coordinates are always id and the first offset is 0
         seqID = rp.id
@@ -321,7 +321,7 @@ class VisualizeHtml(object):
         self.html += " data-rpid='%s'" % (rp_id)
         self.html += " data-rpname='%s'" % (self._pretty_alt_loci_name(rp_id))
         self.html += " data-graph-id='%d'" % (self.vis_id)
-        self.html += " data-coordinate='%s'" % "," #','.join(self._coordinate(rp))
+        self.html += " data-coordinate='%s'" % ','.join(self._coordinate(rp_id))
         self.html += ">"
         self.html += "<font color='white'>%s</font></div>" % ""
 
@@ -361,7 +361,7 @@ class VisualizeHtml(object):
         """
 
     def _pretty_alt_loci_name(self, id):
-        return id 
+        return id
         return self.graph.pretty_alt_loci_name(id)
 
 
