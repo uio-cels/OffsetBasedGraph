@@ -211,7 +211,7 @@ class Interval(object):
         return "%s, %s, [%s]" % (
             self.start_position.offset,
             self.end_position.offset,
-            ', '.join(self.region_paths))
+            ', '.join([str(s) for s in self.region_paths]))
 
     def __str__(self):
         graph = "Graph"
