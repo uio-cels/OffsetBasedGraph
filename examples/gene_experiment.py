@@ -116,6 +116,14 @@ def merge_all_alignments(args):
     full_trans.to_file(args.out_file_name)
 
 
+def visualize_alt_locus_wrapper(args):
+    # Finds correct gene file etc
+    chrom = args.alt_locus.split("_")[0]
+    args.genes = "genes/genes_%s.txt" % (chrom)
+    args.translation_file_name = "g_merged_flanks2"
+    visualize_alt_locus(args)
+
+
 def visualize_alt_locus(args):
     from offsetbasedgraph.graphutils import GeneList, create_gene_dicts, merge_alt_using_cigar, grch38_graph_to_numeric
     trans = Translation.from_file(args.translation_file_name)
@@ -606,7 +614,13 @@ if __name__ == "__main__":
                                         help='Alt locus id (e. g. chr2_KI270774v1_alt)')
     parser_visualize_alt_locus.set_defaults(func=visualize_alt_locus)
 
-
+    # Def visualize alt locus (wrapper)
+    parser_visualize_alt_locus_wrapper = subparsers.add_parser(
+        'visualize_alt_locus_wrapper',
+            help='Produce html visualization (that can be saved and opened in a browser). NB: Wrapper for visualize_alt_locus')
+    parser_visualize_alt_locus_wrapper.add_argument('alt_locus',
+                                        help='Alt locus id (e. g. chr2_KI270774v1_alt)')
+    parser_visualize_alt_locus_wrapper.set_defaults(func=visualize_alt_locus_wrapper)
 
     if len(sys.argv) == 1:
         parser.print_help()
