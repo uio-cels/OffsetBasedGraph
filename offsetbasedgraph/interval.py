@@ -208,10 +208,10 @@ class Interval(object):
         """
         :return: Returns a human readable notation of the interval
         """
-        return "%s, %s, %s" % (
-            self.start_position,
-            self.end_position,
-            self.region_paths)
+        return "%s, %s, [%s]" % (
+            self.start_position.offset,
+            self.end_position.offset,
+            ', '.join(self.region_paths))
 
     def __str__(self):
         graph = "Graph"
