@@ -138,6 +138,27 @@ def curate_alignment_files():
             #print(cigar)
             f2.close()
 
-curate_alignment_files()
+def divide_gen_file(genes_fn):
+    # Divide into one file per chromosome
+    f = open(genes_fn, "r")
+    header = f.readline()
+    from collections import defaultdict
+    lines = defaultdict(list)
+    for l in f.readlines():
+        chrom = l.split()[1]
+        if "_" in chrom:
+            chrom = chrom.split("_")[0]
+        lines[chrom].append(l)
+    f.close()
+
+    for chrom in lines:
+        f = open("genes/genes_%s.txt" % chrom, "w")
+        f.writelines([header])
+        f.writelines(lines[chrom])
+        f.close()
+
+divide_gen_file("genes.txt")
+
+#curate_alignment_files()
 
 # create_alt_loci_file_from_db()

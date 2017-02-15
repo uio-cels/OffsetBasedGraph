@@ -122,7 +122,10 @@ def visualize_alt_locus(args):
     graph = trans.graph2
 
     # Find all genes on this graph
+    print("Fetching genes")
     genes = GeneList(get_gene_objects_as_intervals(args.genes)).gene_list
+    print("Fetched genes")
+
     alt_loci_genes, gene_name_dict, main_genes = create_gene_dicts(genes)
 
 
