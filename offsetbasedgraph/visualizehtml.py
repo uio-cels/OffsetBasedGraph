@@ -305,7 +305,7 @@ class VisualizeHtml(object):
                 self._pretty_alt_loci_name(hierID), str(hierOf), str(size))
 
 
-    def _plot(self, xstart, xend, level, color, rp):
+    def _plot(self, xstart, xend, level, color, rp_id):
 
         y = self.block_height * 2 * ( level + 1)
         x = self.gap_pixels + (xstart - self.minOffset) * self.width_ratio
@@ -318,8 +318,8 @@ class VisualizeHtml(object):
         self.html += "height: %dpx;" % (self.block_height)
         self.html += "background-color: %s;" % color
         self.html += "' "
-        self.html += " data-rpid='%s'" % ("test") #(rp.id)
-        self.html += " data-rpname='%s'" % "tmp" #(self._pretty_alt_loci_name(rp.id))
+        self.html += " data-rpid='%s'" % (rp_id)
+        self.html += " data-rpname='%s'" % (self._pretty_alt_loci_name(rp_id))
         self.html += " data-graph-id='%d'" % (self.vis_id)
         self.html += " data-coordinate='%s'" % "," #','.join(self._coordinate(rp))
         self.html += ">"
@@ -337,7 +337,7 @@ class VisualizeHtml(object):
         #length = self._scale(lr.end - lr.start)
         length = rp.length()
         if DEBUG: print("<p>PLotting " + str(rp_id) + "  on level %.2f, %.2f to %.2f</p>" % (level, start, start + length))
-        xend, y, width, xstart = self._plot(start, start + length, level , self.colors[level + 1], rp)
+        xend, y, width, xstart = self._plot(start, start + length, level , self.colors[level + 1], rp_id)
 
         self.offset_positions[rp_id] = [xstart, y, width]
 
@@ -361,6 +361,7 @@ class VisualizeHtml(object):
         """
 
     def _pretty_alt_loci_name(self, id):
+        return id
         return self.graph.pretty_alt_loci_name(id)
 
 
