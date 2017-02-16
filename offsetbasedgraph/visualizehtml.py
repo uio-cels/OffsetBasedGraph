@@ -293,7 +293,7 @@ class VisualizeHtml(object):
         hier_of = 0
 
         origin = Graph.block_origin(rp)
-        if origin == "main" or origin == "alt":
+        if origin == "main" or origin == "merged":
             dist_back = self._distance_to_start(rp)
             hier_id = self.start_position.region_path_id
             hier_of = dist_back + self.start_position.offset
