@@ -13,7 +13,7 @@ class VisualizeHtml(object):
     Attempt to make a simple html visualization
     """
 
-    def __init__(self, graph, minOffset, maxOffset, id, levels, description='', width=800, genes=[]):
+    def __init__(self, graph, minOffset, maxOffset, id, levels, description='', width=800, genes=[], trans=None):
 
 
         self.padding = 50  # Gap between blocks
@@ -30,6 +30,7 @@ class VisualizeHtml(object):
         self.vis_id = id
         self.genes = genes #list(reversed(intervals))
         self.levels = levels
+        self.trans = trans
 
         self.width = width
         self.maxOffset = maxOffset
@@ -282,7 +283,22 @@ class VisualizeHtml(object):
         """
 
         length = self.graph.blocks[rp].length()
-        return (str(rp), "0", str(rp), "0", str(length))
+        # Translate rp back to get GRCh38 hier. coordinates
+        from offsetbasedgraph import Interval, Graph
+        rp_interval = Interval(0, length, [rp], self.graph)
+        orig_intervals = self.trans.translate_interval(rp_interval, True)
+
+        hier_id = str(rp)
+        hier_of = 0
+        # If any non-alt intervals in original, get hier coordinates
+        for interval in orig_intervals.get_single_path_intervals():
+            if len(interval.region_paths) == 1 and \
+                Graph.block_origin(interval.region_paths[0]) == "main":
+                hier_id = interval.region_paths[0]
+                hier_of = interval.start_position.offset
+
+
+        return (str(rp), "0", str(hier_id), str(hier_of), str(length))
 
         # Sequential coordinates are always id and the first offset is 0
         seqID = rp

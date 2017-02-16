@@ -174,7 +174,7 @@ def visualize_alt_locus(args, skip_wrapping=False):
     from offsetbasedgraph import VisualizeHtml
     subgraph.start_block = start
     max_offset = sum([subgraph.blocks[b].length() for b in subgraph.blocks])
-    v = VisualizeHtml(subgraph, 0, max_offset, 0, levels, "", 800, genes)
+    v = VisualizeHtml(subgraph, 0, max_offset, 0, levels, "", 800, genes, trans)
 
     if skip_wrapping:
         print(str(v))
