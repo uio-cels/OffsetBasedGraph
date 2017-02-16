@@ -290,8 +290,10 @@ class VisualizeHtml(object):
 
         hier_id = str(rp)
         hier_of = 0
+        print("<p>Translating back %s</p>" % rp)
         # If any non-alt intervals in original, get hier coordinates
         for interval in orig_intervals.get_single_path_intervals():
+            print("<p>translated to %s</p>" % interval)
             if len(interval.region_paths) == 1 and \
                 Graph.block_origin(interval.region_paths[0]) == "main":
                 hier_id = interval.region_paths[0]
