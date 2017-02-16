@@ -13,7 +13,7 @@ class VisualizeHtml(object):
     Attempt to make a simple html visualization
     """
 
-    def __init__(self, graph, minOffset, maxOffset, id, levels, description='', width=800, genes=[], trans=None):
+    def __init__(self, graph, minOffset, maxOffset, id, levels, description='', width=800, genes=[], start_position=None, trans=None):
 
 
         self.padding = 50  # Gap between blocks
@@ -31,6 +31,7 @@ class VisualizeHtml(object):
         self.genes = genes #list(reversed(intervals))
         self.levels = levels
         self.trans = trans
+        self.start_position = start_position
 
         self.width = width
         self.maxOffset = maxOffset
@@ -285,12 +286,19 @@ class VisualizeHtml(object):
         length = self.graph.blocks[rp].length()
         # Translate rp back to get GRCh38 hier. coordinates
         from offsetbasedgraph import Interval, Graph
-        rp_interval = Interval(0, length, [rp], self.graph)
-        orig_intervals = self.trans.translate_interval(rp_interval, True)
+        #rp_interval = Interval(0, length, [rp], self.graph)
+        #orig_intervals = self.trans.translate_interval(rp_interval, True)
 
         hier_id = str(rp)
         hier_of = 0
-        print("<p>Translating back %s</p>" % rp)
+
+        origin = Graph.block_origin(rp)
+        if origin == "main" or origin == "alt":
+            dist_back = self._distance_to_start(rp)
+            hier_id = self.start_position.region_path_id
+            hier_of = dist_back + self.start_position.offset
+
+        """
         # If any non-alt intervals in original, get hier coordinates
         for interval in orig_intervals.get_single_path_intervals():
             print("<p>translated to %s</p>" % interval)
@@ -298,7 +306,7 @@ class VisualizeHtml(object):
                 Graph.block_origin(interval.region_paths[0]) == "main":
                 hier_id = interval.region_paths[0]
                 hier_of = interval.start_position.offset
-
+        """
 
         return (str(rp), "0", str(hier_id), str(hier_of), str(length))
 

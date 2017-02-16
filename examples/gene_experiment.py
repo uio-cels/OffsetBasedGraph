@@ -128,7 +128,7 @@ def visualize_alt_locus(args, skip_wrapping=False):
     from offsetbasedgraph.graphutils import GeneList, create_gene_dicts, merge_alt_using_cigar, grch38_graph_to_numeric
     trans = Translation.from_file(args.translation_file_name)
     graph = trans.graph2
-    full_trans = trans.copy()
+    orig_trans = trans.copy()
 
     # Find all genes on this graph
     genes = GeneList(get_gene_objects_as_intervals(args.genes)).gene_list
@@ -146,8 +146,12 @@ def visualize_alt_locus(args, skip_wrapping=False):
     if len(trans_regions) == 0:
         raise Exception("No genes in area")
 
-    subgraph, trans = graph.create_subgraph_from_intervals(trans_regions, 200000, args.alt_locus)
+    subgraph, trans, start_position = graph.create_subgraph_from_intervals(trans_regions, 200000, args.alt_locus)
+    start_position = orig_trans.translate_position(start_position, True)[0]
+    print("<p>Start position: %s</p>" % start_position)
+    #trans.graph1 = full_trans.graph2
 
+    #full_trans = full_trans + trans
 
     genes = [g.translate(trans) for g in genes]
 
@@ -172,12 +176,12 @@ def visualize_alt_locus(args, skip_wrapping=False):
 
     assert start is not None
 
-    full_trans = full_trans + trans
+    #full_trans = full_trans + trans
 
     from offsetbasedgraph import VisualizeHtml
     subgraph.start_block = start
     max_offset = sum([subgraph.blocks[b].length() for b in subgraph.blocks])
-    v = VisualizeHtml(subgraph, 0, max_offset, 0, levels, "", 800, genes, full_trans)
+    v = VisualizeHtml(subgraph, 0, max_offset, 0, levels, "", 800, genes, start_position)
 
     if skip_wrapping:
         print(str(v))

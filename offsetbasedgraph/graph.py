@@ -206,7 +206,7 @@ class Graph(object):
 
         return False
 
-    def create_subgraph_from_intervals(self, intervals, padding = 10000, alt_locus=None):
+    def create_subgraph_from_intervals(self, intervals, padding=10000, alt_locus=None, base_trans=None):
         """
         Creates a subgraph containing all the intervals
         :param intervals: list of intervals. All region paths in the intervals must create a connected subgraph.
@@ -223,7 +223,10 @@ class Graph(object):
 
         subgraph = self.create_subgraph_from_blocks(blocks, alt_locus=alt_locus)
 
+        #if base_trans is None:
         trans = Translation({}, {}, graph=subgraph)
+        #else:
+        #trans = base_trans
 
         remove = []  # Blocks to remove in the end
 
@@ -236,6 +239,8 @@ class Graph(object):
             first_rps = subgraph.get_first_blocks()
             assert len(first_rps) == 1 , "%s has not length 1" % (first_rps)
             first_rp = first_rps[0]
+
+            start_position = Position(first_rp, 0)
 
             if not Graph.intervals_contains_rp(first_rp, intervals):
                 # If only one edge out, delete this one
@@ -269,6 +274,9 @@ class Graph(object):
                     {new_first: [Interval(0, new_first_length, [first], subgraph)],
                      new_second: [Interval(new_first_length, first_length,
                                            [first], subgraph)]}, graph=subgraph)
+
+                start_position = Position(first, new_first_length)
+
                 #print(trans_first._a_to_b)
                 #print(trans_first)
                 subgraph = trans_first.translate_subgraph(subgraph)
@@ -330,77 +338,7 @@ class Graph(object):
         assert len(starts) == 1, " %s has not len 1" % (str(starts))
 
         #assert False
-        return subgraph, trans
-        #########################
-
-        # Find first block
-        first = subgraph.get_first_blocks()
-        #assert len(first) == 1 , "Found multiple first blocks: %s, Graph: \n %s" % (first, subgraph)
-        assert len(first) > 0,  "No first in graph, Graph: \n %s" % (subgraph)
-        first = first[0]
-
-        first_length = subgraph.blocks[first].length()
-
-
-        # Find lowest start in this region path
-        first_start = first_length
-        for i in intervals:
-            if i.region_paths[0] == first:
-                first_start = min(i.start_position.offset, first_start)
-
-        padding_first = max(1, (first_length - first_start) + padding)
-        trans = Translation({}, {}, graph=subgraph)
-        trans.graph2 = subgraph
-        if first_length > padding:
-            # Divide first block
-            new_first = subgraph._next_id()
-            new_first_length = first_length - padding_first
-            new_second = subgraph._next_id()
-            trans_first = Translation(
-                {first: [Interval(0, padding_first, [new_first, new_second])]},
-                {new_first: [Interval(0, new_first_length, [first], subgraph)],
-                 new_second: [Interval(new_first_length, first_length,
-                                       [first], subgraph)]}, graph=subgraph)
-            #print(trans_first._a_to_b)
-            subgraph = trans_first.translate_subgraph(subgraph)
-            trans = trans + trans_first
-
-
-        # Last block
-        lasts = subgraph.get_last_blocks()
-        assert len(lasts) >= 1, "Found no last rps in. Graph: \n %s" % (subgraph)
-
-        last = lasts[0]
-
-        last_length = subgraph.blocks[last].length()
-
-        # Find last end in end rp
-        last_end = 0
-        for i in intervals:
-            if i.region_paths[-1] == last:
-                last_end = max(i.end_position.offset, last_end)
-
-        padding_end = min(last_length - 1, last_end + padding)
-
-        if last_length > padding:
-            # Divide last block
-            new_last = subgraph._next_id()
-            new_last_length  = last_length - padding_end
-            new_second = subgraph._next_id()
-            trans_last = Translation({last: [Interval(0, padding_end, [new_second, new_last])]},
-                                {new_last: [Interval(padding_end, last_length, [last], subgraph)],
-                                 new_second: [Interval(0, padding_end, [last], subgraph)]}, graph=subgraph)
-            subgraph = trans_last.translate_subgraph(subgraph)
-            trans = trans + trans_last
-
-        if new_first is not None:
-            subgraph.remove(new_first)
-        if new_last is not None:
-            subgraph.remove(new_last)
-
-
-
-        return subgraph, trans
+        return subgraph, trans, start_position
 
     def create_subgraph_from_blocks(self, blocks, alt_locus=None):
         """
