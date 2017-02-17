@@ -338,8 +338,8 @@ class Graph(object):
         assert len(starts) == 1, " %s has not len 1" % (str(starts))
 
         #assert False
-        print("<p>Subgraph</p>")
-        print(subgraph)
+        #print("<p>Subgraph</p>")
+        #print(subgraph)
         return subgraph, trans, start_position
 
     def create_subgraph_from_blocks(self, blocks, alt_locus=None):
