@@ -366,14 +366,14 @@ class Graph(object):
 
                 new_edges[b].append(e)
                 if e not in new_blocks:
-                    print("<p>adding %s</p>" % e)
+                    #print("<p>adding %s</p>" % e)
                     new_blocks[e] = Block(self.blocks[e].length())
 
         # Go through all added blocks, add edges into other added blocks
         for b in new_blocks:
-            print("Checking edges for %s" % (b))
+            #print("Checking edges for %s" % (b))
             for edge in self.adj_list[b]:
-                print(" Edge %s" % edge)
+                #print(" Edge %s" % edge)
                 if edge in new_blocks and edge not in new_edges[b]:
                     new_edges[b].append(edge)
 
