@@ -464,6 +464,26 @@ def analyse_multipath_genes(args):
     print("Equal: %d" % (equal / 2))
     print("Equal exons: %d" % (equal_exons / 2))
 
+
+def html_alt_loci_select(args):
+    # Prints all regions as an html select field
+    html_out = """<select name='region'
+               class='form-control' style='width: 320px;'>"""
+    from offsetbasedgraph.graphutils import get_alt_loci_positions
+    loci = get_alt_loci_positions()
+
+    for locus in loci:
+        region = loci[locus]
+        if region["end"] - region["start"] < 4000000:
+            html_out += "<option value='%s'>%s (%s:%d-%d)</option>" % \
+                        (locus,
+                         locus,
+                         region["main_chr"], \
+                         region["start"], region["end"])
+    html_out += "</select>"
+    print(html_out)
+
+
 if __name__ == "__main__":
 
     """
@@ -612,6 +632,13 @@ if __name__ == "__main__":
     parser_visualize_alt_locus_wrapper.add_argument('alt_locus',
                                         help='Alt locus id (e. g. chr2_KI270774v1_alt)')
     parser_visualize_alt_locus_wrapper.set_defaults(func=visualize_alt_locus_wrapper)
+
+    # Html alt loci select
+    parser_html_alt_loci = subparsers.add_parser(
+        'html_alt_loci_select',
+            help='Produce html for alt loci select box (only used by web tool)')
+    parser_html_alt_loci.set_defaults(func=html_alt_loci_select)
+
 
     if len(sys.argv) == 1:
         parser.print_help()
