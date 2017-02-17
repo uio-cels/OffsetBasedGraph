@@ -212,22 +212,28 @@ def _connect_without_flanks(graph, alt_loci_fn, name_translation):
     return new_graph, final_trans
 
 
-def connect_without_flanks(graph, alt_loci_fn, name_translation):
+def connect_without_flanks(graph, alt_loci_fn, name_translation, filter_alt_loci=[]):
     """
     Connects the alternative loci in the given file to the grch38 graph,
     without flanks.
     :param alt_loci_fn: Filename of file containing alternative loci.
     One alt locus on each line.
     Four columns: alt_locus_id  chr chr_start   chr_stop
+    :param filter_alt_loci: If not empty, only these alt loci will be connected
     :return: Returns the new graph
     """
     from .GRCH38 import AltLoci
-    alt_loci = AltLoci.from_file(alt_loci_fn)
+
+    alt_loci = AltLoci.from_file(alt_loci_fn, filter_alt_loci)
     new_graph = graph
     final_trans = Translation(graph=graph)
     final_trans.graph2 = graph
 
     for alt_locus in alt_loci.alt_loci:
+        if len(filter_alt_loci) > 0 and alt_locus.name not in filter_alt_loci:
+            #print("Skipping")
+            continue
+
         new_graph, final_trans = merge_flanks(
             [alt_locus.main_start_flank, alt_locus.start_flank,
              alt_locus.main_end_flank, alt_locus.end_flank],

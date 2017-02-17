@@ -120,7 +120,27 @@ def visualize_alt_locus_wrapper(args):
     # Finds correct gene file etc
     chrom = args.alt_locus.split("_")[0]
     args.genes = "genes/genes_%s.txt" % (chrom)
-    args.translation_file_name = "g_merged_flanks2"
+
+    # Create graph only for this alt loci
+    graph = create_initial_grch38_graph("grch38.chrom.sizes")
+    #graph.to_file("graph_non_connected")
+    #graph = Graph.from_file("graph_non_connected")
+
+    print("Convert to numeric")
+    numeric_graph, name_translation = convert_to_numeric_graph(graph)
+    name_translation.to_file("name_trans_non_connected")
+
+    print("Convert without flanks")
+    new_numeric_graph, numeric_translation = connect_without_flanks(
+        numeric_graph, "grch38_alt_loci.txt", name_translation, [args.alt_locus])
+
+    name_graph, new_name_translation = convert_to_text_graph(
+        new_numeric_graph, name_translation, numeric_translation)
+
+    final_translation = name_translation + numeric_translation + new_name_translation
+    final_translation.to_file("tmp_trans")
+
+    args.translation_file_name = "tmp_trans"
     visualize_alt_locus(args, False)
 
 

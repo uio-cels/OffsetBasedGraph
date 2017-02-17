@@ -63,11 +63,18 @@ class AltLoci(object):
         self.lookup = {alt_locus.name: alt_locus for alt_locus in alt_loci}
 
     @classmethod
-    def from_file(cls, filename):
+    def from_file(cls, filename, filter_alt_loci=[]):
         with open(filename) as f:
-            alt_loci = [AltLocus.from_file_line(line)
-                        for line in f.readlines()
-                        if not line.startswith("#")]
+            alt_loci = []
+            for line in f.readlines():
+                if line.startswith("#"):
+                    continue
+
+                if len(filter_alt_loci) > 0 and line.split()[0] not in filter_alt_loci:
+                    continue
+
+                alt_loci.append(AltLocus.from_file_line(line))
+
         return cls(alt_loci)
 
 

@@ -101,8 +101,8 @@ class Graph(object):
         :param file_name: File name
         :return:
         """
-        if os.path.isfile("data/tmp/%s_blocks.txt" % file_name):
-            with open("data/tmp/graph_%s" % file_name, "rb") as f:
+        if os.path.isfile("%s" % file_name):
+            with open("%s" % file_name, "rb") as f:
                 return pickle.loads(f.read())
         else:
             print("Warning: Graph not found" % file_name)
@@ -115,7 +115,7 @@ class Graph(object):
         :param file_name: File name
         :return:
         """
-        with open("data/tmp/graph_%s" % file_name, "wb") as f:
+        with open("%s" % file_name, "wb") as f:
             pickle.dump(self, f)
 
     def get_edges_as_list(self):
