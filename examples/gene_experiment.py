@@ -128,7 +128,7 @@ def visualize_alt_locus_wrapper(args):
 
     print("Convert to numeric")
     numeric_graph, name_translation = convert_to_numeric_graph(graph)
-    name_translation.to_file("name_trans_non_connected")
+    #name_translation.to_file("name_trans_non_connected")
 
     print("Convert without flanks")
     new_numeric_graph, numeric_translation = connect_without_flanks(
