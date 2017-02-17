@@ -138,15 +138,20 @@ def visualize_alt_locus_wrapper(args):
         new_numeric_graph, name_translation, numeric_translation)
 
     final_translation = name_translation + numeric_translation + new_name_translation
-    final_translation.to_file("tmp_trans")
+    #final_translation.to_file("tmp_trans")
 
-    args.translation_file_name = "tmp_trans"
-    visualize_alt_locus(args, False)
+    args.translation_file_name = final_translation
+    visualize_alt_locus(args, True)
 
 
 def visualize_alt_locus(args, skip_wrapping=False):
     from offsetbasedgraph.graphutils import GeneList, create_gene_dicts, merge_alt_using_cigar, grch38_graph_to_numeric
-    trans = Translation.from_file(args.translation_file_name)
+
+    if not isinstance(args.translation_file_name, Translation):
+        trans = Translation.from_file(args.translation_file_name)
+    else:
+        trans = args.translation_file_name
+        
     graph = trans.graph2
     orig_trans = trans.copy()
 
