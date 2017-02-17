@@ -411,7 +411,8 @@ class Graph(object):
             next = self.adj_list[lasts[0]]
             assert len(next) == 1
             next = next[0]
-            new_blocks.append(self.adj_list[lasts[0]])
+            last = self.adj_list[lasts[0]][0]
+            new_blocks[last] = Block(self.blocks[last].length())
             new_edges[lasts[0]].append(next)
             new_edges[lasts[1]].append(next)
 
