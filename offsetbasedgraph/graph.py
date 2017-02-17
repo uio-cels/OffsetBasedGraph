@@ -295,7 +295,7 @@ class Graph(object):
             # If contains genes: Prune
             # IF contains no genes, but multiple edges out: Prune
             last_rps = subgraph.get_last_blocks()
-            assert len(last_rps) == 1 , "%s is more than one last rp" % last_rps
+            #assert len(last_rps) == 1 , "%s is more than one last rp" % last_rps
             last_rp = last_rps[0]
 
             if not Graph.intervals_contains_rp(last_rp, intervals):
@@ -404,14 +404,15 @@ class Graph(object):
             # Connect the two last to next
             #print("Last")
             #print(lasts)
-            assert self.adj_list[lasts[0]][0] == self.adj_list[lasts[1]][0], "Not identical next: %s != %s" % (self.adj_list[lasts[0]][0], self.adj_list[lasts[1]][0])
-            next = self.adj_list[lasts[0]]
-            assert len(next) == 1
-            next = next[0]
-            last = self.adj_list[lasts[0]][0]
-            new_blocks[last] = Block(self.blocks[last].length())
-            new_edges[lasts[0]].append(next)
-            new_edges[lasts[1]].append(next)
+            if len(self.adj_list[lasts[0]]) > 0 and len(self.adj_list[lasts[1]]) > 0:
+                assert self.adj_list[lasts[0]][0] == self.adj_list[lasts[1]][0], "Not identical next: %s != %s" % (self.adj_list[lasts[0]][0], self.adj_list[lasts[1]][0])
+                next = self.adj_list[lasts[0]]
+                assert len(next) == 1
+                next = next[0]
+                last = self.adj_list[lasts[0]][0]
+                new_blocks[last] = Block(self.blocks[last].length())
+                new_edges[lasts[0]].append(next)
+                new_edges[lasts[1]].append(next)
 
         subgraph2 = Graph(new_blocks, new_edges)
         return subgraph2

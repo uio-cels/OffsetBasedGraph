@@ -151,7 +151,7 @@ def visualize_alt_locus(args, skip_wrapping=False):
         trans = Translation.from_file(args.translation_file_name)
     else:
         trans = args.translation_file_name
-        
+
     graph = trans.graph2
     orig_trans = trans.copy()
 
