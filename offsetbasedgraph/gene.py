@@ -87,13 +87,14 @@ class Gene(object):
         alt loci blocks have names with alt loci in them
         """
         from .graph import Graph
-        #print("=== Checking %s ===" % self.name)
+        print("=== Checking %s ===" % self.name)
         unique_loci = []
         for b in self.transcription_region.region_paths:
             if Graph.block_origin(b) == "alt":
                 unique_loci.append(b)
 
-        #print(unique_loci)
+        print(unique_loci)
+        print(self.transcription_region)
         if len(set(unique_loci)) > 1:
             return True
         else:

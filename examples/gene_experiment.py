@@ -121,7 +121,7 @@ def visualize_alt_locus_wrapper(args):
     chrom = args.alt_locus.split("_")[0]
     args.genes = "genes/genes_%s.txt" % (chrom)
     args.translation_file_name = "g_merged_flanks2"
-    visualize_alt_locus(args, True)
+    visualize_alt_locus(args, False)
 
 
 def visualize_alt_locus(args, skip_wrapping=False):

@@ -119,7 +119,8 @@ class VisualizeHtml(object):
 
     def _plot_interval(self, interval, name, is_exon = False):
 
-        #if is_exon:
+        if is_exon:
+            self.exon_cnt += 1
             #print("<p><b>Plotting exon: %s</b></p>" % interval)
 
         for block in interval.region_paths:

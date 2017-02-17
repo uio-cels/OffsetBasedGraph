@@ -338,6 +338,8 @@ class Graph(object):
         assert len(starts) == 1, " %s has not len 1" % (str(starts))
 
         #assert False
+        print("<p>Subgraph</p>")
+        print(subgraph)
         return subgraph, trans, start_position
 
     def create_subgraph_from_blocks(self, blocks, alt_locus=None):
@@ -359,24 +361,19 @@ class Graph(object):
         for b in blocks:
             for e in self.adj_list[b]:
                 #if e in new_blocks:
-
                 if alt_locus is not None and Graph.block_origin(e) == "alt" and alt_locus not in e:
                     continue
 
                 new_edges[b].append(e)
                 if e not in new_blocks:
+                    print("<p>adding %s</p>" % e)
                     new_blocks[e] = Block(self.blocks[e].length())
 
-                    """
-                    print("Adding block %s" % e)
-                    # If this block has edges into any existing blocks, add them:
-                    for edge in self.adj_list[e]:
-                        if edge in new_blocks:
-                            new_edges[e].append(edge)
-                    """
         # Go through all added blocks, add edges into other added blocks
         for b in new_blocks:
+            print("Checking edges for %s" % (b))
             for edge in self.adj_list[b]:
+                print(" Edge %s" % edge)
                 if edge in new_blocks and edge not in new_edges[b]:
                     new_edges[b].append(edge)
 
