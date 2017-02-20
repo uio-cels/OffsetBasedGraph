@@ -143,7 +143,7 @@ def visualize_alt_locus_wrapper(args):
 
     args.translation_file_name = final_translation
     #return
-    visualize_alt_locus(args, False)
+    visualize_alt_locus(args, True)
 
 
 def visualize_alt_locus(args, skip_wrapping=False):
