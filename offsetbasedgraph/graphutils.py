@@ -276,10 +276,10 @@ def create_subgraph_around_alt_locus(graph, trans, alt_locus, padding=200000):
     # Translate interval, get all intervals
     translated_to = []
     for orig_interval in [main_interval, alt_locus_interval]:
-        print("Orig interval")
-        print(orig_interval)
+        #print("Orig interval")
+        #print(orig_interval)
         trans_interval = trans.translate(orig_interval)
-        print("Including %s" % trans_interval)
+        #print("Including %s" % trans_interval)
         translated_to.append(trans_interval)
 
     return graph.create_subgraph_from_intervals(translated_to, padding, alt_locus)
