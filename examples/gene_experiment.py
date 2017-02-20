@@ -119,7 +119,7 @@ def merge_all_alignments(args):
 def visualize_alt_locus_wrapper(args):
     # Finds correct gene file etc
     chrom = args.alt_locus.split("_")[0]
-    args.genes = "genes/genes_%s.txt" % (chrom)
+    args.genes = "genes/genes_refseq_%s.txt" % (chrom)
 
     # Create graph only for this alt loci
     graph = create_initial_grch38_graph("grch38.chrom.sizes")
