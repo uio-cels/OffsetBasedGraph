@@ -430,7 +430,7 @@ class TestGraph(unittest.TestCase):
             Interval(9, 5, [1, 2, 3], graph),
         ]
         print(graph.adj_list)
-        subgraph, trans = graph.create_subgraph_from_intervals(intervals, 2)
+        subgraph, trans, start_pos = graph.create_subgraph_from_intervals(intervals, 2)
         print(subgraph.blocks)
         print(subgraph.adj_list)
         print(subgraph.reverse_adj_list)
@@ -459,7 +459,7 @@ class TestGraph(unittest.TestCase):
             Interval(5, 5, [1, 2], graph),
         ]
 
-        subgraph, trans = graph.create_subgraph_from_intervals(intervals, 2)
+        subgraph, trans, start_pos = graph.create_subgraph_from_intervals(intervals, 2)
         self.assertEqual(subgraph.blocks[subgraph.get_first_blocks()[0]].length(), 7)
         self.assertEqual(subgraph.blocks[subgraph.get_last_blocks()[0]].length(), 2)
         self.assertEqual(len(subgraph.blocks), 4)

@@ -126,11 +126,11 @@ def visualize_alt_locus_wrapper(args):
     #graph.to_file("graph_non_connected")
     #graph = Graph.from_file("graph_non_connected")
 
-    print("Convert to numeric")
+    #print("Convert to numeric")
     numeric_graph, name_translation = convert_to_numeric_graph(graph)
     #name_translation.to_file("name_trans_non_connected")
 
-    print("Convert without flanks")
+    #print("Convert without flanks")
     new_numeric_graph, numeric_translation = connect_without_flanks(
         numeric_graph, "grch38_alt_loci.txt", name_translation, [args.alt_locus])
 
@@ -138,14 +138,16 @@ def visualize_alt_locus_wrapper(args):
         new_numeric_graph, name_translation, numeric_translation)
 
     final_translation = name_translation + numeric_translation + new_name_translation
+    final_translation.graph2 = name_graph
     #final_translation.to_file("tmp_trans")
 
     args.translation_file_name = final_translation
-    visualize_alt_locus(args, True)
+    #return
+    visualize_alt_locus(args, False)
 
 
 def visualize_alt_locus(args, skip_wrapping=False):
-    from offsetbasedgraph.graphutils import GeneList, create_gene_dicts, merge_alt_using_cigar, grch38_graph_to_numeric
+    from offsetbasedgraph.graphutils import GeneList, create_gene_dicts, create_subgraph_around_alt_locus
 
     if not isinstance(args.translation_file_name, Translation):
         trans = Translation.from_file(args.translation_file_name)
@@ -154,6 +156,7 @@ def visualize_alt_locus(args, skip_wrapping=False):
 
     graph = trans.graph2
     orig_trans = trans.copy()
+
 
     # Find all genes on this graph
     genes = GeneList(get_gene_objects_as_intervals(args.genes)).gene_list
@@ -171,7 +174,9 @@ def visualize_alt_locus(args, skip_wrapping=False):
     if len(trans_regions) == 0:
         raise Exception("No genes in area")
 
-    subgraph, trans, start_position = graph.create_subgraph_from_intervals(trans_regions, 200000, args.alt_locus)
+    #subgraph, trans, start_position = graph.create_subgraph_from_intervals(trans_regions, 200000, args.alt_locus)
+    subgraph, trans, start_position = create_subgraph_around_alt_locus(graph, trans, args.alt_locus, 200000)
+
     start_position = orig_trans.translate_position(start_position, True)[0]
     print("<p>Start position: %s</p>" % start_position)
     #trans.graph1 = full_trans.graph2
@@ -184,7 +189,7 @@ def visualize_alt_locus(args, skip_wrapping=False):
 
 
     if len(genes) > 3:
-        genes.sort(key=lambda g: g.length(), reverse=True)
+        #genes.sort(key=lambda g: g.length(), reverse=True)
         genes = genes[0:3]
 
     levels = Graph.level_dict(subgraph.blocks)
@@ -330,9 +335,9 @@ def _analyse_multipath_genes_on_graph(genes_list, genes_against, graph):
                 equal += 1
 
             if g.faster_equal_critical_intervals(g2):
-                #print("=== Exon match ===")
-                #print(g)
-                #print(g2)
+                print("=== Exon match ===")
+                print(g)
+                print(g2)
                 equal_exons += 1
 
     return equal, equal_exons
@@ -366,19 +371,10 @@ def analyse_multipath_genes2(args):
     t1.diff(name_trans)
     #assert t1 == name_trans
 
-    #print(t1)
-    #print(t2)
-
-    #t3 = Translation.from_file("tmp_full_trans_single")
-    #t4 = Translation.from_file("tmp_full_trans")
-
-    #assert t3 == t4
-    #t3.diff(t4)
-    #genes_tmp_main = GeneList.from_file("gene_list_main")
-    #genes_tmp = GeneList.from_file("gene_list_here")
 
     #for b in text_graph.blocks:
-    for b in ["chr19_GL949747v2_alt", "chr19_KI270929v1_alt"]: #text_graph.blocks:
+    #for b in ["chr19_GL949747v2_alt", "chr19_KI270929v1_alt"]: #text_graph.blocks:
+    for b in ["chr13_KI270838v1_alt"]:
     #for b in ["chr19_KI270929v1_alt"]:
         if "alt" in b:
             print()
@@ -387,6 +383,7 @@ def analyse_multipath_genes2(args):
             genes_here = alt_loci_genes[b]
             trans, complex_graph = merge_alt_using_cigar(graph, name_trans, b)
             full_trans = name_trans + trans
+
 
             # Find candidates on main path to check against:
             genes_against = [g.copy() for g in main_genes[b]]
@@ -411,6 +408,19 @@ def analyse_multipath_genes2(args):
                 sys.stdout.flush()
             print()
             print("\n  Candidates to check against: %d" % len(genes_against))
+
+
+            subgraph_intervals = []
+            for g in genes_here_translated + genes_against_translated:
+                subgraph_intervals.extend(g.critical_intervals)
+
+            subgraph = complex_graph.create_subgraph_from_intervals(subgraph_intervals,
+                                                                    30000, b)
+
+            print("== Subgraph ==")
+            print(subgraph)
+
+
 
             equal, equal_exons = _analyse_multipath_genes_on_graph(genes_here_translated,
                                                                    genes_against_translated,
