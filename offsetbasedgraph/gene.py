@@ -69,6 +69,7 @@ class Gene(object):
         self.strand = strand
         self.chrom = transcription_region.region_paths[0]
         self.graph = self.transcription_region.graph
+        self.transcript_length = sum(exon.length() for exon in exons)
 
     def copy(self):
         coding_region = None
@@ -146,6 +147,15 @@ class Gene(object):
         return Gene(self. name, t_transcription_region, t_exons,
                     t_coding_region, self.strand)
 
+    def get_transcript_length(self):
+        """Return combined length of exons
+
+        :returns: transcript length
+        :rtype: int
+
+        """
+        return sum(exon.length() for exon in self.exons)
+
     def length(self):
         return self.transcription_region.length()
 
@@ -168,10 +178,12 @@ class Gene(object):
         if len(self.exons) != len(other.exons):
             return False
 
-        for exon in self.exons:
-            if exon not in other.exons:
-                return False
-
+        return all(e1 == e2 for e1, e2 in zip(self.exons, other.exons))
+#
+#        for exon in self.exons:
+#            if exon not in other.exons:
+#                return False
+#
         return True
 
     def to_file_line(self):
@@ -231,7 +243,7 @@ class Gene(object):
         diff_sum = 0
         for exon1, exon2 in zip(self.exons, other.exons):
             if exon1.region_paths == exon2.region_paths:
-                s_diff = exon1.start_position.offset-exon2.start_position.offset
+                s_diff = exon1.start_position.offset - exon2.start_position.offset
                 e_diff = exon1.end_position.offset-exon2.end_position.offset
                 diff_sum += abs(s_diff)+abs(e_diff)
             else:

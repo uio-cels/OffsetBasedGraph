@@ -457,7 +457,7 @@ def classify_alt_genes(genes):
 
 
 def analyze_genes_on_merged_graph(genes, translation):
-    cashed = False
+    cashed = True
     translation.block_lengths = None
     if cashed:
         translated = GeneList.from_pickle("trans_genes").gene_list
