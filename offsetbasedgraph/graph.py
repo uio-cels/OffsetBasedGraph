@@ -333,6 +333,7 @@ class Graph(object):
             break
 
         for r in remove:
+            print("Removed %r" % r)
             subgraph.remove(r)
         starts = subgraph.get_first_blocks()
         assert len(starts) == 1, " %s has not len 1" % (str(starts))

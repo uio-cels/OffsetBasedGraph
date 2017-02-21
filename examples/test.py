@@ -145,19 +145,19 @@ def divide_gen_file(genes_fn):
     from collections import defaultdict
     lines = defaultdict(list)
     for l in f.readlines():
-        chrom = l.split()[1]
+        chrom = l.split()[2]
         if "_" in chrom:
             chrom = chrom.split("_")[0]
         lines[chrom].append(l)
     f.close()
 
     for chrom in lines:
-        f = open("genes/genes_%s.txt" % chrom, "w")
+        f = open("genes/genes_refseq_%s.txt" % chrom, "w")
         f.writelines([header])
         f.writelines(lines[chrom])
         f.close()
 
-divide_gen_file("genes.txt")
+divide_gen_file("genes_refseq.txt")
 
 #curate_alignment_files()
 

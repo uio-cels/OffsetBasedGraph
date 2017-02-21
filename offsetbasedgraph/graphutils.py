@@ -160,6 +160,8 @@ def merge_flanks(intervals, final_trans, new_graph, name_translation):
             new_graph.next_position(merge_intervals[0].start_position)
         )
 
+        assert len(new_graph.adj_list[merge_intervals[1].start_position.region_path_id]) > 0
+
         #print("=== end flank trans ===")
         #print(trans)
 
@@ -239,6 +241,48 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation, filter_alt_loci
              alt_locus.main_end_flank, alt_locus.end_flank],
             final_trans, new_graph, name_translation)
     return new_graph, final_trans
+
+def create_subgraph_around_alt_locus(graph, trans, alt_locus, padding=200000):
+    """
+    Takes a translation from an original grch38 graph (created by create_initial_grch38_graph)
+    and uses a translation from that graph to current graph
+    in order to filter out the subgraph around a particular alt locus.
+    :param graph: Graph to create subgraph from
+    :param trans: Translation from original grch38 graph to current graph
+    :param alt_locus: alt locus ID to create subgraph around
+    :param padding: Padding. Number if basepairs to include around alt locus
+    :return: Returns subgraph, a translation object and start position of the subgraph
+    """
+
+    # For now, only use trans object to find which intervals in graph
+    # that can be used to create subgraph by calling
+    # Graph.create_subgraph_from_intervals()
+    # todo: This can be rewritten more efficiently later
+
+    original_graph = trans.graph1
+    assert graph == trans.graph2 , "trans.graph2 should be identical to graph"
+    alt_locus_interval = Interval(0, original_graph.blocks[alt_locus].length(), [alt_locus])
+
+    from offsetbasedgraph.GRCH38 import AltLoci
+    alt_loci_info = AltLoci.from_file("grch38_alt_loci.txt", [alt_locus])
+    alt_locus_info = alt_loci_info.lookup[alt_locus]
+
+    main_interval_start = alt_locus_info.start - 10
+    main_interval_end = alt_locus_info.end + 10
+    main_interval = Interval(main_interval_start,
+                             main_interval_end,
+                             [alt_locus_info.chrom])
+
+    # Translate interval, get all intervals
+    translated_to = []
+    for orig_interval in [main_interval, alt_locus_interval]:
+        #print("Orig interval")
+        #print(orig_interval)
+        trans_interval = trans.translate(orig_interval)
+        #print("Including %s" % trans_interval)
+        translated_to.append(trans_interval)
+
+    return graph.create_subgraph_from_intervals(translated_to, padding, alt_locus)
 
 
 def parse_genes_file(genes_fn):
