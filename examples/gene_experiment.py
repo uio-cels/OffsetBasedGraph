@@ -9,17 +9,19 @@ python3 gene_experiment.py grch38.chrom.sizes-small grch38_alt_loci_small.txt ge
 
 """
 
-from collections import defaultdict
 import sys
 import argparse
 from offsetbasedgraph import Graph, Translation
-from offsetbasedgraph.graphutils import merge_alt_using_cigar, grch38_graph_to_numeric
-from offsetbasedgraph.gene import GeneList, Gene, MultiPathGene
+from offsetbasedgraph.graphutils import merge_alt_using_cigar,\
+    grch38_graph_to_numeric
 
-from offsetbasedgraph.graphutils import Gene, convert_to_numeric_graph, connect_without_flanks, \
-    convert_to_text_graph, merge_flanks, connect_without_flanks, parse_genes_file, \
-    get_genes_as_intervals, get_gene_objects_as_intervals, find_exon_duplicates, \
-    create_initial_grch38_graph, blast_test, convert_cigar_graph_to_text, analyze_genes_on_merged_graph
+from offsetbasedgraph.gene import GeneList
+
+from offsetbasedgraph.graphutils import convert_to_numeric_graph,\
+    convert_to_text_graph, connect_without_flanks,\
+    get_gene_objects_as_intervals, create_initial_grch38_graph, \
+    convert_cigar_graph_to_text, analyze_genes_on_merged_graph
+
 
 def create_graph(args):
     graph = create_initial_grch38_graph(args.chrom_sizes_file_name)
@@ -81,8 +83,10 @@ def merge_alignment(args):
     full_trans.to_file(args.out_file_name)
     print("Saved trans to file %s" % args.out_file_name)
 
+
 def merge_all_alignments(args):
-    from offsetbasedgraph.graphutils import merge_alt_using_cigar, grch38_graph_to_numeric
+    from offsetbasedgraph.graphutils import merge_alt_using_cigar,\
+        grch38_graph_to_numeric
     # Text ids (chrom names and alt names)
     text_graph = create_initial_grch38_graph(args.chrom_sizes_file_name)
     graph, name_trans = grch38_graph_to_numeric(text_graph)
@@ -90,8 +94,7 @@ def merge_all_alignments(args):
     # Go through all alts in this graph
     new_graph = graph.copy()
     i = 0
-    #for b in text_graph.blocks:
-    for b in ['chr8_KI270818v1_alt']: #['chr8_KI270812v1_alt']: #text_graph.blocks: # chr6_GL000251v2_alt
+    for b in ['chr8_KI270818v1_alt']:
 
         if "alt" in b:
             print("Merging %s" % b)
@@ -342,10 +345,10 @@ def _analyse_multipath_genes_on_graph(genes_list, genes_against, graph):
 
     return equal, equal_exons
 
-def analyse_multipath_genes2(args):
-    import pickle
 
-    from offsetbasedgraph.graphutils import create_gene_dicts, translate_single_gene_to_aligned_graph
+def analyse_multipath_genes2(args):
+    from offsetbasedgraph.graphutils import create_gene_dicts,\
+        translate_single_gene_to_aligned_graph
     print("Reading in genes")
     genes = GeneList(get_gene_objects_as_intervals(args.genes_file_name)).gene_list
 
