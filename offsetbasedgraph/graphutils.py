@@ -72,6 +72,8 @@ def convert_cigar_graph_to_text(align_graph, name_translation,
                                 numeric_translation):
 
     def create_name(blocks):
+        print(blocks)
+        print(name_translation)
         names = [name_translation._b_to_a[block][0].region_paths[0]
                  for block in blocks]
         names = ["A" if "alt" in name else "M" for name in names]
@@ -242,7 +244,7 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation, filter_alt_loci
             final_trans, new_graph, name_translation)
     return new_graph, final_trans
 
-def create_subgraph_around_alt_locus(graph, trans, alt_locus, padding=200000):
+def create_subgraph_around_alt_locus(graph, trans, alt_locus, padding=200000, alt_loci_fn='grch38_alt_loci.txt'):
     """
     Takes a translation from an original grch38 graph (created by create_initial_grch38_graph)
     and uses a translation from that graph to current graph
@@ -264,7 +266,7 @@ def create_subgraph_around_alt_locus(graph, trans, alt_locus, padding=200000):
     alt_locus_interval = Interval(0, original_graph.blocks[alt_locus].length(), [alt_locus])
 
     from offsetbasedgraph.GRCH38 import AltLoci
-    alt_loci_info = AltLoci.from_file("grch38_alt_loci.txt", [alt_locus])
+    alt_loci_info = AltLoci.from_file(alt_loci_fn, [alt_locus])
     alt_locus_info = alt_loci_info.lookup[alt_locus]
 
     main_interval_start = alt_locus_info.start - 10
@@ -652,7 +654,7 @@ def grch38_graph_to_numeric(original_grch38_graph):
     return graph, trans
 
 
-def merge_alt_using_cigar(original_numeric_grch38_graph, trans, alt_id):
+def merge_alt_using_cigar(original_numeric_grch38_graph, trans, alt_id, ncbi_alignments_dir="alt_alignments"):
     """
     Uses a cigar string from ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_assembly_structure/
     and merges the alt locus.
@@ -673,7 +675,7 @@ def merge_alt_using_cigar(original_numeric_grch38_graph, trans, alt_id):
     alt_end = 0
 
     try:
-        with open("alt_alignments/%s.alignment" % alt_id) as f:
+        with open("%s/%s.alignment" % (ncbi_alignments_dir, alt_id)) as f:
             d = f.read().split(",")
             cigar = d[-1]
             # All numbers are 1-indxed and inclusive end (?)
@@ -715,9 +717,14 @@ def merge_alt_using_cigar(original_numeric_grch38_graph, trans, alt_id):
 
 # return _merge_alt_using_cigar(original_numeric_grch38_graph, trans, alt_id, cigar, alt_seq, main_seq, main_chr, main_start, main_end, alt_start, alt_end)
 
+def get_alt_loci_positions(alt_loci_file_name='grch38_alt_loci.txt'):
 
-def get_alt_loci_positions():
-    f = open("grch38_alt_loci.txt", "r")
+    try:
+        f = open(alt_loci_file_name, "r")
+    except:
+        print("Error: %s does not exist." % alt_loci_file_name)
+        raise
+
     alt_loci = {}
     for line in f.readlines():
         if line.startswith("#"):
@@ -841,7 +848,7 @@ def _merge_alt_using_cigar(original_grch38_graph, trans, alt_id, cigar,
     return trans, graph
 
 
-def create_gene_dicts(genes, identical_names=False):
+def create_gene_dicts(genes, alt_loci_fn="data/grch38_alt_loci.txt", identical_names=False):
     """
     Takes a list of genes, and creates an alt loci dict and a gene name dict
     :param genes:
@@ -868,7 +875,7 @@ def create_gene_dicts(genes, identical_names=False):
             #exon_dict[g.exons[0].start_position.offset] = g
             chrom_genes[chrom].append(g)
 
-    alt_infos = get_alt_loci_positions()
+    alt_infos = get_alt_loci_positions(alt_loci_fn)
     parallell_to_alt_loci_genes = defaultdict(list)  # Genes on  main path
     for alt_locus in alt_loci_genes:
         main_genes = chrom_genes[alt_locus.split("_")[0]]

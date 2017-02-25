@@ -1,10 +1,6 @@
 from __future__ import absolute_import
 from __future__ import division
-#import matplotlib.pyplot as plt
 import numpy as np
-import six
-#from matplotlib import colors
-from gendatafetcher.ucscdb import DbWrapper
 
 DEBUG = False
 
