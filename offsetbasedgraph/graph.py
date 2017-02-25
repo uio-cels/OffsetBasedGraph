@@ -1305,6 +1305,38 @@ class Graph(object):
         critical_block_b = self.find_previous_critical_block(block_b, critical_blocks)
         return critical_block_a == critical_block_b
 
+    def find_parallell_blocks(self, blocks, filter_func):
+        """Find all parallell_blocks to block
+        that satisfies filter_func
+
+        :param block: region path id
+        :param filter_func: predicate fucntion
+        :returns: all parallell_blocks
+        :rtype: list(str)
+
+        """
+        if isinstance(blocks, str):
+            blocks = [blocks]
+        prev_blocks = [b for b in self.reverse_adj_list[blocks[0]]
+                       if filter_func(b)]
+        assert len(prev_blocks) == 1, blocks
+        start_block = prev_blocks[0]
+        next_blocks = [b for b in self.adj_list[blocks[-1]]
+                       if filter_func(b)]
+        assert len(next_blocks) == 1, blocks
+        end_block = next_blocks[0]
+        cur_block = start_block
+        parallell_blocks = []
+        while True:
+            next_blocks = [b for b in self.adj_list[cur_block]
+                           if filter_func(b)]
+            assert len(next_blocks) == 1
+            cur_block = next_blocks[0]
+            if cur_block == end_block:
+                break
+            parallell_blocks.append(cur_block)
+        return parallell_blocks
+
     def find_all_critical_blocks(self):
         """Find critical blocks in the graph.
         I.e.  blocks that are traversed by all paths
