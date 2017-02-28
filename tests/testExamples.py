@@ -4,8 +4,8 @@ from offsetbasedgraph import Interval, Position, Graph, Translation, Block
 class TestExamples(unittest.TestCase):
 
     def test_overlapping_alt_loci(self):
-        chrom_file = "examples/chrom.sizes.test"
-        alt_loci = "examples/alt_loci_test"
+        chrom_file = "chrom.sizes.test"
+        alt_loci = "alt_loci_test"
 
         import examples.gene_experiment as g
         graph = g.create_initial_grch38_graph(chrom_file)
@@ -281,9 +281,9 @@ class TestExamples(unittest.TestCase):
 
         from offsetbasedgraph.graphutils import GeneList, create_gene_dicts, get_gene_objects_as_intervals
 
-        genes_file_name = "tests/genes_test.txt"
+        genes_file_name = "genes_test.txt"
         genes = GeneList(get_gene_objects_as_intervals(genes_file_name)).gene_list
-        alt_loci_genes, gene_name_dict, main_genes = create_gene_dicts(genes)
+        alt_loci_genes, gene_name_dict, main_genes = create_gene_dicts(genes, "grch38_alt_loci.txt")
 
         print(alt_loci_genes)
         print(gene_name_dict)
@@ -300,7 +300,7 @@ class TestExamples(unittest.TestCase):
     def test_parse_genes_from_file_and_translate_to_multipath(self):
         from offsetbasedgraph.graphutils import GeneList, create_gene_dicts, get_gene_objects_as_intervals
         from offsetbasedgraph import CriticalPathsMultiPathInterval
-        genes_file_name = "tests/genes_test.txt"
+        genes_file_name = "genes_test.txt"
         genes = GeneList(get_gene_objects_as_intervals(genes_file_name)).gene_list
 
         mpintervals = []
