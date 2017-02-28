@@ -12,14 +12,16 @@ import sys
 def create_subgraph_around_alt_locus(graph, trans, alt_locus, padding=200000,
                                      alt_loci_fn='grch38_alt_loci.txt'):
     """
-    Takes a translation from an original grch38 graph (created by create_initial_grch38_graph)
+    Takes a translation from an original grch38 graph
+    (created by create_initial_grch38_graph)
     and uses a translation from that graph to current graph
     in order to filter out the subgraph around a particular alt locus.
     :param graph: Graph to create subgraph from
     :param trans: Translation from original grch38 graph to current graph
     :param alt_locus: alt locus ID to create subgraph around
     :param padding: Padding. Number if basepairs to include around alt locus
-    :return: Returns subgraph, a translation object and start position of the subgraph
+    :return: Returns subgraph, a translation object and
+    start position of the subgraph
     """
 
     # For now, only use trans object to find which intervals in graph
@@ -80,6 +82,13 @@ def get_gene_objects_as_intervals(fn, graph=None):
 
 
 def analyze_genes_on_merged_graph(genes, translation):
+    """
+    Find similarities between gene annotations on alt-loci and
+    main chromosomes when represented on a merged graph
+    Translate the genes to the merged graph and perform analysis
+    :param genes: list of genes on original graph
+    :param translation: translation from original to merged graph
+    """
     cashed = False
     translation.block_lengths = None
     if cashed:
@@ -105,12 +114,16 @@ def analyze_genes_on_merged_graph(genes, translation):
 
 
 def get_alt_loci_positions(alt_loci_file_name):
-    try:
-        f = open(alt_loci_file_name, "r")
-    except:
-        print("Error: %s does not exist." % alt_loci_file_name)
-        raise
+    """Create a dict of alt loci positions read from
+    alt_loci_file_name
 
+    :param alt_loci_file_name: file name
+    :returns: dict{alt_loci_id: info (dict)}
+    :rtype: dict{str: dict}
+
+    """
+
+    f = open(alt_loci_file_name, "r")
     alt_loci = {}
     for line in f.readlines():
         if line.startswith("#"):
@@ -132,12 +145,13 @@ def get_alt_loci_positions(alt_loci_file_name):
     return alt_loci
 
 
-def create_gene_dicts(genes, alt_loci_fn,
-                      identical_names=False):
+def create_gene_dicts(genes, alt_loci_fn, identical_names=False):
     """
-    Takes a list of genes, and creates an alt loci dict and a gene name dict
-    :param genes:
-    :return: alt loci dict, name dict
+    Takes a list of genes, and creates an alt loci dict and a gene name dict.
+    The dicts index the genes on chromosome/alt_loci id
+    :param genes: list of genes
+    :return: alt loci dict, name dict, paralell_dict
+    :rtype: defaultdict, defaultdict, defaultdict
     """
     gene_name_dict = defaultdict(list)
     for g in genes:
@@ -174,6 +188,13 @@ def create_gene_dicts(genes, alt_loci_fn,
 
 
 def translate_to_fuzzy_interval(gene, trans):
+    """Translate the gene to a fuzzy interval on graph2 of trans
+
+    :param gene: Gene
+    :param trans: Translation
+    :rtype: FuzzyGene
+
+    """
     transcription_region = trans.translate(
         gene.transcription_region)
     exons = [trans.translate(exon) for exon in gene.exons]
@@ -187,6 +208,13 @@ def translate_to_fuzzy_interval(gene, trans):
 
 
 def translate_single_gene_to_aligned_graph(gene, trans):
+    """Translate the gene to a multipath gene on trans.graph2
+
+    :param gene: Gene
+    :param trans: Translation
+    :rtype: MultiPathGene
+
+    """
     start = gene.transcription_region.start_position
     end = gene.transcription_region.end_position
     end.offset = end.offset - 1
@@ -206,8 +234,9 @@ def translate_single_gene_to_aligned_graph(gene, trans):
 
 
 def _analyse_fuzzy_genes_on_graph(genes_list, genes_against, graph):
-    # Takes a list of mp genes and a graph
-    # Returns number of equal exons and equal genes
+    """Takes a list of mp genes and a graph
+    Returns number of equal exons and equal genes
+    """
 
     matches = [(gene, against_gene) for gene in genes_list
                for against_gene in genes_against if
@@ -222,6 +251,18 @@ def _analyse_fuzzy_genes_on_graph(genes_list, genes_against, graph):
 
 def analyze_multipath_genes_for_alt(alt_id, alt_loci_genes, main_genes,
                                     graph, name_trans, ncbi_alignments_dir):
+    """Find genes with the same fuzzy multipath interval representation
+
+    :param alt_id: Alt locus id
+    :param alt_loci_genes: Genes on alt loci
+    :param main_genes: Genes on main chromosome paralell to alt loci
+    :param graph: Graph
+    :param name_trans: Translation
+    :param ncbi_alignments_dir: Directory to find alt-loci info
+    :returns: Number of genes on alt-loci with match on main chromsome
+    :rtype: int
+
+    """
     print("Analysing genes on alt locus %s" % alt_id)
     genes_here = alt_loci_genes[alt_id]
     if not (genes_here and main_genes[alt_id]):
@@ -261,27 +302,24 @@ def analyze_multipath_genes_for_alt(alt_id, alt_loci_genes, main_genes,
 
 def fuzzy_gene_analysis(genes, text_graph, ncbi_alignments_dir,
                         alt_loci_filename):
-    from offsetbasedgraph.graphutils import create_gene_dicts
-    print("Readinng in genes")
+    """Find number of genes on alt-loci that can be represented
+    by the fuzzy multipath interval of a gene on a main chromsome
+    when using a complex graph
 
+    :param genes: List of genes
+    :param text_graph: Graph
+    :param ncbi_alignments_dir: Directory alignments
+    :param alt_loci_filename: File with alt loci info
+    """
+    print("Readinng in genes")
     alt_loci_genes, gene_name_dict, main_genes = create_gene_dicts(
         genes, alt_loci_filename)
-
-    # alt loci genes are only genes on alt loci (nothing on main)
-    # exon_dict contains only genes on main, index by offset of first exon
-
-    # For every alt loci create complex graph, translate genes and analyse them
     graph, name_trans = grch38_graph_to_numeric(text_graph)
-
     equal_total = 0
-    # for b in text_graph.blocks:
     for b in text_graph.blocks:
         if "alt" not in b:
             continue
         equal_total += analyze_multipath_genes_for_alt(
             b, alt_loci_genes, main_genes, graph, name_trans,
             ncbi_alignments_dir)
-        print(equal_total)
-        print()
-
     print(equal_total)
