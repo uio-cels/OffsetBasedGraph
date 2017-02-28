@@ -18,6 +18,15 @@ class Block(object):
 
 
 class Graph(object):
+    """
+    Class for holding an Offset-Based Graph
+    and performing simple operations on this graph.
+
+    Does this by storing a dict of Blocks and
+    a dict of adjency lists (one list for each block
+    that has adjencies).
+
+    """
     adj_list = defaultdict(list)
     reverse_adj_list = defaultdict(list)
 
