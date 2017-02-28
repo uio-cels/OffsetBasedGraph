@@ -37,8 +37,8 @@ class GeneMatcher(object):
         # comp_func = self.func_dict[self.category]
         self.scores = [comp_func(main_gene) for main_gene in self.main_genes]
         max_score = max(self.scores)
-        if (max_score < 1) and self.category == "FLANK":
-            print(max_score, self.alt_gene.name)
+        # if (max_score < 1) and self.category == "FLANK":
+        # print(max_score, self.alt_gene.name)
         self.score = max_score
         self.match_gene = self.main_genes[
             self.scores.index(max_score)]
@@ -118,28 +118,22 @@ class GeneMatcher(object):
         eq_length = self.alt_gene.transcript_length == main_gene.transcript_length
         d_length = abs(self.alt_gene.transcript_length - main_gene.transcript_length)
         contained = main_gene.get_contained_pairs(self.alt_gene)
-        base_score = 10 if contained else 0
+        base_score = 0 if contained else -10
         if all(are_paralell):
-            if eq_length:
-                return 5+base_score
             if d_length < 5:
-                return 4.5+base_score
-            if self.category == "FLANK":
-                print(self.alt_gene.to_file_line())
-                print(main_gene.to_file_line())
-            
+                return 5+base_score
             return 4+base_score
         if any(are_paralell):
 
-            if eq_length:
-                return 3+base_score
+            #if eq_length:
+            #    return 3+base_score
             if d_length < 5:
-                return 2.5+base_score
+                return 3+base_score
             return 2+base_score
-        if eq_length:
-            return 1
+        # if eq_length:
+        #    return 1
         if d_length < 5:
-            return 0.5
+            return 1
 
         return 0
 

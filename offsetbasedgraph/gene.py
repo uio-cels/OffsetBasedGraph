@@ -58,8 +58,7 @@ class MultiPathGene(object):
         self.interval = multipath_interval
 
 
-class Gene(object):
-
+class GeneBase(object):
     def __init__(self, name, transcription_region, exons,
                  coding_region, strand):
         self.name = name
@@ -71,6 +70,32 @@ class Gene(object):
         self.graph = self.transcription_region.graph
         self.transcript_length = sum(exon.length() for exon in exons)
 
+    def __eq__(self, other):
+        """Check if genes are equal up to name
+
+        :param other: other gene
+        :returns: Wheter genes are equal
+        :rtype: bool
+
+        """
+        if not self.transcription_region == other.transcription_region:
+            return False
+
+        if len(self.exons) != len(other.exons):
+            return False
+
+        return all(e1 == e2 for e1, e2 in zip(self.exons, other.exons))
+
+
+class FuzzyGene(GeneBase):
+    def __str__(self):
+        return "%s\t%s" % (self.name, str(self.transcription_region))
+
+    __repr__ = __str__
+
+
+class Gene(GeneBase):
+
     def copy(self):
         coding_region = None
         if self.coding_region is not None:
@@ -81,6 +106,7 @@ class Gene(object):
                     self.strand,
                     )
 
+    ###### Should be elswere
     def multiple_alt_loci(self):
         """
         Returns true if gene stretches over multiple alt loci.
@@ -88,14 +114,11 @@ class Gene(object):
         alt loci blocks have names with alt loci in them
         """
         from .graph import Graph
-        #print("=== Checking %s ===" % self.name)
         unique_loci = []
         for b in self.transcription_region.region_paths:
             if Graph.block_origin(b) == "alt":
                 unique_loci.append(b)
 
-        #print(unique_loci)
-        #print(self.transcription_region)
         if len(set(unique_loci)) > 1:
             return True
         else:
@@ -128,7 +151,7 @@ class Gene(object):
                  zip(exon_starts, exon_ends)]
         strand = attr_dict["strand"]
 
-        return cls(attr_dict["name"], transcription_region, exons,
+        return cls(attr_dict["name2"], transcription_region, exons,
                    coding_region, strand)
 
     def translate(self, T):

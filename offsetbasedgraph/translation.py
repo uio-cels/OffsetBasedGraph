@@ -1,12 +1,13 @@
-from collections import defaultdict
 from .interval import Interval, Position
-from .multipathinterval import GeneralMultiPathInterval, SingleMultiPathInterval, SimpleMultipathInterval
+from .multipathinterval import GeneralMultiPathInterval, \
+    SingleMultiPathInterval, SimpleMultipathInterval
 import pickle
 
 
 class Translation(object):
 
-    def __init__(self, translate_dict={}, reverse_dict={}, graph=None, block_lengths = None):
+    def __init__(self, translate_dict={}, reverse_dict={},
+                 graph=None, block_lengths=None):
         """
         Init the translation object with two dicts. Each dict has
         region path IDs as keys and a list of intervals as values.
@@ -21,11 +22,13 @@ class Translation(object):
         self._b_to_a = reverse_dict
         for k, intervals in translate_dict.items():
             for interval in intervals:
-                assert interval.start_position != interval.end_position, "Empty interval in translate: (%s: %s)" % ("T", translate_dict)
+                assert interval.start_position != interval.end_position,\
+                                                  "Empty interval in translate: (%s: %s)" % ("T", translate_dict)
 
         for k, intervals in reverse_dict.items():
             for interval in intervals:
-                assert interval.start_position != interval.end_position, "Empty interval in translate: (%s: %s)" % ("R", reverse_dict)
+                assert interval.start_position != interval.end_position,\
+                                                  "Empty interval in translate: (%s: %s)" % ("R", reverse_dict)
 
 
         # Store graph references

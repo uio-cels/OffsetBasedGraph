@@ -1,5 +1,5 @@
 from itertools import chain
-from .interval import Interval
+from .interval import Interval, Position
 
 
 class MultiPathInterval(object):
@@ -20,6 +20,7 @@ class SingleMultiPathInterval(MultiPathInterval):
 
     def get_single_path_intervals(self):
         return [self.interval]
+
 
 class CriticalPathsMultiPathInterval(MultiPathInterval):
     def __init__(self, start_pos, end_pos, critical_intervals):
@@ -60,8 +61,8 @@ class CriticalPathsMultiPathInterval(MultiPathInterval):
         """
         :param other:
         :return:
-        NB: Only compare exact representation. Will give wrong result if equal, but
-        different critical_intervals.
+        NB: Only compare exact representation. Will give wrong result if equal,
+        but different critical_intervals.
         TODO: Fix so that it compares the minimum representation
         """
         if other.start_pos != self.start_pos:
@@ -75,7 +76,7 @@ class CriticalPathsMultiPathInterval(MultiPathInterval):
         return out
 
     def __str__(self):
-        out = "Start: "  + str(self.start_pos) + "\n"
+        out = "Start: " + str(self.start_pos) + "\n"
         out += "Critical paths:\n"
         for c in self.critical_intervals:
             out += "  " + str(c) + "\n"
@@ -86,6 +87,94 @@ class CriticalPathsMultiPathInterval(MultiPathInterval):
         return str(self)
 
 
+class FuzzyMultipathInterval(MultiPathInterval):
+    def __init__(self, start_offset, end_offset, region_paths,
+                 threshold, graph=None):
+        self.start_position = Position(region_paths[0], start_offset)
+        self.end_position = Position(region_paths[-1], end_offset)
+        self.region_paths = region_paths
+        self.threshold = threshold
+        self.graph = graph
+
+    @classmethod
+    def from_interval(cls, interval, threshold):
+        return cls(interval.start_position.offset,
+                   interval.end_position.offset,
+                   interval.region_paths, threshold,
+                   interval.graph)
+
+    def get_single_path_intervals(self):
+        raise NotImplementedError()
+
+    def __eq__(self, other):
+        """Check if other deviates from self
+        with less than self.threshold bps
+
+        :param other: other interval
+        :returns: wheter they are equal
+        :rtype: bool
+
+        """
+        if not self.start_position == other.start_position:
+            return False
+        if not self.end_position == other.end_position:
+            return False
+
+        comparison_directions = [(self, other), (other, self)]
+        for template, test_interval in comparison_directions:
+            cur_deviance = 0
+            for region_path in test_interval.region_paths:
+                if region_path in template.region_paths:
+                    cur_deviance = 0
+                    continue
+                cur_deviance += self.graph.blocks[region_path].length()
+                if cur_deviance >= self.threshold:
+                    return False
+
+        return True
+
+    def _calculate_length(self):
+        if len(self.region_paths) == 1:
+            return self.end_position.offset - self.start_position.offset
+
+        if not self.region_paths:
+            return 0
+
+        assert self.graph is not None,\
+            "Graph is none and length cache is None and\
+            interval has more than 1 rp. Cannot compute length"
+
+        rp_lengths = [self.graph.blocks[rp].length()
+                      for rp in self.region_paths[:-1]]
+        r_sum = sum(rp_lengths)
+        length = r_sum-self.start_position.offset+self.end_position.offset
+
+        assert length >= 0,\
+            "Length is %d for interval %s. r_lengths: %s. Graph: %s"\
+            % (length, self, rp_lengths, self.graph)
+
+        return length
+
+    def length(self):
+        """
+
+        :returns: The length of the interval
+        :rtype: int
+
+        """
+
+        if hasattr(self, "length_cache") and self.length_cache is not None:
+            return self.length_cache
+        length = self._calculate_length()
+        self.length_cache = length
+        return length
+
+    def __str__(self):
+        return "%s\t%s\t%s" % (self.start_position.offset,
+                               self.end_position.offset,
+                               " ".join(str(c) for c in self.region_paths))
+
+    __repr__ = __str__
 
 
 class SimpleMultipathInterval(object):

@@ -1,5 +1,6 @@
 import unittest
 from offsetbasedgraph import Interval, Position, Graph, Translation, Block
+import offsetbasedgraph.graphutils as graphutils
 
 class TestExamples(unittest.TestCase):
 
@@ -65,7 +66,8 @@ class TestExamples(unittest.TestCase):
         final_trans = Translation({}, {}, graph=g)
         final_trans.graph2 = g
         name_trans = Translation({}, {}, graph=g)
-        new_graph, trans = e.merge_flanks(intervals, final_trans, g, name_trans)
+        new_graph, trans = graphutils.merge_flanks(
+            intervals, final_trans, g, name_trans)
 
         correct_structure = Graph(
             {
@@ -94,7 +96,8 @@ class TestExamples(unittest.TestCase):
             Interval(5, 6, [1], g),
             Interval(4, 5, [3], g)
         ]
-        new_graph, trans = e.merge_flanks(intervals, trans, new_graph, name_trans)
+        new_graph, trans = graphutils.merge_flanks(
+            intervals, trans, new_graph, name_trans)
 
         correct_structure = Graph(
             {
@@ -139,7 +142,7 @@ class TestExamples(unittest.TestCase):
         final_trans = Translation({}, {}, graph=g)
         final_trans.graph2 = g
         name_trans = Translation({}, {}, graph=g)
-        new_graph, trans = e.merge_flanks(intervals, final_trans, g, name_trans)
+        new_graph, trans = graphutils.merge_flanks(intervals, final_trans, g, name_trans)
 
 
         # MERGE SECOND ALT LOCUS
@@ -149,7 +152,7 @@ class TestExamples(unittest.TestCase):
             Interval(5, 6, [1], g),
             Interval(4, 5, [3], g)
         ]
-        new_graph, trans = e.merge_flanks(intervals, trans, new_graph, name_trans)
+        new_graph, trans = graphutils.merge_flanks(intervals, trans, new_graph, name_trans)
 
         correct_structure = Graph(
             {
@@ -193,7 +196,7 @@ class TestExamples(unittest.TestCase):
         alt_seq = "CCCTGGGAAA"
         main_seq = "CCCGGGTAAA"
         cigar = "M3 I1 M3 1D M3"
-        from offsetbasedgraph.graphutils import _merge_alt_using_cigar
+        from offsetbasedgraph.graphcreators import _merge_alt_using_cigar
         trans, new_graph = _merge_alt_using_cigar(graph, trans,
                                "chr1_test_alt",
                                cigar,
@@ -242,9 +245,9 @@ class TestExamples(unittest.TestCase):
         end = 21
 
         alt_seq = "GCCCCTTTTATTTTATTTTA"
-        main_seq ="G" +"TTTTGTTTTGTTTTA"
+        main_seq = "G" + "TTTTGTTTTGTTTTA"
         cigar = "1M 4I 15M"
-        from offsetbasedgraph.graphutils import _merge_alt_using_cigar
+        from offsetbasedgraph.graphcreators import _merge_alt_using_cigar
         trans, new_graph = _merge_alt_using_cigar(graph, trans,
                                "chr1_test_alt",
                                cigar,
