@@ -382,8 +382,7 @@ class Translation(object):
 
         return self._translate_interval_nontrivialv2(interval, inverse)
 
-
-    def tmp2(self, region_path, intervalt, interval, inverse):
+    def _find_rps_to_add_within_translated_interval(self, region_path, intervalt, interval, inverse):
         # Find out which of these rps should be added
         # Do not add region paths before the original interval
         intervalt_offset = intervalt.start_position.offset
@@ -467,7 +466,7 @@ class Translation(object):
                     # Find out which of these rps should be added
                     # Do not add region paths before the original interval
                     new_region_paths.extend(
-                        self.tmp2(region_path, intervalt, interval, inverse))
+                        self._find_rps_to_add_within_translated_interval(region_path, intervalt, interval, inverse))
 
         if is_simple:
             return SingleMultiPathInterval(
