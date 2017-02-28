@@ -11,79 +11,6 @@ from .gene import GeneList, Gene, MultiPathGene, FuzzyGene
 import sys
 
 
-def merge_flanks(intervals, final_trans, new_graph, name_translation):
-    """
-    Merges the start and end flanks represented in intervals on the given graph
-    :param intervals: List of start and end flanks to merge [start, start, end, end]
-    Intervals should be on first graph (i.e. name_translation.graph1)
-    :param final_trans: Trans that will be updated
-    :param new_graph: Current graph
-    :param name_translation: Translation from human readable names to numeric IDs. Can be an empty translation
-    :return: Returns the new graph and translation as a tuple
-    """
-    # Merge start flank of alt locus with main
-    merge_intervals = intervals[0:2]
-    merge_intervals = [name_translation.translate(i) for i in merge_intervals]
-    merge_intervals = [final_trans.translate(i) for i in merge_intervals]
-
-    for intv in merge_intervals:
-        intv.graph = new_graph
-    if merge_intervals[0].length() > 0:
-        new_graph, trans = new_graph.merge(merge_intervals)
-        final_trans += trans
-    else:
-        # Only connect by edge
-        new_graph, trans = new_graph.connect_postitions(
-            new_graph.prev_position(merge_intervals[0].start_position),
-            merge_intervals[1].start_position
-        )
-        final_trans += trans
-        final_trans.graph2 = new_graph.copy()
-        final_trans.graph2._update_a_b_graph(final_trans._a_to_b, new_graph)
-
-    # Merge end flank of alt locus with main
-
-    merge_intervals = intervals[2:4]
-
-    if merge_intervals[0].length() > 0:
-        merge_intervals = [final_trans.translate(name_translation.translate(i))
-                           for i in merge_intervals]
-        for intv in merge_intervals:
-            intv.graph = new_graph
-
-        new_graph, trans = new_graph.merge(merge_intervals)
-        final_trans += trans
-    else:
-        # Change position 1 back for alt loci
-        ig = name_translation.graph1
-        merge_intervals[1].start_position = \
-            ig.prev_position(merge_intervals[1].start_position)
-
-        merge_intervals = [final_trans.translate(name_translation.translate(i))
-                           for i in merge_intervals]
-
-        for intv in merge_intervals:
-            intv.graph = new_graph
-
-        # Only connect by edge
-        new_graph, trans = new_graph.connect_postitions(
-            merge_intervals[1].start_position,
-            new_graph.next_position(merge_intervals[0].start_position)
-        )
-
-        assert len(new_graph.adj_list[merge_intervals[1].start_position.region_path_id]) > 0
-
-        #print("=== end flank trans ===")
-        #print(trans)
-
-        final_trans += trans
-        final_trans.graph2 = new_graph.copy()
-        final_trans.graph2._update_a_b_graph(final_trans._a_to_b, new_graph)
-        #print("No end flank")
-
-    return new_graph, final_trans
-
-
 def _connect_without_flanks(graph, alt_loci_fn, name_translation):
     """
     Connects the alternative loci in the given file to the grch38 graph,
@@ -125,34 +52,6 @@ def _connect_without_flanks(graph, alt_loci_fn, name_translation):
     return new_graph, final_trans
 
 
-def connect_without_flanks(graph, alt_loci_fn, name_translation,
-                           filter_alt_loci=[]):
-    """
-    Connects the alternative loci in the given file to the grch38 graph,
-    without flanks.
-    :param alt_loci_fn: Filename of file containing alternative loci.
-    One alt locus on each line.
-    Four columns: alt_locus_id  chr chr_start   chr_stop
-    :param filter_alt_loci: If not empty, only these alt loci will be connected
-    :return: Returns the new graph
-    """
-    from .GRCH38 import AltLoci
-
-    alt_loci = AltLoci.from_file(alt_loci_fn, filter_alt_loci)
-    new_graph = graph
-    final_trans = Translation(graph=graph)
-    final_trans.graph2 = graph
-
-    for alt_locus in alt_loci.alt_loci:
-        if len(filter_alt_loci) > 0 and alt_locus.name not in filter_alt_loci:
-            #print("Skipping")
-            continue
-
-        new_graph, final_trans = merge_flanks(
-            [alt_locus.main_start_flank, alt_locus.start_flank,
-             alt_locus.main_end_flank, alt_locus.end_flank],
-            final_trans, new_graph, name_translation)
-    return new_graph, final_trans
 
 def create_subgraph_around_alt_locus(graph, trans, alt_locus, padding=200000, alt_loci_fn='grch38_alt_loci.txt'):
     """
