@@ -81,18 +81,13 @@ def align_cigar(cigar, main_interval, alt_interval, graph):
         assert alt_offset <= alt_interval.end_position.offset
         _id += 1
 
-    try:
-        if main_offset < graph.blocks[main_id].length():
-            main_rps.append(_id)
-            b_to_a[_id] = [MainInterval(main_offset,
-                                        graph.blocks[main_id].length())]
+    if main_offset < graph.blocks[main_id].length():
+        main_rps.append(_id)
+        b_to_a[_id] = [MainInterval(main_offset,
+                                    graph.blocks[main_id].length())]
 
-            main_n = graph.blocks[main_id].length()-main_offset
-            _id += 1
-    except KeyError:
-        print(graph.blocks)
-        print(main_id)
-        raise
+        main_n = graph.blocks[main_id].length()-main_offset
+        _id += 1
 
     alt_len = graph.blocks[alt_id].length()
     if alt_offset < alt_len:
@@ -172,8 +167,8 @@ def clean_cigar(cigar, alt_seq, main_seq):
             var_type = first
             n = int(c[1:])
         else:
-            var_type = c[-1]
-            n = int(c[:-1])
+            raise ValueError("Invalid cigar string. Should only contain letters I, D or M.")
+
         if var_type == "I":
             alt_offset += n
             cleaned_cigar.append((var_type, n))

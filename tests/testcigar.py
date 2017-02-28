@@ -22,6 +22,12 @@ class TestCigar(unittest.TestCase):
         answer = clean_cigar(cigar, seq_alt, seq_main)
         self.assertEqual(answer, fasit)
 
+    def test_clean_invalid_cigar(self):
+        cigar = " ".join(("D1", "Q2", "I2"))
+        seq_main = "".join(["A", "CGT", "CGTA"])
+        seq_alt = "".join(["CAT", "GG", "CGGG"])
+        self.assertRaises(ValueError, clean_cigar, cigar, seq_alt, seq_main)
+
     def test_align_cigar(self):
         cigar = [("D", 1), ("M", 1), ("V", 1), ("M", 1),
                  ("I", 2), ("M", 2), ("V", 2)]

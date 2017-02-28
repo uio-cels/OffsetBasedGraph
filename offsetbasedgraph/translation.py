@@ -258,81 +258,13 @@ class Translation(object):
                 for f in my_firsts:
                     rev_edges[f].extend([l for l in lasts if f != l])
 
-    def _translate_subgraph_edges(self, subgraph, copy_graph):
-        edge_list_add = []
-
-        # Translate all edges
-        for edge in subgraph.get_edges_as_list():
-            block1, block2 = edge
-
-            # Do not translate if block1 and block2 translates to themselves
-            """if self._translations(block1, inverse=False) == block1 and \
-                    self._translations(block2, inverse=False) == block2:
-                print("Identical translation")
-                continue
-            """
-            if block1 not in self._a_to_b and block2 not in self._a_to_b:
-                edge_list_add.append((block1, block2))
-                continue
-
-            interval = Interval(0, subgraph.blocks[block2].length(),
-                                [block1, block2], subgraph)
-
-            translated = self.translate_interval(
-                interval).get_single_path_intervals()
-            assert len(translated) <= 1, \
-                "Only translations to one interval supported. %d returned" \
-                % len(translated)
-            translated = translated[0]
-            edge_list_add.extend(translated.get_adj_list())  # Add these later
-
-        return edge_list_add
-
     def _copy_blocks(self, subgraph):
         new_blocks = subgraph.blocks.copy()
         for b in self._a_to_b:
             del new_blocks[b]
         return new_blocks
 
-    def _translate_subgraph_blocksv3(self, subgraph, new_adj, copy_graph):
-        # from .graph import Block
-
-        if copy_graph:
-            new_blocks = self._copy_blocks(subgraph)
-        else:
-            new_blocks = subgraph.blocks
-
-
-        # Add blocks sthat should be translated
-        for block in self._a_to_b:
-
-            if block not in subgraph.blocks:
-                continue
-
-            translated = self._translations(block, inverse=False)
-            assert len(translated) <= 1, \
-                "Only translations to max 1 interval supported. %d returned" \
-                % (len(translated))
-            translated = translated[0]
-            for rp in translated.region_paths:
-                if rp not in new_blocks:
-                    new_blocks[rp] = self.block_cls(
-                        self._translations(rp, inverse=True)[0].length())
-
-            #edge_list_add.extend(translated.get_adj_list())  # Add these later
-            for e1, e2 in translated.get_adj_list():
-                if e1 in new_adj:
-                    new_adj[e1].append(e2)
-                else:
-                    new_adj[e1] = [e2]
-
-
-            #if not copy_graph:
-            #del new_blocks[block]
-
-        return new_blocks, new_adj
-
-    def _translate_subgraph_blocksv2(self, subgraph, edge_list_add, copy_graph):
+    def _translate_subgraph_blocks(self, subgraph, edge_list_add, copy_graph):
         # from .graph import Block
 
         if copy_graph:
@@ -361,30 +293,6 @@ class Translation(object):
 
             #if not copy_graph:
             #del new_blocks[block]
-
-        return new_blocks, edge_list_add
-
-
-    def _translate_subgraph_blocks(self, subgraph, edge_list_add):
-        # from .graph import Graph, Block
-        new_blocks = {}
-        # Translate all blocks
-        for block in subgraph.blocks:
-
-            if block not in self._a_to_b:
-                new_blocks[block] = self.block_cls(subgraph.blocks[block].length())
-                continue
-
-            translated = self._translations(block, inverse=False)
-            assert len(translated) <= 1, \
-                "Only translations to max 1 interval supported. %d returned" \
-                % (len(translated))
-            translated = translated[0]
-            for rp in translated.region_paths:
-                new_blocks[rp] = self.block_cls(
-                    self._translations(rp, inverse=True)[0].length())
-                # translated.graph.blocks[rp].length())
-            edge_list_add.extend(translated.get_adj_list())  # Add these later
 
         return new_blocks, edge_list_add
 
@@ -417,7 +325,6 @@ class Translation(object):
         Also, translate every region path and add edges and region paths found
         """
         edge_list_add = []
-        #edge_list_add = self._translate_subgraph_edges(subgraph, copy_graph)
 
 
         edges, rev_edges = self.get_old_edges(subgraph)
@@ -428,9 +335,7 @@ class Translation(object):
         for k, v in rev_edges.items():
             rev_edges[k] = list(set(v))
 
-        # edge_list_add = self._translate_subgraph_edges(subgraph, copy_graph)
-
-        new_blocks, edge_list_add = self._translate_subgraph_blocksv2(
+        new_blocks, edge_list_add = self._translate_subgraph_blocks(
             subgraph, [], copy_graph)
 
         # Add all edges we have found
@@ -477,41 +382,7 @@ class Translation(object):
 
         return self._translate_interval_nontrivialv2(interval, inverse)
 
-    def tmp(self, region_path, intervalt, interval, inverse):
-        # Find out which of these rps should be added
-        # Do not add region paths before the original interval
-        intervalt_offset = intervalt.start_position.offset
-        offset = 0
-        new_region_paths = []
-        for rp in intervalt.region_paths:
-            if inverse:
-                assert intervalt.graph is not None, intervalt
-                assert rp in intervalt.graph.blocks, \
-                    "region path %s in interval %s does not exist in graph %s" % (
-                        rp, intervalt, intervalt.graph)
-                length = intervalt.graph.blocks[rp].length()
-            else:
-                length = self._translations(rp, True)[0].length()
-
-            # If first region path
-            is_first = interval.region_paths[0] == region_path
-            is_tmp = offset + length - intervalt_offset <= interval.start_position.offset
-            if is_first and is_tmp:
-                offset += length
-                continue
-
-            # If last region path
-            is_last = interval.region_paths[-1] == region_path
-            if is_last and offset - intervalt_offset >= interval.end_position.offset:
-                offset += length
-                continue
-            new_region_paths.append(rp)
-
-            offset += length
-
-        return new_region_paths
-
-    def tmp2(self, region_path, intervalt, interval, inverse):
+    def _find_rps_to_add_within_translated_interval(self, region_path, intervalt, interval, inverse):
         # Find out which of these rps should be added
         # Do not add region paths before the original interval
         intervalt_offset = intervalt.start_position.offset
@@ -595,7 +466,7 @@ class Translation(object):
                     # Find out which of these rps should be added
                     # Do not add region paths before the original interval
                     new_region_paths.extend(
-                        self.tmp(region_path, intervalt, interval, inverse))
+                        self._find_rps_to_add_within_translated_interval(region_path, intervalt, interval, inverse))
 
         if is_simple:
             return SingleMultiPathInterval(
