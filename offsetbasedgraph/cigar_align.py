@@ -81,18 +81,13 @@ def align_cigar(cigar, main_interval, alt_interval, graph):
         assert alt_offset <= alt_interval.end_position.offset
         _id += 1
 
-    try:
-        if main_offset < graph.blocks[main_id].length():
-            main_rps.append(_id)
-            b_to_a[_id] = [MainInterval(main_offset,
-                                        graph.blocks[main_id].length())]
+    if main_offset < graph.blocks[main_id].length():
+        main_rps.append(_id)
+        b_to_a[_id] = [MainInterval(main_offset,
+                                    graph.blocks[main_id].length())]
 
-            main_n = graph.blocks[main_id].length()-main_offset
-            _id += 1
-    except KeyError:
-        print(graph.blocks)
-        print(main_id)
-        raise
+        main_n = graph.blocks[main_id].length()-main_offset
+        _id += 1
 
     alt_len = graph.blocks[alt_id].length()
     if alt_offset < alt_len:
