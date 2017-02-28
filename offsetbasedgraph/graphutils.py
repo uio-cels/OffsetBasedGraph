@@ -331,7 +331,6 @@ def get_alt_loci_positions(alt_loci_file_name):
 
     alt_loci = {}
     for line in f.readlines():
-        print(line)
         if line.startswith("#"):
             continue
         l = line.split()
@@ -347,6 +346,7 @@ def get_alt_loci_positions(alt_loci_file_name):
                 "length": length
              }
 
+    f.close()
     return alt_loci
 
 

@@ -16,10 +16,6 @@ class GeneList(object):
         with open("%s" % file_name, "wb") as f:
             pickle.dump(self, f)
 
-    def translate(self, T):
-        t_gene_list = [gene.translate(T) for gene in self.gene_list]
-        return GeneList(t_gene_list)
-
     @staticmethod
     def from_pickle(file_name):
         with open("%s" % file_name, "rb") as f:
@@ -105,7 +101,6 @@ class Gene(GeneBase):
                     self.strand,
                     )
 
-    ###### Should be elswere
     def multiple_alt_loci(self):
         """
         Returns true if gene stretches over multiple alt loci.
@@ -201,11 +196,6 @@ class Gene(GeneBase):
             return False
 
         return all(e1 == e2 for e1, e2 in zip(self.exons, other.exons))
-#
-#        for exon in self.exons:
-#            if exon not in other.exons:
-#                return False
-#
         return True
 
     def to_file_line(self):
@@ -243,36 +233,6 @@ class Gene(GeneBase):
         transcription_region = cls.parse_transcript_region(transcript_string)
         exons = cls.parse_exons(exons_string)
 
-    def start_and_end_diffs(self, other):
-        my_interval = self.transcription_region
-        other_interval = other.transcription_region
-        start_diff = 0
-        end_diff = 0
-        if my_interval.region_paths[0] == other_interval.region_paths[0]:
-            start_diff = abs(my_interval.start_position.offset - other_interval.start_position.offset)
-        else:
-            start_diff = -1
-
-        if my_interval.region_paths[-1] == other_interval.region_paths[-1]:
-            end_diff = abs(my_interval.end_position.offset - other_interval.end_position.offset)
-        else:
-            end_diff = -1
-        return (start_diff, end_diff)
-
-    def exon_diffs(self, other):
-        if len(self.exons) != len(other.exons):
-            return None
-        diff_sum = 0
-        for exon1, exon2 in zip(self.exons, other.exons):
-            if exon1.region_paths == exon2.region_paths:
-                s_diff = exon1.start_position.offset - exon2.start_position.offset
-                e_diff = exon1.end_position.offset-exon2.end_position.offset
-                diff_sum += abs(s_diff)+abs(e_diff)
-            else:
-                diff_sum += abs(exon1.length()-exon2.length())
-
-        return diff_sum/len(self.exons)
-
     def approxEquals(self, other, tolerance=0):
         if not len(self.exons) == len(other.exons):
             return False
@@ -280,29 +240,6 @@ class Gene(GeneBase):
         other_regions = [other.transcription_region] + other.exons
         return all(my_reg.approx_equals(other_reg) for
                    my_reg, other_reg in zip(my_regions, other_regions))
-
-    def contains(self, other, tolerance=0):
-        """Checks if self contains other. Allows
-        mismatch in start and end coordinated up to 
-        tolerance
-
-        :param other: Other gene
-        :param tolerance: bps allowed discrepancy
-        :returns: Wheter self contains other
-        :rtype: bool
-
-        """
-        if not self.transcription_region.contains(
-                other.transcription_region, tolerance):
-            return False
-        cur_i = 0
-        for exon in other.exons:
-            while not self.exons[cur_i].contains(exon, tolerance):
-                cur_i += 1
-                if cur_i == len(self.exons):
-                    return False
-            cur_i += 1
-        return True
 
     def get_contained_pairs(self, other, tolerance=0):
         pairs = []
@@ -314,52 +251,3 @@ class Gene(GeneBase):
             assert len(containers) == 1
             pairs.append((containers[0], exon))
         return pairs
-
-    def partition_region_paths(self, region_paths=[]):
-        """Partition the gene into one part for each
-        region paths. Splits the transcription_region and
-        the exons, but NB! not the coding region
-
-        :returns: list of gene-parts
-        :rtype: list(Gene)
-
-        """
-        rps = self.transcription_region.region_paths
-        if len(rps) == 0:
-            return [self]
-
-        transcription_regions = self.transcription_regions.partition_region_paths()
-        exon_partitions = chain([exon.partition_region_paths()
-                                 for exon in self.exons])
-
-        rps = [tr.region_paths[0] for tr in transcription_regions]
-        exons_per_rp = {rp: [e for e in exon_partitions
-                             if e.region_paths[0] == rp]
-                        for rp in rps}
-        gene_partitions = []
-        for rp, tr in zip(rps, transcription_regions):
-            gene_partitions.append(
-                Gene(self.name, tr, exons_per_rp[rp],
-                     self.coding_region, self.strand))
-
-        return gene_partitions
-
-    def is_cut_version(self, other, tolerance=0):
-        """Check if other is made from cutting self
-        at the edge of the alt loci
-
-        :param other: alt-gene
-        :param tolerance: number of base-pair tolerance
-        :returns: whether other is cut
-        :rtype: bool
-
-        """
-        # Check transcription_region
-
-        f_tx_region = other.transcription_region.filter_to_main()
-        if f_tx_region is None:
-            return False
-        f_exons = [e.filter_to_main() for e in other.exons]
-        f_exons = [e for e in f_exons if e is not None]
-        f_gene = Gene("f" + other.name, f_tx_region, f_exons)
-        return self.contains(f_gene, tolerance)
