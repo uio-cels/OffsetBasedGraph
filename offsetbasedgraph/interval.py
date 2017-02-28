@@ -2,6 +2,7 @@
 class Position(object):
     """
     Represents a position  in the graph
+    >>> Position("chr1-1", 100)
     """
     def __init__(self, region_path_id, offset):
         """
@@ -93,9 +94,11 @@ class BaseInterval(object):
 
 class Interval(BaseInterval):
     """
-    Interval(Position("chr1-0", 10), Position("chr1-1", 100),\
-    ["chr1-0", "alt, "chr1-1"]))
+    Represents an interval on a graph
+    >>> Interval(Position("chr1-0", 10), Position("chr1-1", 100),
+                          ["chr1-0", "alt, "chr1-1"]), graph)
     """
+
     def __init__(self, start_position, end_position,
                  region_paths=None, graph=None):
         """Initialize interval with either:
