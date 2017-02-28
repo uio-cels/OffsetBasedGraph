@@ -20,9 +20,6 @@ class Position(object):
     def copy(self):
         return Position(self.region_path_id, self.offset)
 
-    def __deepcopy__(self, memo):
-        return Position(self.region_path_id, self.offset)
-
 
 class BaseInterval(object):
 
@@ -114,65 +111,6 @@ class Interval(BaseInterval):
 
         self.length_cache = None
 
-    def starts_at_rp(self):
-        return self.start_position.offset == 0
-
-    def ends_at_rp(self):
-        rp_end = self.graph.blocks[self.end_position.region_path_id].length()
-        self.end_position.offset == rp_end
-
-    def intersect(self, other):
-        """Should be implemented"""
-        raise NotImplementedError()
-
-    def split(self, offsets):
-        """Split the interval at the given offsets
-
-        :param offsets: list of int
-        :returns: list of intervals
-        :rtype: list
-
-        """
-        split_points = [self.get_position_from_offset(offset) for offset
-                        in offsets]
-        region_path_idxs = {rp: i for i, rp in enumerate(self.region_paths)}
-        split_intervals = []
-
-        starts = [self.start_position] + split_points
-        ends = split_points + [self.end_position]
-
-        for start_pos, end_pos in zip(starts, ends):
-            start_idx = region_path_idxs[start_pos.region_path_id]
-            end_idx = region_path_idxs[end_pos.region_path_id]
-            region_paths = self.region_paths[start_idx:end_idx+1]
-            split_intervals.append(Interval(start_pos, end_pos, region_paths))
-
-        return split_intervals
-
-    def join(self, other):
-        """Create new interval as union of self and other
-        other must start at self.end_position
-
-        :param other: Interval
-        :returns: joined interval
-        :rtype: Interval
-
-        """
-
-        assert self.end_position == other.start_position
-        region_paths = self.region_paths[:-1] + other.region_paths
-        return Interval(self.start_position, other.end_position, region_paths)
-
-    def filter_to_main(self):
-        filtered_rps = [rp for rp in self.region_paths if
-                        self.graph.is_main_name(rp)]
-        if not filtered_rps:
-            return None
-        start_offset = self.start_position.offset if self.graph.is_main_name(self.region_paths[0]) else 0
-
-        end_offset = self.end_position.offset if self.graph.is_main_name(self.region_paths[-1]) else self.graph.blocks[filtered_rps[-1]].length()
-        return Interval(start_offset, end_offset, filtered_rps)
-
     def contains_rp(self, rp):
         return (rp in self.region_paths)
 
@@ -196,15 +134,6 @@ class Interval(BaseInterval):
             if other.end_position.offset > self.end_position.offset + tolerance:
                 return False
 
-        return True
-
-    def approx_equals(self, other, tolerance=0):
-        if not self.region_paths == other.region_paths:
-            return False
-        if abs(self.start_position.offset-other.start_position.offset) > tolerance:
-            return False
-        if abs(self.end_position.offset-other.end_position.offset)>tolerance:
-            return False
         return True
 
     def __deepcopy__(self, memo):
@@ -235,32 +164,6 @@ class Interval(BaseInterval):
             self.start_position,
             self.end_position, self.region_paths,
             graph, self.length_cache if self.length_cache is not None else 0)
-
-    def diff(self, other):
-        codes = []
-        for rp in self.region_paths:
-            if any(o_rp == rp for o_rp in other.region_paths):
-                codes.append("E")
-            elif any(self.graph.are_paralell(rp, o_rp) for
-                     o_rp in other.region_paths):
-                codes.append("P")
-            else:
-                codes.append("N")
-        return codes
-
-        codes = []
-        if not any(rp in other.region_paths for rp in self.region_paths):
-            return ["D"]
-        if len(self.region_paths) != len(other.region_paths):
-            codes.append("dl")
-        if self.region_paths[0] != other.region_paths[0]:
-            codes.append("ds")
-        if self.region_paths[-1] != other.region_paths[-1]:
-            codes.append("de")
-        if len(self.region_paths) > 2 and len(other.region_paths) > 2:
-            if self.region_paths[1] != other.region_paths[1]:
-                codes.append("dm")
-        return codes
 
     def get_position_from_offset(self, offset, rp_lens=None):
         """Get position of with offset counted from the start of
@@ -296,48 +199,3 @@ class Interval(BaseInterval):
                 adjs.append((prev, rp))
             prev = rp
         return adjs
-
-    def partition_region_paths(self, region_paths=[]):
-        """Split the interval into one interval
-        for each region path
-
-        :returns: list of single-rp intervals
-        :rtype: list(Interval)
-
-        """
-        rps = self.region_paths
-        start = self.start_position.offset
-        partitions = []
-
-        for rp in rps:
-            if rp == rps[-1]:
-                end = self.end_position.offset
-            else:
-                end = self.graph.blocks[rp].length()
-            partitions.append(Interval(start, end, [rp]))
-            start = 0
-
-        return partitions
-
-
-def interval_factory(graph):
-    """Create function that initializes
-    intervals without specifying the graph
-    every time
-
-    :param graph: The graph for the intervals
-    :returns: initializer for Interval
-    :rtype: func
-
-    """
-    def get_interval(*args, **kwargs):
-        """Initialize an interval with the specified graph
-
-        :returns: 
-        :rtype: Interval
-
-        """
-        kwargs["graph"] = graph
-        return Interval(*args, **kwargs)
-
-    return get_interval
