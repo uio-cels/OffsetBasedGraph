@@ -8,26 +8,14 @@ import os
 
 class Block(object):
     def __init__(self, length):
-
         assert length > 0
-
         self._length = length
 
     def length(self):
         return self._length
 
-    def to_interval(self):
-        pass
-
     def __eq__(self, other):
         return self.length() == other.length()
-
-    def __str__(self):
-
-        return "B(%s)" % self._length
-
-    def __repr__(self):
-        return self.__str__()
 
 
 class Graph(object):
@@ -52,9 +40,6 @@ class Graph(object):
 
         self._id = max([b for b in blocks if isinstance(b, int)] + [-1])
 
-        if isinstance(self._id, str):
-            self._id = 0
-
     def copy(self):
         """Make a copy of the graph
 
@@ -66,11 +51,8 @@ class Graph(object):
         new_adjs = {}
         for b in self.blocks:
             new_blocks[b] = Block(self.blocks[b].length())
-        # new_blocks = copy.copy(self.blocks)
-
         for b in self.adj_list:
             new_adjs[b] = list(self.adj_list[b])
-        # new_adjs = self.adj_list.copy()
 
         new_graph = Graph(new_blocks, new_adjs, True)
         return new_graph
@@ -109,58 +91,6 @@ class Graph(object):
         with open("%s" % file_name, "wb") as f:
             pickle.dump(self, f)
 
-    def get_edges_as_list(self):
-        """
-        :return: Returns edges as tuples (from, to) in a list
-        """
-        edges = []
-        for block in self.adj_list:
-            for to in self.adj_list[block]:
-                edges.append((block, to))
-
-        return edges
-
-    @staticmethod
-    def _generate_translation(interval_a, interval_b,
-                              sub_intervals_a, sub_intervals_b, ids):
-
-        reverse_dict = {ids: list(pair)
-                        for pair in zip(sub_intervals_a, sub_intervals_b)}
-
-        involved_region_paths = interval_a.region_paths+interval_b.region_paths
-        front_dict = {rp: [i for i in sub_intervals_a+sub_intervals_b
-                           if rp in i.region_paths]
-                      for rp in set(involved_region_paths)}
-
-        return Translation(front_dict, reverse_dict)
-
-    def _get_edges_to_subintervals(self, intervals):
-        """Return a list of incoming and outgoing edges at the
-        divisions between the sub_intervals
-
-        :param intervals: list of consecutive intervals
-        :returns: incoming_edges, outgoing_edges
-        :rtype: (list, list)
-
-        """
-        pre_edges = []
-        post_edges = []
-        for i_pre, i_post in zip(intervals[:-1], intervals[1:]):
-            if not i_post.starts_at_rp():
-                post_edges.append([])
-                pre_edges.append([])
-                continue
-            pre_rps = self.reverse_adj_list[i_post.region_paths[0]]
-            pre_edges.append(
-                [rp for rp in pre_rps if rp != i_pre.region_paths[-1]]
-                )
-
-            post_rps = self.adj_list[i_pre.region_paths[-1]]
-            post_edges.append(
-                [rp for rp in post_rps if rp != i_post.region_paths[0]])
-
-        return pre_edges, post_edges
-
     def get_first_blocks(self):
         """
         :param graph: Graph
@@ -184,17 +114,6 @@ class Graph(object):
                 lasts.append(b)
 
         return lasts
-
-    @staticmethod
-    def intervals_contains_rp(rp, intervals):
-        """
-        Returns true if any of the intervals cover rp
-        """
-        for i in intervals:
-            if rp in i.region_paths:
-                return True
-
-        return False
 
     def create_subgraph_from_intervals(self, intervals, padding=10000,
                                        alt_locus=None, base_trans=None):
@@ -232,7 +151,7 @@ class Graph(object):
 
             start_position = Position(first_rp, 0)
 
-            if not Graph.intervals_contains_rp(first_rp, intervals):
+            if not any(interval.contains_rp(first_rp) for interval in intervals):
                 # If only one edge out, delete this one
                 if len(self.adj_list[first_rp]) == 1:
                     subgraph.remove(first_rp)
@@ -280,7 +199,7 @@ class Graph(object):
             last_rps = subgraph.get_last_blocks()
             last_rp = last_rps[0]
 
-            if not Graph.intervals_contains_rp(last_rp, intervals):
+            if not any(interval.contains_rp(last_rp) for interval in intervals):
                 # If only one edge out, delete this one
                 if len(self.reverse_adj_list[last_rp]) == 1:
                     subgraph.remove(last_rp)
@@ -421,120 +340,6 @@ class Graph(object):
         self.adj_list[block_a].append(block_b)
         self.reverse_adj_list[block_b].append(block_a)
 
-    def _join_blocks(self, block_ids):
-        """Merge the given blocks in the graph and
-        giving them the combination of all edges.
-
-        :param block_ids: block ids of blocks to merge
-        :returns: translation object
-        :rtype: Translation
-
-        """
-        if not block_ids:
-            return Translation()
-        lens = [self.blocks[_id].length() for _id in block_ids]
-        L = lens[0]
-        assert all(l == L for l in lens)
-
-        # Find all incoming and outgoing edges
-        in_edges = set()
-        out_edges = set()
-        for block_id in block_ids:
-            in_edges.update(self.reverse_adj_list[block_id])
-            out_edges.update(self.adj_list[block_id])
-
-        # Add the new block
-        new_id = self._next_id()
-        self.blocks[new_id] = Block(L)
-        for block_id in out_edges:
-            self._add_edge(new_id, block_id)
-        for block_id in in_edges:
-            self._add_edge(block_id, new_id)
-
-        # Remove old blocks
-        for block_id in block_ids:
-            self.remove(block_id)
-
-        # Create translation object
-        translation = Translation(
-            {block_id: [Interval(Position(new_id, 0), Position(new_id, L))]
-             for block_id in block_ids},
-            {new_id:
-             [Interval(Position(block_id, 0), Position(block_id, L))
-              for block_id in block_ids]})
-
-        return translation
-
-    def _split_block(self, block_id, offsets):
-        """Splits the given block at offsets
-        and return translation object
-
-        :param block_id: block to split
-        :param offset: where to split
-        :returns: translation object
-        :rtype: Translation
-
-        """
-        l = self.blocks[block_id].length()
-        if not offsets:
-            return Translation()
-
-        # Add blocks
-        blocks = [Block(b-a) for a, b in zip([0]+offsets, offsets+[l])]
-        ids = [self._next_id() for _ in blocks]
-        self.blocks.update(dict(zip(ids, blocks)))
-
-        # Add edges
-        for id1, id2 in zip(ids[:-1], ids[1:]):
-            self._add_edge(id1, id2)
-
-        for e in self.adj_list[block_id]:
-            self._add_edge(ids[-1], e)
-        for e in self.reverse_adj_list[block_id]:
-            self._add_edge(e, ids[0])
-
-        self.remove(block_id)
-
-        # Set translation
-        return Translation(
-            {block_id:
-             [Interval(
-                 Position(ids[0], 0),
-                 Position(ids[-1], blocks[-1].length()),
-                 ids)]},
-            {_id: [Interval(Position(block_id, offset),
-                            Position(block_id, offset+block.length()))]
-             for _id, block, offset, in zip(ids, blocks, [0]+offsets)}
-        )
-
-    def get_split_translation(self, rp, offset):
-
-        id_a, id_b = (self._next_id(), self._next_id())
-        L = self.blocks[rp].length()
-        trans_dict = {}
-        reverse_dict = {}
-        trans_dict[rp] = [Interval(
-            Position(id_a, 0),
-            Position(id_b, L-offset))]
-
-        reverse_dict[id_a] = [Interval(Position(rp, 0),
-                                       Position(rp, offset),
-                                       graph=self)]
-
-        reverse_dict[id_b] = [Interval(Position(rp, offset),
-                                       Position(rp, L),
-                                       graph=self)]
-
-        trans = Translation(trans_dict, reverse_dict, graph=self)
-
-        new_graph = trans.translate_subgraph(self)
-        trans.graph2 = new_graph
-        for i_list in trans_dict.values():
-            for i in i_list:
-                i.graph = new_graph
-
-        return new_graph, trans
-
     def connect_postitions(self, position_a, position_b):
         """Connect position_a to position_b with an edge
         and split the region paths if necessary.
@@ -616,47 +421,6 @@ class Graph(object):
             # Find next region path
             next = self.adj_list[pos.region_path_id][0]
             return Position(next, 0)
-
-    def _get_insulated_merge_transformation(self, intervals):
-        """Merge intervals that all start and end at region path
-        boundries
-
-        :param intervals:
-        :returns: translation and new graph
-        :rtype: (Translation, Graph)
-
-        """
-        first_rps = [i.region_paths[0] for i in intervals]
-        offset = min(self.blocks[rp].length() for rp in first_rps)
-        if offset == intervals[0].length():
-            return Translation(graph=self), self
-
-        translation = Translation(graph=self)
-        graph = self
-        for rp in first_rps:
-            if self.blocks[rp].length() == offset:
-                continue
-            trans, graph = graph.get_split_translation(rp, offset)
-            translation += trans
-
-        intervals = [translation.translate(i) for i in intervals]
-        first_rps = [i.region_paths[0] for i in intervals]
-
-        merge_id = graph._next_id()
-        a_to_b = {rp: [Interval(Position(merge_id, 0),
-                                Position(merge_id, offset),
-                                )]
-                  for rp in first_rps}
-        b_to_a = {merge_id: [Interval(Position(rp, 0),
-                                      Position(rp, offset),
-                                      graph=graph)]}
-
-        merge_trans = Translation(a_to_b, b_to_a, graph=graph)
-        intervals = [merge_trans.translate(i) for i in intervals]
-        full_trans = translation + merge_trans
-        new_graph = full_trans.translate_subgraph(graph)
-        trans, ng = new_graph._get_insulated_merge_translation(intervals)
-        return full_trans+trans, ng
 
     def _get_inslulate_translation(self, intervals, block_lengths={}):
         """Get translation for splitting the region paths
@@ -929,92 +693,6 @@ class Graph(object):
         final_trans.graph2 = final_graph
 
         return final_graph, final_trans
-
-    def _split_blocks_at_starts_and_ends(self, intervals):
-        """
-        Splits the region paths at the starts and ends of the
-        intervals, such that all the intervals starts at the
-        beginning of the intervals
-
-        :param intervals: list(intervals)
-        :returns: full translation for all block splits
-        :rtype: Translation
-
-        """
-        full_translation = Translation()
-
-        # Split starts
-        for interval in intervals:
-            offset = interval.start_position.offset
-            if offset == 0:
-                continue
-            rp = interval.region_paths[0]
-            full_translation += self._split_block(rp, [offset])
-
-        for interval in intervals:
-            end_offset = interval.end_position.offset
-            rp = interval.end_position.region_path_id
-            L = self.blocks[rp]
-            if end_offset == L:
-                continue
-            full_translation += self.split_block(rp, [offset])
-
-        return full_translation
-
-    @takes(Interval, Interval)
-    def merge_intervals(self, interval_a, interval_b, copy=True):
-        """
-        Merge the two intervals in the graph and return
-        a translation object
-
-        :param interval_a: One interval
-        :param interval_b: One interval
-        :returns: translation from old to new graph
-        :rtype: Translation
-
-        """
-        assert interval_a.length() == interval_b.length()
-        assert not any(rp_a in interval_b.region_paths
-                       for rp_a in interval_a.region_paths)
-        break_points = self._get_all_block_borders(
-            interval_a,
-            interval_b)
-
-        sub_intervals_a = interval_a.split(break_points)
-        sub_intervals_b = interval_b.split(break_points)
-
-        ids = (self._next_id() for _ in sub_intervals_a)
-        translation = self._generate_translation(
-            interval_a, interval_b,
-            sub_intervals_a, sub_intervals_b,
-            ids)
-
-        return translation
-
-    def _get_all_block_borders(self, interval_a, interval_b):
-        """Return a list of block changes in both a and b
-
-        :param interval_a: Interval
-        :param interval_b: Interval
-        :returns: list of all break_points
-        :rtype: list
-
-        """
-        break_points = []
-        for interval in [interval_a, interval_b]:
-            offset = -interval.start_position.offset
-            for region_path in interval.region_paths[:-1]:
-                offset += self.blocks[region_path].length()
-                break_points.append(offset)
-            offset += interval.end_position.offset
-            break_points.append(offset)
-
-        unique_points = sorted(set(break_points))
-        return unique_points
-
-    @takes(Interval, Interval)
-    def connect_intervals(self, interval_a, interval_b):
-        pass
 
     def __str__(self):
         return "Graph: \n Blocks: %s\n Edges: %s" % \
