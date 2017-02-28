@@ -1,6 +1,5 @@
 from collections import defaultdict
 from .interval import Interval, Position
-from .util import takes
 from .translation import Translation
 import pickle
 import os
@@ -789,66 +788,6 @@ class Graph(object):
             critical_blocks.append(cur_block)
 
         return critical_blocks
-
-    def find_previous_critical_block(self, block, critical_blocks=None):
-        """Find previous critical block, going backwards from block.
-        Traverse blocks and return once a block in critical_blocks
-        is found.
-
-        :param block: block to start from
-        :param critical_blocks: list of critical blocks
-        :returns: previous critical block
-        :rtype: str
-
-        """
-        if critical_blocks is None:
-            critical_blocks = self.critical_blocks
-
-        if block in critical_blocks:
-            return block
-        cur_block = block
-        while self.reverse_adj_list[cur_block]:
-            prevs = self.reverse_adj_list[cur_block]
-            if not prevs:
-                raise Exception("No prevs: %s" % prevs)
-
-            prev_block = prevs[0]
-
-            if prev_block in critical_blocks:
-                return prev_block
-
-            cur_block = prev_block
-
-        raise Exception("Did not find critical node from %s" % block)
-
-    def find_next_critical_block(self, block, critical_blocks):
-        if block in critical_blocks:
-            return block
-        cur_block = block
-        while self.adj_list[cur_block]:
-            prevs = self.adj_list[cur_block]
-            prev_mains = [b for b in prevs]
-            if not prev_mains:
-                raise Exception("No prevs: %s" % prevs)
-
-            prev_main_block = prev_mains[0]
-
-            if prev_main_block in critical_blocks:
-                return prev_main_block
-            cur_block = prev_main_block
-
-        raise Exception("No critical blocks found")
-
-    def are_paralell(self, block_a, block_b, critical_blocks=None):
-        if critical_blocks is None:
-            critical_blocks = self.critical_blocks
-        if block_a == block_b:
-            return True
-        critical_block_a = self.find_previous_critical_block(
-            block_a, critical_blocks)
-        critical_block_b = self.find_previous_critical_block(
-            block_b, critical_blocks)
-        return critical_block_a == critical_block_b
 
     def find_parallell_blocks(self, blocks, filter_func):
         """Find all parallell_blocks to block
