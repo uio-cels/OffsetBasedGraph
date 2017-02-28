@@ -1,0 +1,15 @@
+# NB: This code takes time to run, as remote sequence data needs to be downloaded.
+
+from offsetbasedgraph.graphutils import *
+
+graph = create_initial_grch38_graph("grch38.chrom.sizes")
+numeric_graph, name_translation = convert_to_numeric_graph(graph)
+new_numeric_graph, numeric_translation = connect_without_flanks(
+    numeric_graph, "grch38_alt_loci.txt", name_translation)
+name_graph, new_name_translation = convert_to_text_graph(
+    new_numeric_graph, name_translation, numeric_translation)
+final_translation = name_translation + numeric_translation + new_name_translation
+final_translation.graph2 = name_graph
+final_translation.to_file("grch38.graph")
+
+grch38_graph_with_flanks = name_graph

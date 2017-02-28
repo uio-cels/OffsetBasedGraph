@@ -322,4 +322,10 @@ def fuzzy_gene_analysis(genes, text_graph, ncbi_alignments_dir,
         equal_total += analyze_multipath_genes_for_alt(
             b, alt_loci_genes, main_genes, graph, name_trans,
             ncbi_alignments_dir)
-    print(equal_total)
+
+        print()
+
+    print("RESULTS:")
+    print("%d genes on alternative loci have identical representation as at least one gene from the main chromosome." % equal_total)
+    print("In total %d genes on alt loci" % len(alt_loci_genes))
+

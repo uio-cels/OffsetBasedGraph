@@ -430,8 +430,9 @@ class Translation(object):
         return Translation(new_ab, new_ba, graph=g)
 
     def __repr__(self):
-        return "b to a: \n  " + str(self._b_to_a) +\
-            "\na to b: \n   " + str(self._a_to_b)
+        return "reverse translations: \n  " + str(self._b_to_a) +\
+               "\nforward translation: \n   " + str(self._a_to_b)
+
 
     __str__ = __repr__
 
