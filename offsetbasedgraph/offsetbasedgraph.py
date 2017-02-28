@@ -3,7 +3,6 @@ from __future__ import print_function
 from collections import defaultdict
 from .graphinterval import GraphInterval
 from .regionpath import RegionPath
-from .linearinterval import LinearInterval
 
 from .config import DEBUG
 
