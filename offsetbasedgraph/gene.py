@@ -38,7 +38,6 @@ class GeneList(object):
 
     def __eq__(self, other):
         if len(self.gene_list) != len(other.gene_list):
-            print("Different lengths")
             return False
 
         for g in self.gene_list:
