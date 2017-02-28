@@ -151,7 +151,7 @@ class Gene(GeneBase):
                  zip(exon_starts, exon_ends)]
         strand = attr_dict["strand"]
 
-        return cls(attr_dict["name2"], transcription_region, exons,
+        return cls(attr_dict["name"], transcription_region, exons,
                    coding_region, strand)
 
     def translate(self, T):
