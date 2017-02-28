@@ -382,39 +382,6 @@ class Translation(object):
 
         return self._translate_interval_nontrivialv2(interval, inverse)
 
-    def tmp(self, region_path, intervalt, interval, inverse):
-        # Find out which of these rps should be added
-        # Do not add region paths before the original interval
-        intervalt_offset = intervalt.start_position.offset
-        offset = 0
-        new_region_paths = []
-        for rp in intervalt.region_paths:
-            if inverse:
-                assert intervalt.graph is not None, intervalt
-                assert rp in intervalt.graph.blocks, \
-                    "region path %s in interval %s does not exist in graph %s" % (
-                        rp, intervalt, intervalt.graph)
-                length = intervalt.graph.blocks[rp].length()
-            else:
-                length = self._translations(rp, True)[0].length()
-
-            # If first region path
-            is_first = interval.region_paths[0] == region_path
-            is_tmp = offset + length - intervalt_offset <= interval.start_position.offset
-            if is_first and is_tmp:
-                offset += length
-                continue
-
-            # If last region path
-            is_last = interval.region_paths[-1] == region_path
-            if is_last and offset - intervalt_offset >= interval.end_position.offset:
-                offset += length
-                continue
-            new_region_paths.append(rp)
-
-            offset += length
-
-        return new_region_paths
 
     def tmp2(self, region_path, intervalt, interval, inverse):
         # Find out which of these rps should be added
