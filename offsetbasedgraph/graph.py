@@ -16,6 +16,12 @@ class Block(object):
     def __eq__(self, other):
         return self.length() == other.length()
 
+    def __str__(self):
+        return "Block(%d)" % self.length()
+
+    def __repr__(self):
+        return self.__str__()
+
 
 class Graph(object):
     """
@@ -25,7 +31,7 @@ class Graph(object):
     Does this by storing a dict of Blocks and
     a dict of adjency lists (one list for each block
     that has adjencies).
-    
+
     """
     adj_list = defaultdict(list)
     reverse_adj_list = defaultdict(list)

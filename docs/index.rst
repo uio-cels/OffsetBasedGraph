@@ -3,16 +3,33 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Package OffsetBasedGraph
-============================================
-
 The Python package *OffsetBasedGraphs* is a simple implementation of offset-based sequence graphs.
 The package lets you represent graphs as well of the *Translation* (difference) between them,
 making it possible to e.g. convert interval from one graph to another.
 
+Installation
+=================
+The package with dependencies can be installed with pip::
 
-Quickstart - how to create simple graphs
---------------------------------------------
+    pip3 install offsetbasedgraph
+
+If you want to use the example data to run the examples using real data, you need to clone the repository::
+
+    git clone git@github.com:uio-cels/OffsetBasedGraph.git
+    cd OffsetBasedGraph
+    pip3 install -e
+
+Test that installation works, e.g. by trying to import the package::
+
+    python3
+    >>> import offsetbasedgraph
+
+
+
+Quickstart
+=================
+Create a simple graph
+^^^^^^^^^^^^^^^^^^^^^^
 
 The only way to create a Graph is through the init method.
 The following creates a very simple graph consisting of two connected blocks,
@@ -26,7 +43,7 @@ and saves that graph to file::
 
 The graph can later be read from file again::
 
-    graph.to_file("mygraph.graph")
+    graph = Graph.from_file("mygraph.graph")
 
 Translating between graphs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -48,7 +65,7 @@ on chromosome 1 (represented as a simple Interval)::
         {}
     )
 
-    gene = Interval(0, 5, "chr1", graph)
+    gene = Interval(0, 8, ["chr1"], graph)
     print(gene)
 
 Now, assume we have a new graph where the first 5 base pairs of chr1 have
@@ -61,25 +78,84 @@ can easily be expressed by a *Translation* (see Translation class for details)::
             "chr1": [Interval(0, 15, ["merged_part", "chr1-unmerged"])]
         },
         {
-            "chr1_merged": [Interval(0, 5, ["chr1"]), Interval(0, 5, ["chr1_alt1"])],
-            "chr1-unmerged": [Interval(5, 20, ["chr1"])],
-            "chr1_alt1-unmerged": [Interval(5, 10, ["chr1_alt1"])]
-        }
+            "merged_part": [Interval(0, 5, ["chr1"]), Interval(0, 5, ["chr1_alt1"], graph)],
+            "chr1-unmerged": [Interval(5, 20, ["chr1"], graph)],
+            "chr1_alt1-unmerged": [Interval(5, 10, ["chr1_alt1"], graph)]
+        },
+        graph=graph
     )
 
 
 Now, it is easy to translate the gene interval to our merged graph::
 
     translated_interval = merge_translation.translate(gene)
-    print(translated_interval.get_single_path_intervals())
+    print(translated_interval)
 
-Example with real data
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Intervals and positions
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+Positions consist of a region path ID and an offset::
+
+    from offsetbasedgraph  import Position
+    my_position = Position("chr1_some_alt", 100)
+
+
+Singlepath intervals contain a start position, end position and a list of region paths ids::
+
+    from offsetbasedgraph import Interval
+    start_position = Position("chr1", 100)
+    end_position = Position("chr1_some_alt", 100)
+    interval = Interval(start_position, end_position, ["chr1", "chr1_some_alt"])
+
+The interval init method also accepts only the offsets instead of full start and end positions::
+
+    interval = Interval(100, 100, ["chr1", "chr1_some_alt"])
+
+The package also supports some multipath intervals. See the documentation.
+
+
+Example using GRCh38
+=============================================
+This example assumes that you have clone the repository (see Installation) and that you are positioned in the
+examples directory.
+
+Included in the package are some utility functions that makes it
+easy to create GRCh38-like graphs.
+We here create a simple graph covering an alt locus on GRCh38::
+
+    from offsetbasedgraph.graphcreators import create_initial_grch38_graph, convert_to_numeric_graph
+    graph = create_initial_grch38_graph("chrom.sizes.example")
+    numeric_graph, name_translation = convert_to_numeric_graph(graph)
+    print(numeric_graph)
+
+*graph*  is now a simple graph with two blocks (an alt locus and chr1), and
+*numeric_graph* is the same graph converted so that all blocks have numeric IDs.
+*name_translation* is a translation from the original block names to the numeric format.
+This numeric format makes it easier to work with the graph, but
+we can always get back to the original graph later by using the translation object.
+
+We now connect
+the alt locus to chr1 and remove flanking regions of the alt locus
+(regions identical to the main chromosome)::
+
+    from offsetbasedgraph.graphcreators import connect_without_flanks
+    connected_graph, connected_trans = connect_without_flanks(numeric_graph, "alt.loci.example", name_translation)
+    print(connected_graph)
+
+*connected_trans* now represents all the operations done when connecting the
+alt locus. Using this translation object, we can translate intervals from an original
+GRC3h8 graph (*graph*) to our *connected_graph*::
+
+    from offsetbasedgraph.gene import Genelist
+    genes = GeneList.from_file("genes.example").gene_list
+    translated_genes = [g.translate(connected_trans) for g in genes]
+
+We have noe successfully represented genes on a graph based on GRCh38.
 
 
 
 
-Contents:
+Documentation
+============================
 
 .. toctree::
    :maxdepth: 2
@@ -101,8 +177,6 @@ Contents:
 .. autoclass:: AltLocus
     :members:
 
-.. autoclass:: AltLoci
-    :members:
 
 
 Indices and tables

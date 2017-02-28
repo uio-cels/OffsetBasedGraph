@@ -651,7 +651,7 @@ class Translation(object):
         return self.__repr__()
 
     def __repr__(self):
-        return "b to a: \n  " + str(self._b_to_a) + "\na to b: \n   " + str(self._a_to_b)
+        return "reverse translations: \n  " + str(self._b_to_a) + "\nforward translation: \n   " + str(self._a_to_b)
 
     def set_graph2(self, graph2):
         self.graph2 = graph2

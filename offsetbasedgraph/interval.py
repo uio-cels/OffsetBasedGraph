@@ -160,10 +160,10 @@ class Interval(BaseInterval):
         graph = "Graph"
         if self.graph is None:
             graph = "None graph"
-        return "Intv(%s, %s, %s, %s, lc=%d)" % (
+        return "Intv(%s, %s, %s, %s)" % (
             self.start_position,
             self.end_position, self.region_paths,
-            graph, self.length_cache if self.length_cache is not None else 0)
+            graph)
 
     def get_position_from_offset(self, offset, rp_lens=None):
         """Get position of with offset counted from the start of
