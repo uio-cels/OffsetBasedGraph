@@ -4,6 +4,7 @@ from .translation import Translation
 from .genematcher import GeneMatcher, GeneMatchings
 import csv
 from genutils import flanks
+from offsetbasedgraph.sequences import get_sequence_ucsc
 from offsetbasedgraph import CriticalPathsMultiPathInterval,\
     FuzzyMultipathInterval
 from collections import defaultdict
