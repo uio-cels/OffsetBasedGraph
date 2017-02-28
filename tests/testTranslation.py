@@ -14,6 +14,24 @@ class TestTranslation(unittest.TestCase):
         self.assertEqual(trans.graph2, graph2)
         self.assertEqual(trans.graph1, graph)
 
+    def test_translate_rp(self):
+        graph, graph2, trans = dummygraph.get_translation_single_block()
+        self.assertEqual(trans.translate_rp(1)[0], trans._a_to_b[1][0])
+        graph.blocks[5] = Block(2)
+        self.assertEqual(trans.translate_rp(5)[0], Interval(0, 2, [5]))
+
+    def test_translate_method(self):
+        # Tests the wrapper method translate
+        # Only simple cases to test that the wrapping works.
+        # Testing of translation is not done here
+        graph, graph2, trans = dummygraph.get_translation_single_block()
+        position = Position(1, 0)
+        self.assertEqual(trans.translate(position), Position(2, 0))
+        interval = Interval(0, 1, [1])
+        self.assertEqual(trans.translate(interval), Interval(0, 1, [2]))
+        not_interval_or_pos = ""
+        self.assertRaises(ValueError, trans.translate, not_interval_or_pos)
+
     def testSimpleTranslatePosition(self):
         graph, graph2, trans = dummygraph.get_translation_single_block()
         pos_graph1 = Position(1, 4)
@@ -139,10 +157,63 @@ class TestTranslation(unittest.TestCase):
         translated_graph = trans.translate_subgraph(graph1)
         self.assertEqual(graph2, translated_graph)
 
+        # Case 4: Subgraph is not full graph
+        graph1 = Graph(
+            {
+                1: Block(1),
+                2: Block(1),
+                3: Block(1)},
+            {
+                1: [2],
+                2: [3]
+            }
+        )
+        graph2 = Graph(
+            {
+                10: Block(1),
+                20: Block(1),
+                30: Block(1)},
+            {
+                10: [20],
+                20: [30]
+            }
+        )
+        trans = Translation(
+            {
+                1: [Interval(0, 1, [10], graph2)],
+                2: [Interval(0, 1, [20], graph2)],
+                3: [Interval(0, 1, [30], graph2)],
+            },
+            {
+                10: [Interval(0, 1, [1], graph2)],
+                20: [Interval(0, 1, [2], graph2)],
+                30: [Interval(0, 1, [3], graph2)],
+            }
+        )
+        subgraph = graph1 = Graph(
+            {
+                2: Block(1),
+                3: Block(1)},
+            {
+                2: [3]
+            }
+        )
+        correct_translated = Graph(
+            {
+                20: Block(1),
+                30: Block(1)},
+            {
+                20: [30]
+            }
+        )
+
+        translated_graph = trans.translate_subgraph(subgraph)
+        self.assertEqual(correct_translated, translated_graph)
+
     def test_empty_start(self):
         pass  # TODO
 
-    def _test_overlapping_merge(self):
+    def test_overlapping_merge(self):
         graph = dummygraph.get_disjoint_graph()
 
         intervals_a = [Interval(5, 7, [2], graph=graph),
@@ -378,6 +449,68 @@ class TestTranslation(unittest.TestCase):
             self.assertEqual(translated.length(), correct_length)
             self.assertEqual(translated.start_position.region_path_id, 13)
             self.assertEqual(translated.end_position.region_path_id, 21 + i)
+
+    def test_str(self):
+        graph1, graph2, trans = dummygraph.get_merged_middle_translation()
+        str(trans)
+        self.assertTrue(True)
+
+    def test_translate_interval_nontrivial_unequal_starts_and_ends(self):
+        # Special case where start of interval translates to
+        # more/less intervals than end of interval
+        graph = Graph(
+            {
+                1: Block(3),
+                2: Block(3)
+            },
+            {
+                1: [2]
+            }
+        )
+
+        graph2 = Graph(
+            {
+                3: Block(3),
+                4: Block(3),
+                5: Block(3)
+            },
+            {
+                3: [5],
+                4: [5]
+            }
+        )
+        ab = {
+                1: [Interval(0, 3, [3], graph2), Interval(0, 3, [4], graph2)],
+                2: [Interval(0, 3, [5], graph2)]
+            }
+
+        ba = {
+                3: [Interval(0, 3, [1], graph)],
+                4: [Interval(0, 3, [1], graph)],
+                5: [Interval(0, 3, [2], graph)],
+            }
+
+        trans = Translation(ab, ba, graph)
+
+        self.assertEqual(len(trans.translate_position(Position(1, 0))), 2)
+
+        interval = Interval(0, 3, [1, 2], graph)
+        translated = trans.translate_interval(interval).get_single_path_intervals()
+        self.assertEqual(len(translated), 2)
+
+        correct_translations = [
+                Interval(0, 3, [3, 5]),
+                Interval(0, 3, [4, 5])
+        ]
+        self.assertTrue(correct_translations[0] in translated)
+        self.assertTrue(correct_translations[1] in translated)
+
+
+        # Inverse case
+        trans = Translation(ba, ab, graph2)
+        interval = Interval(0, 3, [1, 2], graph)
+        translated = trans.translate_interval(interval, True).get_single_path_intervals()
+        self.assertEqual(len(translated), 2)
 
 
 if __name__ == "__main__":
