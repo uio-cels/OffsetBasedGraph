@@ -2,7 +2,7 @@ import os
 from .translation import Translation
 from .graph import Graph, Block
 from .interval import Interval
-from gendatafetcher.sequences import get_sequence_ucsc
+from offsetbasedgraph.sequences import get_sequence_ucsc
 import csv
 
 
