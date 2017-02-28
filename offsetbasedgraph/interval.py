@@ -106,7 +106,6 @@ class Interval(BaseInterval):
         else:
             self.position_init(start_position, end_position, region_paths)
 
-        # By default include start and end region path
         self.graph = graph
         self.rp_lens_tmp = None
 
@@ -173,6 +172,9 @@ class Interval(BaseInterval):
 
         end_offset = self.end_position.offset if self.graph.is_main_name(self.region_paths[-1]) else self.graph.blocks[filtered_rps[-1]].length()
         return Interval(start_offset, end_offset, filtered_rps)
+
+    def contains_rp(self, rp):
+        return (rp in self.region_paths)
 
     def contains(self, other, tolerance=0):
         """Check if transcription region and all exons of other
