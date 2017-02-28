@@ -154,9 +154,9 @@ We have noe successfully represented genes on a graph based on GRCh38.
 Create full GRCh38 graph
 =============================================
 The following show a short snippet for building a graph from GRCh38, with flanks removed
-It assumes you are positioned in the examples directory.::
+It assumes you are positioned in the examples directory.
 
-NB: This code takes time to run, as remote sequence data needs to be downloaded.
+NB: This code takes time to run, as remote sequence data needs to be downloaded::
 
     graph = create_initial_grch38_graph("grch38.chrom.sizes")
     numeric_graph, name_translation = convert_to_numeric_graph(graph)
