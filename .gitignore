@@ -14,3 +14,4 @@ docs/_template
 *.swp
 tests/cover
 tests/.coverage
+.coverage
