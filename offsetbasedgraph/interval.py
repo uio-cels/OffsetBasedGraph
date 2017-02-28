@@ -24,10 +24,64 @@ class Position(object):
         return Position(self.region_path_id, self.offset)
 
 
-class Interval(object):
+class BaseInterval(object):
+
+    def set_length_cache(self, l):
+        assert l > 0
+        self.length_cache = l
+
+    def _calculate_length(self):
+        if len(self.region_paths) == 1:
+            return self.end_position.offset - self.start_position.offset
+
+        if not self.region_paths:
+            return 0
+
+        assert self.graph is not None,\
+            "Graph is none and length cache is None and\
+            interval has more than 1 rp. Cannot compute length"
+
+        rp_lengths = [self.graph.blocks[rp].length()
+                      for rp in self.region_paths[:-1]]
+        r_sum = sum(rp_lengths)
+        length = r_sum-self.start_position.offset+self.end_position.offset
+
+        assert length >= 0,\
+            "Length is %d for interval %s. r_lengths: %s. Graph: %s"\
+            % (length, self, rp_lengths, self.graph)
+
+        return length
+
+    def __eq__(self, other):
+        eq = self.start_position == other.start_position
+        eq &= self.end_position == other.end_position
+        eq &= self.region_paths == other.region_paths
+        return eq
+
+    def __repr__(self):
+        return self.__str__()
+
+    def length(self):
+        """
+
+        :returns: The length of the interval
+        :rtype: int
+
+        """
+
+        if hasattr(self, "length_cache") and self.length_cache is not None:
+            return self.length_cache
+        length = self._calculate_length()
+        self.length_cache = length
+        return length
+
+
+class Interval(BaseInterval):
 
     def offset_init(self, start_offset, end_offset, region_paths):
-        assert region_paths, "No region paths given and start_position is int %s, %s, %s" % (start_position, end_position, region_paths)
+        assert region_paths,\
+            "No region paths given and start_position is int %s, %s, %s" % (
+                start_offset, end_offset, region_paths)
         self.start_position = Position(region_paths[0], start_offset)
         self.end_position = Position(region_paths[-1], end_offset)
         self.region_paths = region_paths
@@ -44,7 +98,8 @@ class Interval(object):
 
     def __init__(self, start_position, end_position,
                  region_paths=None, graph=None):
-        assert region_paths is None or isinstance(region_paths, list), "Region paths must be None or list"
+        assert region_paths is None or isinstance(region_paths, list),\
+            "Region paths must be None or list"
 
         if isinstance(start_position, int):
             self.offset_init(start_position, end_position, region_paths)
@@ -59,40 +114,6 @@ class Interval(object):
         assert self.start_position.region_path_id == self.region_paths[0]
 
         self.length_cache = None
-
-    def set_length_cache(self, l):
-        assert l > 0
-        self.length_cache = l
-
-    def length(self):
-        """
-
-        :returns: The length of the interval
-        :rtype: int
-
-        """
-
-        if hasattr(self, "length_cache") and self.length_cache is not None:
-            return self.length_cache
-
-        if len(self.region_paths) == 1:
-            self.length_cache = self.end_position.offset - self.start_position.offset
-            return self.length_cache
-
-        if not self.region_paths:
-            self.length_cache = 0
-            return 0
-
-        assert self.graph is not None, "Graph is none and length cache is None and interval has more than 1 rp. Cannot compute length"
-
-        r_lengths = [self.graph.blocks[rp].length()
-                     for rp in self.region_paths[:-1]]
-        r_sum = sum(r_lengths)
-        length = r_sum-self.start_position.offset+self.end_position.offset
-        self.length_cache = length
-
-        assert length >= 0, "Length is %d for interval %s. r_lengths: %s. Graph: %s" % (length, self, r_lengths, self.graph)
-        return length
 
     def starts_at_rp(self):
         return self.start_position.offset == 0
@@ -194,15 +215,6 @@ class Interval(object):
         if self.length_cache is not None:
             c.set_length_cache(self.length_cache)
         return c
-
-    def __eq__(self, other):
-        eq = self.start_position == other.start_position
-        eq &= self.end_position == other.end_position
-        eq &= self.region_paths == other.region_paths
-        return eq
-
-    def __repr__(self):
-        return self.__str__()
 
     def notation(self):
         """
