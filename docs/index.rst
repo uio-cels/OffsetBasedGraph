@@ -145,7 +145,7 @@ the alt locus to chr1 and remove flanking regions of the alt locus
 alt locus. Using this translation object, we can translate intervals from an original
 GRC3h8 graph (*graph*) to our *connected_graph*::
 
-    from offsetbasedgraph.gene import Genelist
+    from offsetbasedgraph.gene import GeneList
     genes = GeneList.from_file("genes.example").gene_list
     translated_genes = [g.translate(connected_trans) for g in genes]
 
