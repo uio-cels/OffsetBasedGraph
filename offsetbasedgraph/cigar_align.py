@@ -167,8 +167,8 @@ def clean_cigar(cigar, alt_seq, main_seq):
             var_type = first
             n = int(c[1:])
         else:
-            var_type = c[-1]
-            n = int(c[:-1])
+            raise ValueError("Invalid cigar string. Should only contain letters I, D or M.")
+
         if var_type == "I":
             alt_offset += n
             cleaned_cigar.append((var_type, n))
