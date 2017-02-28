@@ -5,6 +5,8 @@ from .interval import Interval, Position
 
 
 class GeneList(object):
+    """ Container for collection of genes"""
+
     def __init__(self, gene_list):
         assert isinstance(gene_list, list)
         self.gene_list = gene_list
@@ -13,11 +15,13 @@ class GeneList(object):
             self.lookup[gene.name].append(gene)
 
     def to_file(self, file_name):
+        """Write gene list to pickle"""
         with open("%s" % file_name, "wb") as f:
             pickle.dump(self, f)
 
     @staticmethod
     def from_pickle(file_name):
+        """Read gene list from pickle"""
         with open("%s" % file_name, "rb") as f:
             o = pickle.loads(f.read())
             if isinstance(o, list):
@@ -26,6 +30,11 @@ class GeneList(object):
 
     @classmethod
     def from_file(cls, file_name):
+        """Read gene list from csv file
+        :param file_name: csv file name
+        :returns: list of genes
+        :rtype: GeneList
+        """
         with open(file_name) as f:
             reader = csv.DictReader(f, delimiter="\t")
             gene_list = [Gene.from_dict(d) for d in
@@ -83,6 +92,11 @@ class GeneBase(object):
 
 
 class FuzzyGene(GeneBase):
+    """ Gene representation that includes in adddition to the specified
+    intervals all intervals that deviate with less than a threshold from
+    those.
+    """
+
     def __str__(self):
         return "%s\t%s" % (self.name, str(self.transcription_region))
 
@@ -90,16 +104,6 @@ class FuzzyGene(GeneBase):
 
 
 class Gene(GeneBase):
-
-    def copy(self):
-        coding_region = None
-        if self.coding_region is not None:
-            coding_region = self.coding_region.copy()
-        return Gene(self.name, self.transcription_region.copy(),
-                    [ex.copy() for ex in self.exons],
-                    coding_region,
-                    self.strand,
-                    )
 
     def multiple_alt_loci(self):
         """
@@ -174,7 +178,48 @@ class Gene(GeneBase):
         return sum(exon.length() for exon in self.exons)
 
     def length(self):
+        """Return length of transcription region
+        :rtype: int
+        """
         return self.transcription_region.length()
+
+
+    def approxEquals(self, other, tolerance=0):
+        """Check if other is approximately equal to self.
+        Difference between start and end positions of 
+        transcription region as well as all exons must be
+        less than tolerance
+        :param other: Gene
+        :param tolerance: allowed differnce (int)
+        :rtype: bool
+
+        """
+        if not len(self.exons) == len(other.exons):
+            return False
+        my_regions = [self.transcription_region] + self.exons
+        other_regions = [other.transcription_region] + other.exons
+        return all(my_reg.approx_equals(other_reg) for
+                   my_reg, other_reg in zip(my_regions, other_regions))
+
+    def get_contained_pairs(self, other, tolerance=0):
+        """Get list of all pairs (my, his) of exons in other
+        that are contained in an exon in self
+
+        :param other: Gene
+        :param tolerance: tolerance for contains (int)
+        :returns: list of pairs of (container, containee) exons
+        :rtype: list( (Interval, Interval)...)
+
+        """
+        pairs = []
+        for exon in other.exons:
+            containers = [s_exon for s_exon in self.exons
+                          if s_exon.contains(exon, tolerance)]
+            if not containers:
+                continue
+            assert len(containers) == 1
+            pairs.append((containers[0], exon))
+        return pairs
 
     def __str__(self):
         exon_string = "\n\t".join(str(exon) for exon in self.exons)
@@ -198,19 +243,36 @@ class Gene(GeneBase):
         return all(e1 == e2 for e1, e2 in zip(self.exons, other.exons))
         return True
 
+    def copy(self):
+        coding_region = None
+        if self.coding_region is not None:
+            coding_region = self.coding_region.copy()
+        return Gene(self.name, self.transcription_region.copy(),
+                    [ex.copy() for ex in self.exons],
+                    coding_region,
+                    self.strand,
+                    )
+
+
+class GeneIO(object):
+    """Unfinished gene writer/reader"""
+    def __init__(self, gene):
+        self.gene = gene
+        
     def to_file_line(self):
-        cur_rp = self.transcription_region.region_paths[0]
+        cur_rp = self.gene.transcription_region.region_paths[0]
         exon_strings = []
-        for exon in self.exons:
+        for exon in self.gene.exons:
             rps = [rp for rp in exon.region_paths if rp != cur_rp]
             offsets = [exon.start_position.offset, exon.end_position.offset]
             exon_string = ",".join(str(e) for e in rps+offsets)
             exon_strings.append(exon_string)
             cur_rp = exon.region_paths[-1]
-        transcript_string = ",".join(self.transcription_region.region_paths+[
-            str(self.transcription_region.start_position.offset),
-            str(self.transcription_region.end_position.offset)])
-        return "\t".join([self.name,
+        transcript_string = ",".join(
+            self.gene.transcription_region.region_paths+[
+                str(self.gene.transcription_region.start_position.offset),
+                str(self.gene.transcription_region.end_position.offset)])
+        return "\t".join([self.gene.name,
                           transcript_string,
                           " ".join(exon_strings)])
 
@@ -230,24 +292,6 @@ class Gene(GeneBase):
     @classmethod
     def from_file_line(cls, line):
         name, transcript_string, exons_string = line.split("\t")
-        transcription_region = cls.parse_transcript_region(transcript_string)
+        transcription_region = cls.parse_transcript_region(
+            transcript_string)
         exons = cls.parse_exons(exons_string)
-
-    def approxEquals(self, other, tolerance=0):
-        if not len(self.exons) == len(other.exons):
-            return False
-        my_regions = [self.transcription_region] + self.exons
-        other_regions = [other.transcription_region] + other.exons
-        return all(my_reg.approx_equals(other_reg) for
-                   my_reg, other_reg in zip(my_regions, other_regions))
-
-    def get_contained_pairs(self, other, tolerance=0):
-        pairs = []
-        for exon in other.exons:
-            containers = [s_exon for s_exon in self.exons
-                          if s_exon.contains(exon, tolerance)]
-            if not containers:
-                continue
-            assert len(containers) == 1
-            pairs.append((containers[0], exon))
-        return pairs
