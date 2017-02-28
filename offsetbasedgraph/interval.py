@@ -2,8 +2,13 @@
 class Position(object):
     """
     Represents a position  in the graph
+    >>> Position("chr1-1", 100)
     """
     def __init__(self, region_path_id, offset):
+        """
+        :param region_path_id: region path/block identifier
+        :param offset: offset from start of region path (int)
+        """
         self.region_path_id = region_path_id
         self.offset = offset
 
@@ -22,12 +27,20 @@ class Position(object):
 
 
 class BaseInterval(object):
-
     def set_length_cache(self, l):
+        """Set length cache used by lenght()
+        :param l: length (int)
+        """
         assert l > 0
         self.length_cache = l
 
     def _calculate_length(self):
+        """Calculate length of interval
+        :returns: lenght of interval
+        :rtype: int
+
+        """
+
         if len(self.region_paths) == 1:
             return self.end_position.offset - self.start_position.offset
 
@@ -50,6 +63,13 @@ class BaseInterval(object):
         return length
 
     def __eq__(self, other):
+        """Check that start and end positions and 
+        region paths are the same
+
+        :param other: Interval
+        :rtype: bool
+
+        """
         eq = self.start_position == other.start_position
         eq &= self.end_position == other.end_position
         eq &= self.region_paths == other.region_paths
@@ -60,7 +80,6 @@ class BaseInterval(object):
 
     def length(self):
         """
-
         :returns: The length of the interval
         :rtype: int
 
@@ -74,34 +93,30 @@ class BaseInterval(object):
 
 
 class Interval(BaseInterval):
-
-    def offset_init(self, start_offset, end_offset, region_paths):
-        assert region_paths,\
-            "No region paths given and start_position is int %s, %s, %s" % (
-                start_offset, end_offset, region_paths)
-        self.start_position = Position(region_paths[0], start_offset)
-        self.end_position = Position(region_paths[-1], end_offset)
-        self.region_paths = region_paths
-
-    def position_init(self, start_position, end_position, region_paths):
-        self.start_position = start_position
-        self.end_position = end_position
-
-        if region_paths is None:
-            region_paths = [start_position.region_path_id]
-            if end_position.region_path_id != start_position.region_path_id:
-                region_paths.append(end_position.region_path_id)
-        self.region_paths = region_paths
+    """
+    Represents an interval on a graph
+    >>> Interval(Position("chr1-0", 10), Position("chr1-1", 100),
+                          ["chr1-0", "alt, "chr1-1"]), graph)
+    """
 
     def __init__(self, start_position, end_position,
                  region_paths=None, graph=None):
+        """Initialize interval with either:
+        (Position, Position, [list(str)])
+        (int, int, list(str)) or
+
+        :param start_position: Start position/offset
+        :param end_position: End position/offset
+        :param region_paths: list of region_paths
+        :param graph: The graph the interval is defined on
+        """
         assert region_paths is None or isinstance(region_paths, list),\
             "Region paths must be None or list"
 
         if isinstance(start_position, int):
-            self.offset_init(start_position, end_position, region_paths)
+            self._offset_init(start_position, end_position, region_paths)
         else:
-            self.position_init(start_position, end_position, region_paths)
+            self._position_init(start_position, end_position, region_paths)
 
         self.graph = graph
         self.rp_lens_tmp = None
@@ -111,8 +126,12 @@ class Interval(BaseInterval):
 
         self.length_cache = None
 
-    def contains_rp(self, rp):
-        return (rp in self.region_paths)
+    def contains_rp(self, region_path):
+        """Check if interval uses region_path
+        :param region_path: region path id
+        :rtype: bool
+        """
+        return (region_path in self.region_paths)
 
     def contains(self, other, tolerance=0):
         """Check if transcription region and all exons of other
@@ -136,9 +155,41 @@ class Interval(BaseInterval):
 
         return True
 
-    def __deepcopy__(self, memo):
-        return Interval(self.start_position, self.end_position,
-                        self.region_paths, self.graph)
+    def get_position_from_offset(self, offset, rp_lens=None):
+        """Get position of with offset counted from the start of
+        the interval
+
+        :param offset:
+        :returns: The position in the graph
+        :rtype: Position
+
+        """
+        total_offset = offset + self.start_position.offset
+        if rp_lens is None:
+            rp_lens = [self.graph.blocks[rp].length()
+                       for rp in self.region_paths]
+
+        for i, rp_length in enumerate(rp_lens):
+            region_path = self.region_paths[i]
+            if rp_length > total_offset:
+                return Position(region_path, total_offset)
+            total_offset -= rp_length
+
+        assert False, "No offset %d from interval %s using rp lens %s" % \
+            (offset, self, list(rp_lens))
+
+    def get_adj_list(self):
+        """
+        :return: Returns every adjency in the interval as a list
+         of tuples (from_block_id, to_block_id)
+        """
+        prev = None
+        adjs = []
+        for rp in self.region_paths:
+            if prev is not None:
+                adjs.append((prev, rp))
+            prev = rp
+        return adjs
 
     def copy(self):
         c = Interval(self.start_position.copy(), self.end_position.copy(),
@@ -160,42 +211,29 @@ class Interval(BaseInterval):
         graph = "Graph"
         if self.graph is None:
             graph = "None graph"
-        return "Intv(%s, %s, %s, %s)" % (
+        return "Intv(%s, %s, %s, %s, lc=%d)" % (
             self.start_position,
             self.end_position, self.region_paths,
-            graph)
+            graph, self.length_cache if self.length_cache is not None else 0)
 
-    def get_position_from_offset(self, offset, rp_lens=None):
-        """Get position of with offset counted from the start of
-        the interval
+    def _offset_init(self, start_offset, end_offset, region_paths):
+        assert region_paths,\
+            "No region paths given and start_position is int %s, %s, %s" % (
+                start_offset, end_offset, region_paths)
+        self.start_position = Position(region_paths[0], start_offset)
+        self.end_position = Position(region_paths[-1], end_offset)
+        self.region_paths = region_paths
 
-        :param offset:
-        :returns: The position in the graph
-        :rtype: Position
+    def _position_init(self, start_position, end_position, region_paths):
+        self.start_position = start_position
+        self.end_position = end_position
 
-        """
-        total_offset = offset + self.start_position.offset
-        if rp_lens is None:
-            rp_lens = [self.graph.blocks[rp].length()
-                       for rp in self.region_paths]
+        if region_paths is None:
+            region_paths = [start_position.region_path_id]
+            if end_position.region_path_id != start_position.region_path_id:
+                region_paths.append(end_position.region_path_id)
+        self.region_paths = region_paths
 
-        for i, rp_length in enumerate(rp_lens):
-            region_path = self.region_paths[i]
-            if rp_length > total_offset:
-                return Position(region_path, total_offset)
-            total_offset -= rp_length
-
-        assert False, "No offset %d from interval %s using rp lens %s" % (offset, self, list(rp_lens))
-
-    def get_adj_list(self):
-        """
-        :return: Returns every adjency in the interval as a list
-         of tuples (from_block_id, to_block_id)
-        """
-        prev = None
-        adjs = []
-        for rp in self.region_paths:
-            if prev is not None:
-                adjs.append((prev, rp))
-            prev = rp
-        return adjs
+    def __deepcopy__(self, memo):
+        return Interval(self.start_position, self.end_position,
+                        self.region_paths, self.graph)
