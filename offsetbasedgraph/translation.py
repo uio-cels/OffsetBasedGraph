@@ -5,15 +5,18 @@ import pickle
 
 
 class Translation(object):
+
+
+
     """
     Holds information necessary to translate coordinates and intervals
     from one graph to another
     >>> forward_dict = {"chr1": [Interval(0, 100, ["chr1-0", "chr1-1", "chr1-2"])],
-                        "alt": [Interval(0,100, ["chr1-1, "alt-0"])]}
+    "alt": [Interval(0,100, ["chr1-1, "alt-0"])]}
     >>> reverse_dict = {"chr1-0": [Interval(0, 50, ["chr1"])],
-                        "chr1-1": [Interval(50, 110, ["chr1"]), Interval(0,50, ["alt"])],
-                        "chr1-2": [Interval(110, 210, ["chr1"])],
-                        "alt-0": [Interval(50, 100, ["alt"])]}
+    "chr1-1": [Interval(50, 110, ["chr1"]), Interval(0,50, ["alt"])],
+    "chr1-2": [Interval(110, 210, ["chr1"])],
+    "alt-0": [Interval(50, 100, ["alt"])]}
     >>> translation = Translation(forward_dict, reverse_dict, graph)
     """
 

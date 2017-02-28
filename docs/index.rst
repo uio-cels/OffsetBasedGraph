@@ -164,7 +164,6 @@ NB: This code takes time to run, as remote sequence data needs to be downloaded:
         numeric_graph, "grch38_alt_loci.txt", name_translation)
     name_graph, new_name_translation = convert_to_text_graph(
         new_numeric_graph, name_translation, numeric_translation)
-    assert n_starts3 == n_starts4
     final_translation = name_translation + numeric_translation + new_name_translation
     final_translation.graph2 = name_graph
 
@@ -180,12 +179,16 @@ Documentation
    :maxdepth: 2
 
 .. automodule:: offsetbasedgraph
- 
+
+
 .. autoclass:: Graph
     :members:
     :undoc-members:
     :inherited-members:
     :show-inheritance:
+
+.. autoclass:: Translation
+    :members:
 
 .. autoclass:: Interval
     :members:
@@ -193,8 +196,17 @@ Documentation
 .. autoclass:: Position
     :members:
 
-.. autoclass:: AltLocus
+
+
+.. automodule:: offsetbasedgraph.gene
+
+.. autoclass:: Gene
     :members:
+
+.. automodule:: offsetbasedgraph.graphutils
+
+
+
 
 
 

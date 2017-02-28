@@ -32,12 +32,9 @@ class Graph(object):
     a dict of adjency lists (one list for each block
     that has adjencies).
 
-<<<<<<< HEAD
-=======
     >>> blocks = {"chr1-0": 100000, "chr1-1": 50000, "alt": 40000}
     >>> adj_list = {"chr1-0": ["chr1-1", "alt"]}
     >>> graph = Graph(blocks, adj_list)
->>>>>>> 2b3b554ec0659955e2f4cafa54e42f725f07a84f
     """
 
     # Graph alterations

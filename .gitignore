@@ -4,7 +4,6 @@
 *~
 *#*
 __pycache__
-data
 build
 dist
 *.egg-info
@@ -15,3 +14,4 @@ docs/_template
 tests/cover
 tests/.coverage
 .coverage
+data/tmp/*

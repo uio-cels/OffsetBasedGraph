@@ -1,9 +1,9 @@
 
 class Position(object):
-    """
-    Represents a position  in the graph
+    """ Represents a position  in the graph
     >>> Position("chr1-1", 100)
     """
+
     def __init__(self, region_path_id, offset):
         """
         :param region_path_id: region path/block identifier
@@ -96,7 +96,7 @@ class Interval(BaseInterval):
     """
     Represents an interval on a graph
     >>> Interval(Position("chr1-0", 10), Position("chr1-1", 100),
-                          ["chr1-0", "alt, "chr1-1"]), graph)
+    ["chr1-0", "alt, "chr1-1"]), graph)
     """
 
     def __init__(self, start_position, end_position,
