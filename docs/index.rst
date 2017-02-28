@@ -13,17 +13,24 @@ Contents:
 
 .. automodule:: offsetbasedgraph
  
-.. autoclass:: OffsetBasedGraph
+.. autoclass:: Graph
     :members:
     :undoc-members:
     :inherited-members:
     :show-inheritance:
 
-.. autoclass:: LinearInterval
+.. autoclass:: Interval
     :members:
 
-.. autoclass:: RegionPath
+.. autoclass:: Position
     :members:
+
+.. autoclass:: AltLocus
+    :members:
+
+.. autoclass:: AltLoci
+    :members:
+
 
 Indices and tables
 ==================

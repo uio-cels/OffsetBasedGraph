@@ -12,3 +12,6 @@ docs/_build
 docs/_static
 docs/_template
 *.swp
+tests/cover
+tests/.coverage
+.coverage
