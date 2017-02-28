@@ -154,8 +154,7 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation,
             final_trans, new_graph, name_translation)
     return new_graph, final_trans
 
-
-def create_subgraph_around_alt_locus(graph, trans, alt_locus, padding=200000):
+def create_subgraph_around_alt_locus(graph, trans, alt_locus, padding=200000, alt_loci_fn='grch38_alt_loci.txt'):
     """
     Takes a translation from an original grch38 graph (created by create_initial_grch38_graph)
     and uses a translation from that graph to current graph
@@ -177,7 +176,7 @@ def create_subgraph_around_alt_locus(graph, trans, alt_locus, padding=200000):
     alt_locus_interval = Interval(0, original_graph.blocks[alt_locus].length(), [alt_locus])
 
     from offsetbasedgraph.GRCH38 import AltLoci
-    alt_loci_info = AltLoci.from_file("grch38_alt_loci.txt", [alt_locus])
+    alt_loci_info = AltLoci.from_file(alt_loci_fn, [alt_locus])
     alt_locus_info = alt_loci_info.lookup[alt_locus]
 
     main_interval_start = alt_locus_info.start - 10
@@ -425,8 +424,14 @@ def blast_test():
     print(alignments)
 
 
-def get_alt_loci_positions():
-    f = open("grch38_alt_loci.txt", "r")
+def get_alt_loci_positions(alt_loci_file_name='grch38_alt_loci.txt'):
+
+    try:
+        f = open(alt_loci_file_name, "r")
+    except:
+        print("Error: %s does not exist." % alt_loci_file_name)
+        raise
+
     alt_loci = {}
     for line in f.readlines():
         if line.startswith("#"):
@@ -447,7 +452,7 @@ def get_alt_loci_positions():
     return alt_loci
 
 
-def create_gene_dicts(genes, identical_names=False):
+def create_gene_dicts(genes, alt_loci_fn="data/grch38_alt_loci.txt", identical_names=False):
     """
     Takes a list of genes, and creates an alt loci dict and a gene name dict
     :param genes:
@@ -474,7 +479,7 @@ def create_gene_dicts(genes, identical_names=False):
             #exon_dict[g.exons[0].start_position.offset] = g
             chrom_genes[chrom].append(g)
 
-    alt_infos = get_alt_loci_positions()
+    alt_infos = get_alt_loci_positions(alt_loci_fn)
     parallell_to_alt_loci_genes = defaultdict(list)  # Genes on  main path
     for alt_locus in alt_loci_genes:
         main_genes = chrom_genes[alt_locus.split("_")[0]]
