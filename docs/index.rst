@@ -151,6 +151,25 @@ GRC3h8 graph (*graph*) to our *connected_graph*::
 
 We have noe successfully represented genes on a graph based on GRCh38.
 
+Create full GRCh38 graph
+=============================================
+The following show a short snippet for building a graph from GRCh38, with flanks removed
+It assumes you are positioned in the examples directory.::
+
+NB: This code takes time to run, as remote sequence data needs to be downloaded.
+
+    graph = create_initial_grch38_graph("grch38.chrom.sizes")
+    numeric_graph, name_translation = convert_to_numeric_graph(graph)
+    new_numeric_graph, numeric_translation = connect_without_flanks(
+        numeric_graph, "grch38_alt_loci.txt", name_translation)
+    name_graph, new_name_translation = convert_to_text_graph(
+        new_numeric_graph, name_translation, numeric_translation)
+    assert n_starts3 == n_starts4
+    final_translation = name_translation + numeric_translation + new_name_translation
+    final_translation.graph2 = name_graph
+
+    grch38_graph_with_flanks = name_graph
+
 
 
 
