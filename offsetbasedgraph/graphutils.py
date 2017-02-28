@@ -4,7 +4,7 @@ from .translation import Translation
 from .genematcher import GeneMatcher, GeneMatchings
 import csv
 from genutils import flanks
-from gendatafetcher.sequences import get_sequence_ucsc
+from offsetbasedgraph.sequences import get_sequence_ucsc
 from offsetbasedgraph import CriticalPathsMultiPathInterval
 from collections import defaultdict
 from .gene import GeneList, Gene, MultiPathGene
