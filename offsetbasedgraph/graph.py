@@ -25,7 +25,7 @@ class Graph(object):
     Does this by storing a dict of Blocks and
     a dict of adjency lists (one list for each block
     that has adjencies).
-
+    
     """
     adj_list = defaultdict(list)
     reverse_adj_list = defaultdict(list)
