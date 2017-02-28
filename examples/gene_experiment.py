@@ -337,7 +337,6 @@ def _analyse_multipath_genes_on_graph(genes_list, genes_against, graph):
     return equal, equal_exons
 
 
-<<<<<<< HEAD
 def _analyse_multipath_genes_on_graph(genes_list, genes_against, graph):
     # Takes a list of mp genes and a graph
     # Returns number of equal exons and equal genes

@@ -258,36 +258,6 @@ class Translation(object):
                 for f in my_firsts:
                     rev_edges[f].extend([l for l in lasts if f != l])
 
-    def _translate_subgraph_edges(self, subgraph, copy_graph):
-        edge_list_add = []
-
-        # Translate all edges
-        for edge in subgraph.get_edges_as_list():
-            block1, block2 = edge
-
-            # Do not translate if block1 and block2 translates to themselves
-            """if self._translations(block1, inverse=False) == block1 and \
-                    self._translations(block2, inverse=False) == block2:
-                print("Identical translation")
-                continue
-            """
-            if block1 not in self._a_to_b and block2 not in self._a_to_b:
-                edge_list_add.append((block1, block2))
-                continue
-
-            interval = Interval(0, subgraph.blocks[block2].length(),
-                                [block1, block2], subgraph)
-
-            translated = self.translate_interval(
-                interval).get_single_path_intervals()
-            assert len(translated) <= 1, \
-                "Only translations to one interval supported. %d returned" \
-                % len(translated)
-            translated = translated[0]
-            edge_list_add.extend(translated.get_adj_list())  # Add these later
-
-        return edge_list_add
-
     def _copy_blocks(self, subgraph):
         new_blocks = subgraph.blocks.copy()
         for b in self._a_to_b:
@@ -355,7 +325,6 @@ class Translation(object):
         Also, translate every region path and add edges and region paths found
         """
         edge_list_add = []
-        #edge_list_add = self._translate_subgraph_edges(subgraph, copy_graph)
 
 
         edges, rev_edges = self.get_old_edges(subgraph)
@@ -365,8 +334,6 @@ class Translation(object):
             edges[k] = list(set(v))
         for k, v in rev_edges.items():
             rev_edges[k] = list(set(v))
-
-        # edge_list_add = self._translate_subgraph_edges(subgraph, copy_graph)
 
         new_blocks, edge_list_add = self._translate_subgraph_blocks(
             subgraph, [], copy_graph)
@@ -533,7 +500,7 @@ class Translation(object):
                     # Find out which of these rps should be added
                     # Do not add region paths before the original interval
                     new_region_paths.extend(
-                        self.tmp(region_path, intervalt, interval, inverse))
+                        self.tmp2(region_path, intervalt, interval, inverse))
 
         if is_simple:
             return SingleMultiPathInterval(
