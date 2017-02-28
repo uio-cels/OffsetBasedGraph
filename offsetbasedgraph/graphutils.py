@@ -1,54 +1,12 @@
 from .interval import Interval
 from .graphcreators import *
-from .translation import Translation
-from .genematcher import GeneMatcher, GeneMatchings
+from .genematcher import GeneMatchings
 import csv
-from genutils import flanks
-from offsetbasedgraph.sequences import get_sequence_ucsc
 from offsetbasedgraph import CriticalPathsMultiPathInterval,\
     FuzzyMultipathInterval
 from collections import defaultdict
 from .gene import GeneList, Gene, MultiPathGene, FuzzyGene
 import sys
-
-
-def _connect_without_flanks(graph, alt_loci_fn, name_translation):
-    """
-    Connects the alternative loci in the given file to the grch38 graph,
-    without flanks.
-    :param alt_loci_fn: Filename of file containing alternative loci.
-    One alt locus on each line.
-    Four columns: alt_locus_id  chr chr_start   chr_stop
-    :return: Returns the new graph
-    """
-    f = open(alt_loci_fn)
-    new_graph = graph
-    final_trans = Translation(graph=graph)
-    final_trans.graph2 = graph
-    for line in f.readlines():
-        if line.startswith("#"):
-            continue
-        l = line.split()
-        alt_locus_id = l[0]
-        main_chr = l[1]
-        start = int(l[2])
-        end = int(l[3])
-        length = int(l[4])
-
-        intervals = flanks.get_flanks(alt_locus_id, length,
-                                      main_chr, start-1, end)
-
-        n_starts = len([b for b in new_graph.blocks if not
-                        new_graph.reverse_adj_list[b]])
-        new_graph, final_trans = merge_flanks(intervals, final_trans,
-                                              new_graph, name_translation)
-
-        new_n_starts = len([b for b in new_graph.blocks if not
-                            new_graph.reverse_adj_list[b]])
-        assert new_n_starts == n_starts-1, line
-
-    f.close()
-    return new_graph, final_trans
 
 
 def create_subgraph_around_alt_locus(graph, trans, alt_locus, padding=200000,
@@ -70,8 +28,9 @@ def create_subgraph_around_alt_locus(graph, trans, alt_locus, padding=200000,
     # todo: This can be rewritten more efficiently later
 
     original_graph = trans.graph1
-    assert graph == trans.graph2 , "trans.graph2 should be identical to graph"
-    alt_locus_interval = Interval(0, original_graph.blocks[alt_locus].length(), [alt_locus])
+    assert graph == trans.graph2, "trans.graph2 should be identical to graph"
+    alt_locus_interval = Interval(
+        0, original_graph.blocks[alt_locus].length(), [alt_locus])
 
     from offsetbasedgraph.GRCH38 import AltLoci
     alt_loci_info = AltLoci.from_file(alt_loci_fn, [alt_locus])
@@ -86,18 +45,17 @@ def create_subgraph_around_alt_locus(graph, trans, alt_locus, padding=200000,
     # Translate interval, get all intervals
     translated_to = []
     for orig_interval in [main_interval, alt_locus_interval]:
-        #print("Orig interval")
-        #print(orig_interval)
         trans_interval = trans.translate(orig_interval)
-        #print("Including %s" % trans_interval)
         translated_to.append(trans_interval)
 
-    return graph.create_subgraph_from_intervals(translated_to, padding, alt_locus)
+    return graph.create_subgraph_from_intervals(
+        translated_to, padding, alt_locus)
 
 
 def parse_genes_file(genes_fn):
     """
-    Parses a file containing genes (on the format of UCSC), and returns a list of dicts
+    Parses a file containing genes (on the format of UCSC),
+    and returns a list of dicts
     :param genes_fn: File name
     :return: Returns a list of genes, one dict for each gene
     """
@@ -110,25 +68,6 @@ def parse_genes_file(genes_fn):
     return genes
 
 
-def get_genes_as_intervals(fn, graph):
-    """
-    Returns a dict. Keys are gene names and values are intervals
-    representing the gene
-    :param fn: File name of file containing genes (on the format of UCSC)
-    :return:
-    """
-    genes = parse_genes_file(fn)
-    out = {}
-    for gene in genes:
-        chrom = gene["chrom"]
-        start = int(gene["txStart"])
-        end = int(gene["txEnd"])
-        name = gene["name"]
-        out[name] = Interval(start, end, [chrom], graph)
-
-    return out
-
-
 def get_gene_objects_as_intervals(fn, graph=None):
     """
     Returns a dict. Keys are gene names and values are intervals
@@ -138,82 +77,6 @@ def get_gene_objects_as_intervals(fn, graph=None):
     """
     genes = parse_genes_file(fn)
     return [Gene.from_dict(gene) for gene in genes]
-
-
-def find_unequal_sibling_genes(main_genes, alt_genes):
-    """TODO:
-    Categories:
-        Completely equal
-        Equal up to base pairs
-        Fully parallel
-        Starting ending equally, up to base pairs
-        Starting/Ending equally
-        Starting/Ending equally up to base pairs
-
-    :param main_genes: 
-    :param alt_genes: 
-    :returns: 
-    :rtype: 
-
-    """
-    graph = main_genes[0].transcription_region.graph
-    main_dict = defaultdict(list)
-    gene_categories = defaultdict(list)
-    for gene in main_genes:
-        main_dict[gene.name].append(gene)
-    gene_matches = []
-    for gene in alt_genes:
-        if gene.name not in main_dict:
-            continue
-        gene_matches.append(GeneMatcher(gene, main_dict[gene.name]))
-
-    return gene_matches
-
-
-def classify_alt_gene(gene):
-    def is_merged(name):
-        return name.count("chr") > 1
-
-    def was_alt(name):
-        return "alt" in name
-
-    def is_varying(name):
-        return was_alt(name) and not is_merged(name)
-
-    rps = gene.transcription_region.region_paths
-    if not any(is_varying(rp) for rp in rps):
-        return "FLANK"
-    if is_merged(rps[0]) and is_merged(rps[-1]):
-        return "BUBBLE"
-    elif is_merged(rps[0]):
-        return "START"
-    elif is_merged(rps[-1]):
-        return "END"
-    if len(rps) == 1:
-        return "ALT"
-    else:
-        raise Exception("Couldnt classify %s" % rps)
-
-
-def classify_alt_genes(genes):
-    """Group alt genes by their position on the alt loci
-    i.e, on flank, varying or a combination.
-
-    :param genes: list of  alt genes
-    :returns: dict of gene-lists for each category
-    :rtype: dict[str] = list(Gene)
-
-    """
-
-    rp_lists = [gene.transcription_region.region_paths for gene in genes]
-    classificaitons = []
-    for rps in rp_lists:
-        class_lists = defaultdict(list)
-
-    for gene, classi in zip(genes, classificaitons):
-        class_lists[classi].append(gene)
-
-    return class_lists
 
 
 def analyze_genes_on_merged_graph(genes, translation):
@@ -228,9 +91,6 @@ def analyze_genes_on_merged_graph(genes, translation):
 
     graph = translated[0].transcription_region.graph
     graph.critical_blocks = graph.find_all_critical_blocks()
-    main_chr_dict = defaultdict(list)
-
-    alt_dict = defaultdict(list)
     alt_genes = []
     main_genes = []
     for gene, t_gene in zip(genes, translated):
@@ -242,84 +102,6 @@ def analyze_genes_on_merged_graph(genes, translation):
     main_genes = GeneList(main_genes)
     matchings = GeneMatchings(alt_genes, main_genes)
     print(matchings)
-    return
-
-    print("N:", sum(len(v) for v in alt_dict.values()))
-    gene_matches = []
-    for chrom, genes in alt_dict.items():
-        gene_matches.extend(
-            find_unequal_sibling_genes(main_chr_dict[chrom], genes))
-
-    print("M", len(gene_matches))
-    for gene_category in ["ALT", "FLANK", "START", "END", "BUBBLE"]:
-        category_mathes = [m for m in gene_matches
-                           if m.category == gene_category]
-        score_dict = defaultdict(int)
-        for match in category_mathes:
-            score_dict[match.score] += 1
-        print(gene_category, score_dict)
-
-
-def find_exon_duplicates(genes, translation):
-    """Find and count duplicate genes on flanks of
-    alt loci
-
-    :param genes: genes on original graph
-    :param translation: translation object
-    """
-    translation.block_lengths = None
-    translated = [gene.translate(translation) for gene in genes]
-    gene_list = GeneList(translated)
-    gene_list.to_file("trans_genes")
-    print([g.transcription_region for g in genes])
-    print([g.transcription_region for g in translated])
-    # translated = GeneList.from_file("trans_genes").gene_list
-    graph = translated[0].transcription_region.graph
-    graph.critical_blocks = graph.find_all_critical_blocks()
-
-    main_chr_dict = defaultdict(list)
-
-    # class_lists = classify_alt_genes(genes)
-    alt_dict = defaultdict(list)
-    gene_categories = defaultdict(list)
-
-    for gene, t_gene in zip(genes, translated):
-        if "alt" in gene.chrom:
-            alt_dict[gene.chrom.split("_")[0]].append(t_gene)
-        else:
-            main_chr_dict[gene.chrom].append(t_gene)
-
-    print("N:", sum(len(v) for v in alt_dict.values()))
-    s = 0
-    gene_matches = []
-    for chrom, genes in alt_dict.items():
-        gene_matches.extend(
-            find_unequal_sibling_genes(main_chr_dict[chrom], genes))
-        continue
-        for k, v in new_things.items():
-            gene_categories[k].extend(v)
-        continue
-        for gene in genes:
-            for main_gene in main_chr_dict[chrom]:
-                if gene == main_gene:
-                    print(main_gene.name, gene.name)
-                    s += 1
-
-
-def blast_test():
-    try:
-        from StringIO import StringIO  # Python 2
-    except ImportError:
-        from io import StringIO
-
-    q = "data/tmp/sequence_chr2_KI270769v1_alt_1_120616.fasta"
-    r = "data/tmp/sequence_chr4_KI270785v1_alt_1_119912.fasta"
-
-    from Bio import pairwise2
-    qs = open(q).read()
-    rs = open(r).read()
-    alignments = pairwise2.align.globalxx(qs, rs)
-    print(alignments)
 
 
 def get_alt_loci_positions(alt_loci_file_name):
