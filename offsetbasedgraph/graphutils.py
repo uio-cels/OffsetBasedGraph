@@ -424,8 +424,7 @@ def blast_test():
     print(alignments)
 
 
-def get_alt_loci_positions(alt_loci_file_name='grch38_alt_loci.txt'):
-
+def get_alt_loci_positions(alt_loci_file_name):
     try:
         f = open(alt_loci_file_name, "r")
     except:
@@ -434,6 +433,7 @@ def get_alt_loci_positions(alt_loci_file_name='grch38_alt_loci.txt'):
 
     alt_loci = {}
     for line in f.readlines():
+        print(line)
         if line.startswith("#"):
             continue
         l = line.split()
@@ -452,14 +452,14 @@ def get_alt_loci_positions(alt_loci_file_name='grch38_alt_loci.txt'):
     return alt_loci
 
 
-def create_gene_dicts(genes, alt_loci_fn="data/grch38_alt_loci.txt", identical_names=False):
+def create_gene_dicts(genes, alt_loci_fn,
+                      identical_names=False):
     """
     Takes a list of genes, and creates an alt loci dict and a gene name dict
     :param genes:
     :return: alt loci dict, name dict
     """
     gene_name_dict = defaultdict(list)
-    exon_dict = defaultdict(list)
     for g in genes:
         gene_name_dict[g.name].append(g)
 
@@ -468,15 +468,12 @@ def create_gene_dicts(genes, alt_loci_fn="data/grch38_alt_loci.txt", identical_n
     chrom_genes = defaultdict(list)
     n = 0
     for g in genes:
-        #if n % 1000 == 0:
-        #    print("Parsed %d genes" % n)
         n += 1
         chrom = g.transcription_region.region_paths[0]
         if "alt" in chrom:
             alt_loci_genes[chrom].append(g)
         else:
             # Index non-alt loci genes using  offset of first exon
-            #exon_dict[g.exons[0].start_position.offset] = g
             chrom_genes[chrom].append(g)
 
     alt_infos = get_alt_loci_positions(alt_loci_fn)
@@ -544,11 +541,12 @@ def _analyse_fuzzy_genes_on_graph(genes_list, genes_against, graph):
 
 
 def analyze_multipath_genes_for_alt(alt_id, alt_loci_genes, main_genes,
-                                    graph, name_trans):
+                                    graph, name_trans, ncbi_alignments_dir):
     print("Analysing genes on alt locus %s" % alt_id)
 
     genes_here = alt_loci_genes[alt_id]
-    trans, complex_graph = merge_alt_using_cigar(graph, name_trans, alt_id)
+    trans, complex_graph = merge_alt_using_cigar(graph, name_trans, alt_id,
+                                                 ncbi_alignments_dir)
     full_trans = name_trans + trans
 
     # Find candidates on main path to check against:
@@ -579,12 +577,12 @@ def analyze_multipath_genes_for_alt(alt_id, alt_loci_genes, main_genes,
         complex_graph)
 
 
-def fuzzy_gene_analysis(genes, text_graph):
-    from offsetbasedgraph.graphutils import create_gene_dicts,\
-        translate_single_gene_to_aligned_graph
+def fuzzy_gene_analysis(genes, text_graph, ncbi_alignments_dir, alt_loci_filename):
+    from offsetbasedgraph.graphutils import create_gene_dicts
     print("Readinng in genes")
 
-    alt_loci_genes, gene_name_dict, main_genes = create_gene_dicts(genes)
+    alt_loci_genes, gene_name_dict, main_genes = create_gene_dicts(genes,
+                                                                   alt_loci_filename)
 
     # alt loci genes are only genes on alt loci (nothing on main)
     # exon_dict contains only genes on main, index by offset of first exon
@@ -598,7 +596,8 @@ def fuzzy_gene_analysis(genes, text_graph):
         if "alt" not in b:
             continue
         equal_total += analyze_multipath_genes_for_alt(
-            b, alt_loci_genes, main_genes, graph, name_trans)
+            b, alt_loci_genes, main_genes, graph, name_trans,
+            ncbi_alignments_dir)
         print(equal_total)
         print()
 

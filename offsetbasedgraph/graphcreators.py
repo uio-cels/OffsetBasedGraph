@@ -1,3 +1,4 @@
+import os
 from .translation import Translation
 from .graph import Graph, Block
 from .interval import Interval
@@ -115,7 +116,8 @@ def grch38_graph_to_numeric(original_grch38_graph):
     return graph, trans
 
 
-def merge_alt_using_cigar(original_numeric_grch38_graph, trans, alt_id):
+def merge_alt_using_cigar(original_numeric_grch38_graph,
+                          trans, alt_id, ncbi_alignments_dir):
     """
     Uses a cigar string from ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_assembly_structure/
     and merges the alt locus.
@@ -137,7 +139,7 @@ def merge_alt_using_cigar(original_numeric_grch38_graph, trans, alt_id):
     alt_end = 0
 
     try:
-        with open("alt_alignments/%s.alignment" % alt_id) as f:
+        with open(os.path.join(ncbi_alignments_dir, "%s.alignment" % alt_id)) as f:
             d = f.read().split(",")
             cigar = d[-1]
             # All numbers are 1-indxed and inclusive end (?)
