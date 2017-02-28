@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='offsetbasedgraph',
-      version='1.0.0',
+      version='1.0.1',
       description='Offset based graph',
       url='http://github.com/uio-cels/offsetbasedgraph',
       author='Ivar Grytten and Knut Rand',
@@ -9,11 +9,12 @@ setup(name='offsetbasedgraph',
       license='MIT',
       packages=['offsetbasedgraph'],
       zip_safe=False,
-      install_requires=['pymysql', 'numpy', 'future', 'biopython'])
+      install_requires=['pymysql', 'numpy', 'future'])
 
 
 """
 To update package:
+#Update version
 
 sudo python3 setup.py sdist
 sudo python3 setup.py bdist_wheel
