@@ -5,6 +5,7 @@ from .translation import Translation
 import pickle
 import os
 
+
 class Block(object):
     def __init__(self, length):
 
@@ -34,7 +35,8 @@ class Graph(object):
     reverse_adj_list = defaultdict(list)
 
     # Graph alterations
-    def __init__(self, blocks, adj_list, create_reverse_adj_list=True, rev_adj_list=None):
+    def __init__(self, blocks, adj_list, create_reverse_adj_list=True,
+                 rev_adj_list=None):
         """
         Inits the graph with a list of blocks and an adjency list
         :param blocks:
@@ -60,9 +62,6 @@ class Graph(object):
         :rtype: Graph
 
         """
-        import copy
-        #return copy.deepcopy(self)
-
         new_blocks = {}
         new_adjs = {}
         for b in self.blocks:
@@ -73,9 +72,7 @@ class Graph(object):
             new_adjs[b] = list(self.adj_list[b])
         # new_adjs = self.adj_list.copy()
 
-
         new_graph = Graph(new_blocks, new_adjs, True)
-        #new_graph.reverse_adj_list = self.reverse_adj_list.copy()
         return new_graph
 
     def _next_id(self):
@@ -87,12 +84,6 @@ class Graph(object):
         """
         self._id += 1
         return self._id
-
-        # Debug sanity checking
-        for block in adj_list:
-            assert block in self.blocks, "Edge found from block that is not in blocks"
-            for block2 in adj_list[block]:
-                assert block2 in self.blocks, "Edge found going to non-existing block"
 
     @staticmethod
     def from_file(file_name):
@@ -177,7 +168,6 @@ class Graph(object):
         """
         firsts = []
         for b in self.blocks:
-            n_in = 0
             if len(self.reverse_adj_list[b]) == 0:
                 firsts.append(b)
 
@@ -206,7 +196,9 @@ class Graph(object):
 
         return False
 
-    def create_subgraph_from_intervals(self, intervals, padding=10000, alt_locus=None, base_trans=None):
+    def create_subgraph_from_intervals(self, intervals, padding=10000,
+                                       alt_locus=None, base_trans=None):
+
         """
         Creates a subgraph containing all the intervals
         :param intervals: list of intervals. All region paths in the intervals must create a connected subgraph.
@@ -221,12 +213,10 @@ class Graph(object):
         for i in intervals:
             blocks.extend(i.region_paths)
 
-        subgraph = self.create_subgraph_from_blocks(blocks, alt_locus=alt_locus)
+        subgraph = self.create_subgraph_from_blocks(blocks,
+                                                    alt_locus=alt_locus)
 
-        #if base_trans is None:
         trans = Translation({}, {}, graph=subgraph)
-        #else:
-        #trans = base_trans
 
         remove = []  # Blocks to remove in the end
 
@@ -237,7 +227,7 @@ class Graph(object):
             # If contains genes: Prune
             # IF contains no genes, but multiple edges out: Prune
             first_rps = subgraph.get_first_blocks()
-            assert len(first_rps) == 1 , "%s has not length 1" % (first_rps)
+            assert len(first_rps) == 1, "%s has not length 1" % (first_rps)
             first_rp = first_rps[0]
 
             start_position = Position(first_rp, 0)
@@ -248,7 +238,6 @@ class Graph(object):
                     subgraph.remove(first_rp)
                     continue
 
-
             # Prune this rp
             first = first_rp
             first_length = subgraph.blocks[first].length()
@@ -258,7 +247,6 @@ class Graph(object):
             for i in intervals:
                 if i.region_paths[0] == first:
                     first_start = min(i.start_position.offset, first_start)
-
 
             padding_first = max(1, (first_length - first_start) + padding)
             split_trans = Translation({}, {}, graph=subgraph)
@@ -276,17 +264,12 @@ class Graph(object):
                                            [first], subgraph)]}, graph=subgraph)
 
                 start_position = Position(first, new_first_length)
-
-                #print(trans_first._a_to_b)
-                #print(trans_first)
                 subgraph = trans_first.translate_subgraph(subgraph)
                 split_trans = split_trans + trans_first
-                #subgraph.remove(new_first)
                 remove.append(new_first)
             subgraph = trans.translate_subgraph(subgraph)
             trans = trans + split_trans
             break
-
 
         # Prune from end
         while True:
@@ -295,7 +278,6 @@ class Graph(object):
             # If contains genes: Prune
             # IF contains no genes, but multiple edges out: Prune
             last_rps = subgraph.get_last_blocks()
-            #assert len(last_rps) == 1 , "%s is more than one last rp" % last_rps
             last_rp = last_rps[0]
 
             if not Graph.intervals_contains_rp(last_rp, intervals):
@@ -303,7 +285,6 @@ class Graph(object):
                 if len(self.reverse_adj_list[last_rp]) == 1:
                     subgraph.remove(last_rp)
                     continue
-
 
             # Prune this rp
             last = last_rp
@@ -320,34 +301,34 @@ class Graph(object):
             if last_length > padding:
                 # Divide last block
                 new_last = subgraph._next_id()
-                new_last_length  = last_length - padding_end
                 new_second = subgraph._next_id()
-                trans_last = Translation({last: [Interval(0, padding_end, [new_second, new_last])]},
-                                    {new_last: [Interval(padding_end, last_length, [last], subgraph)],
-                                     new_second: [Interval(0, padding_end, [last], subgraph)]}, graph=subgraph)
+                trans_last = Translation(
+                    {last: [Interval(0, padding_end, [new_second, new_last])]},
+                    {new_last:
+                     [Interval(padding_end, last_length, [last], subgraph)],
+                     new_second:
+                     [Interval(0, padding_end, [last], subgraph)]},
+                    graph=subgraph)
                 subgraph = trans_last.translate_subgraph(subgraph)
 
                 trans = trans + trans_last
-                #subgraph.remove(new_second)
                 remove.append(new_last)
             break
 
         for r in remove:
-            #print("Removed %r" % r)
             subgraph.remove(r)
         starts = subgraph.get_first_blocks()
         assert len(starts) == 1, " %s has not len 1" % (str(starts))
 
-        #assert False
-        #print("<p>Subgraph</p>")
-        #print(subgraph)
         return subgraph, trans, start_position
 
     def create_subgraph_from_blocks(self, blocks, alt_locus=None):
         """
-        Creates a subgraph using existing edges and only the blocks send as argument
+        Creates a subgraph using existing edges and only the blocks
+        send as argument
         :param blocks: list of block ids
-        :param alt_locus: If not None, alt loci blocks not from this alt locus will not be added to graph
+        :param alt_locus: If not None, alt loci blocks not from this
+        alt locus will not be added to graph
         This wil typically be parallell alt loci that potentially can be added
         :return: Returns a new graph
         """
@@ -361,52 +342,48 @@ class Graph(object):
 
         for b in blocks:
             for e in self.adj_list[b]:
-                #if e in new_blocks:
-                if alt_locus is not None and Graph.block_origin(e) == "alt" and alt_locus not in e:
+                if alt_locus is not None and\
+                   Graph.block_origin(e) == "alt" and alt_locus not in e:
                     continue
 
                 new_edges[b].append(e)
                 if e not in new_blocks:
-                    #print("<p>adding %s</p>" % e)
                     new_blocks[e] = Block(self.blocks[e].length())
 
         # Go through all added blocks, add edges into other added blocks
         for b in new_blocks:
-            #print("Checking edges for %s" % (b))
             for edge in self.adj_list[b]:
-                #print(" Edge %s" % edge)
                 if edge in new_blocks and edge not in new_edges[b]:
                     new_edges[b].append(edge)
 
         subgraph = Graph(new_blocks, new_edges)
-        subgraph_without_critical = subgraph.copy()
 
         # Add all blocks going into first blocks in graph
         firsts = subgraph.get_first_blocks()
         for f in firsts:
             for before in self.reverse_adj_list[f]:
 
-                if alt_locus is not None and Graph.block_origin(before) == "alt" and alt_locus not in before:
+                if alt_locus is not None \
+                   and Graph.block_origin(before) == "alt" \
+                   and alt_locus not in before:
                     continue
 
                 new_blocks[before] = Block(self.blocks[before].length())
-                #print("Adding before: %s" % before)
                 new_edges[before].append(f)
-                #print("  adding edge from %s to %s" % (before, f))
 
         subgraph = Graph(new_blocks, new_edges)
 
         # If two last rps, they should be going to the same next
-        #print(subgraph)
         lasts = subgraph.get_last_blocks()
         assert len(lasts) == 1 or len(lasts) == 2, "%s is lasts" % lasts
 
         if len(lasts) == 2:
             # Connect the two last to next
-            #print("Last")
-            #print(lasts)
-            if len(self.adj_list[lasts[0]]) > 0 and len(self.adj_list[lasts[1]]) > 0:
-                assert self.adj_list[lasts[0]][0] == self.adj_list[lasts[1]][0], "Not identical next: %s != %s" % (self.adj_list[lasts[0]][0], self.adj_list[lasts[1]][0])
+            if len(self.adj_list[lasts[0]]) > 0 \
+               and len(self.adj_list[lasts[1]]) > 0:
+                assert self.adj_list[lasts[0]][0] == self.adj_list[lasts[1]][0], \
+                    "Not identical next: %s != %s" % (self.adj_list[lasts[0]][0], self.adj_list[lasts[1]][0])
+
                 next = self.adj_list[lasts[0]]
                 assert len(next) == 1
                 next = next[0]
@@ -416,61 +393,6 @@ class Graph(object):
                 new_edges[lasts[1]].append(next)
 
         subgraph2 = Graph(new_blocks, new_edges)
-        return subgraph2
-
-        # Delete everything below here
-
-
-        # Append with prev critical and next critical (only if first/last is not critical)
-
-        """
-        first_blocks = subgraph.get_first_blocks()
-        assert len(first_blocks) > 0, "Subgraph has no first blocks. %s" % (subgraph)
-        first = first_blocks[0]
-        critical = self.find_critical_blocks(first)
-        critical.append(self.get_last_blocks()[0])
-        critical = set(critical)
-
-        prev_critical = self.find_previous_critical_block(first, critical)
-        new_blocks[prev_critical] = Block(self.blocks[prev_critical].length())
-        """
-        lasts = subgraph.get_last_blocks()
-
-        assert len(lasts) == 1 or len(lasts) == 2
-
-        if len(lasts) == 2:
-            # Connect the two last to next
-            assert self.adj_list[lasts[0]] == self.adj_list[lasts[1]], "Not identical next: %s != %s" % (self.adj_list[lasts[0]], self.adj_list[lasts[0]])
-            next = self.adj_list[lasts[0]]
-            assert len(next) == 1
-            next = next[0]
-            new_blocks.append(self.adj_list[lasts[0]])
-            new_edges[lasts[0]].append(next)
-            new_edges[lasts[1]].append(next)
-
-        """
-        if len(lasts) > 1:
-
-            last = lasts[0]
-            next_critical = self.find_next_critical_block(last, critical)
-            print("Next critical block: %s" % next_critical)
-            new_blocks[next_critical] = Block(self.blocks[next_critical].length())
-
-            # Create new edges to the new blocks
-            for l in subgraph_without_critical.get_last_blocks():
-                print("Connecting edges from %s" % l)
-                if l != next_critical and next_critical in self.adj_list[l]:
-                    new_edges[l] = [next_critical]
-                    print(" Connecting %s to %s" % (l, next_critical))
-
-
-        for f in subgraph_without_critical.get_first_blocks():
-
-            if f != prev_critical:
-                new_edges[prev_critical] = [f]
-        """
-        subgraph2 = Graph(new_blocks, new_edges)
-
         return subgraph2
 
     def remove(self, block_id):
@@ -584,22 +506,6 @@ class Graph(object):
                             Position(block_id, offset+block.length()))]
              for _id, block, offset, in zip(ids, blocks, [0]+offsets)}
         )
-
-    def _merge_clean_intervals(self, intervals):
-        """Merge intervals that all start at beginning
-        of a region path
-
-        :param intervals: 
-        :returns: 
-        :rtype: Translation
-
-        """
-        first_rps = [interval.region_paths[0] for interval in intervals]
-        first_rp_lengths = [self.blocks[rp].lenght()
-                            for rp in first_rps]
-        min_len = min(first_rp_lengths)
-        translations = [self._split_block(rp, min_len) for
-                        rp in first_rps]
 
     def get_split_translation(self, rp, offset):
 
@@ -752,7 +658,7 @@ class Graph(object):
         trans, ng = new_graph._get_insulated_merge_translation(intervals)
         return full_trans+trans, ng
 
-    def _get_inslulate_translation(self, intervals, block_lengths = {}):
+    def _get_inslulate_translation(self, intervals, block_lengths={}):
         """Get translation for splitting the region paths
         at the start and end of the intervals such that
         all the intervals span complete region paths
@@ -814,7 +720,8 @@ class Graph(object):
                          for interval in intervals]
         ends = [interval.end_position for interval in new_intervals]
 
-        # Update interval's graph. Is this necessary? Should be done in translate interval
+        # Update interval's graph. Is this necessary?
+        # Should be done in translate interval
         for interval in new_intervals:
             interval.graph = cur_graph
 
@@ -841,7 +748,7 @@ class Graph(object):
                 Position(id_b, L-offset)
                 )]
 
-            prev_graph = cur_graph#.copy()
+            prev_graph = cur_graph
             reverse_dict[id_a] = [Interval(Position(rp, 0),
                                            Position(rp, offset),
                                            graph=prev_graph)]
@@ -864,7 +771,6 @@ class Graph(object):
 
             end_translations += tmp_trans
 
-
         translation += end_translations
 
         return translation, cur_graph
@@ -878,12 +784,13 @@ class Graph(object):
             for interval in intervals:
                 assert interval.graph is not None
 
-    def _update_a_b_graph(self, a_b, graph, prev_graph = None):
+    def _update_a_b_graph(self, a_b, graph, prev_graph=None):
         for block, intvs in a_b.items():
             for interval in intvs:
                 interval.graph = graph
-                if prev_graph != None:
-                    interval.set_length_cache(prev_graph.blocks[block].length())
+                if prev_graph is not None:
+                    interval.set_length_cache(
+                        prev_graph.blocks[block].length())
 
     def assert_position_in_graph(self, position, exclusive=False):
         assert position.region_path_id in self.blocks
@@ -914,13 +821,15 @@ class Graph(object):
         length = intervals[0].length()
         for interval in intervals[1:]:
             assert interval.length() == length, \
-                "All intervals should have the same length (%d, %d)" % (interval.length(), length)
-
+                "All intervals should have the same length (%d, %d)" % \
+                (interval.length(), length)
 
         # 1: Translate graph so that all intervals starts and ends at rps
-        trans, graph1 = self._get_inslulate_translation(intervals, block_lengths)
+        trans, graph1 = self._get_inslulate_translation(intervals,
+                                                        block_lengths)
         trans.graph2 = graph1
-        self._update_a_b_graph(trans._a_to_b, graph1)  # correct, a to b interval's graph is wrong for some reason
+        # correct, a to b interval's graph is wrong for some reason
+        self._update_a_b_graph(trans._a_to_b, graph1)
 
         # Update intervals to be on graph1
         new_intervals = []
@@ -957,11 +866,7 @@ class Graph(object):
 
         # Find new graph
         trans2 = Translation(a_b, b_a, graph1, block_lengths)
-        #graph2 = trans2.translate_subgraph(graph1)
-        #trans2.graph2 = graph2
-
         # Update graph in a_b intervals to graph2 (which is now created)
-        #self._update_a_b_graph(a_b, graph2)
 
         # Step 3: Merge each block (representing one interval each) to one single block
         new_block = graph1._next_id()
@@ -979,9 +884,6 @@ class Graph(object):
 
         # Translate graph
         trans3 = Translation(a_b, b_a, None, block_lengths)
-        #graph3 = trans3.translate_subgraph(graph2)
-        #self._update_a_b_graph(a_b, graph3)
-        #trans3.graph2 = graph3
 
         # Step 4: Divide large middle block
         starts = []
@@ -994,7 +896,6 @@ class Graph(object):
         starts = list(set(starts))
         starts.sort()
 
-
         # Create translation from big block to all small created from each start
         a_b = {new_block: []}
         b_a = {}
@@ -1003,9 +904,9 @@ class Graph(object):
         last_length = 0
         sum_len = 0
         for start in starts:
-            new_small = graph1._next_id()  # graph3._next_id()
+            new_small = graph1._next_id()
             new_blocks.append(new_small)
-            i = Interval(prev_start, start, [new_block]) #, graph3)
+            i = Interval(prev_start, start, [new_block])
             i.set_length_cache(start - prev_start)
             b_a[new_small] = [i]
             block_lengths[new_small] = start - prev_start
@@ -1017,26 +918,12 @@ class Graph(object):
         i2.set_length_cache(sum_len)
         a_b[new_block].append(i2)
 
-
         trans4 = Translation(a_b, b_a, None, block_lengths)
-        #print("==== Trans 4 ====")
-        #print(trans4)
-        #graph4 = trans4.translate_subgraph(graph3)
-        #self._update_a_b_graph(a_b, graph4)
-        #trans4.graph2 = graph4
-
 
         final_trans = trans + trans2
         final_trans += trans3
         final_trans += trans4
-        """
-
-        final_trans = trans3 + trans4
-        final_trans = trans2 + final_trans
-        final_trans = trans + final_trans
-        """
         final_trans.graph1 = original_graph  # Should not be needed ?!
-
 
         final_graph = final_trans.translate_subgraph(self)
         final_trans.graph2 = final_graph
@@ -1102,18 +989,6 @@ class Graph(object):
             sub_intervals_a, sub_intervals_b,
             ids)
 
-        graph = self.copy() if copy else self
-        # for pair in zip(sub_intervals_a, sub_intervals_b):
-        #     start_intervals = [i for i in pair if i.start_position.offset == 0]
-        #     in_edges = sum([self.reverse_adj_list[i.region_paths[0]]
-        #                     for i in start_intervals], [])
-        #     out_intervals = [
-        #         i for i in pair if
-        #         i.end_position.offset == self.blocks[i.end_position.region_path_id].length()]
-        #     out_edges = sum([self.adj_list[i.region_paths[-1]] for i in end_intervals], [])
-        # 
-        #     graph
-
         return translation
 
     def _get_all_block_borders(self, interval_a, interval_b):
@@ -1142,7 +1017,8 @@ class Graph(object):
         pass
 
     def __str__(self):
-        return "Graph: \n Blocks: %s\n Edges: %s" % (self.blocks, self.adj_list)
+        return "Graph: \n Blocks: %s\n Edges: %s" % \
+            (self.blocks, self.adj_list)
 
     def __repr__(self):
         return self.__str__()
@@ -1166,21 +1042,11 @@ class Graph(object):
             return False
 
         for adj in self.adj_list:
-            #if adj in other.adj_list and self.adj_list[adj] != other.adj_list[adj]:
             if set(self.adj_list[adj]) != set(other.adj_list[adj]):
-                #print("Different adj list for key %d" % (adj))
                 return False
         for adj in other.adj_list:
             if set(self.adj_list[adj]) != set(other.adj_list[adj]):
-            #if adj in self.adj_list and self.adj_list[adj] != other.adj_list[adj]:
-                #print("Different adj list 2")
                 return False
-
-
-        #if self.adj_list != other.adj_list:
-        #    return False
-
-
 
         return True
 
@@ -1200,7 +1066,7 @@ class Graph(object):
         :return: merged, alt or main
         """
         name = str(name)
-        if name.count("chr") == 1 and not "alt" in name:
+        if name.count("chr") == 1 and "alt" not in name:
             return "main"
         elif name.count("chr") == 2:
             return "merged"
@@ -1234,7 +1100,6 @@ class Graph(object):
 
         while(self.adj_list[cur_block]):
             visited.append((cur_block, counter))
-            # assert counter >= 0, visited
             if counter == 0:
                 critical_blocks.append(cur_block)
             nexts = self.adj_list[cur_block]
@@ -1301,8 +1166,10 @@ class Graph(object):
             critical_blocks = self.critical_blocks
         if block_a == block_b:
             return True
-        critical_block_a = self.find_previous_critical_block(block_a, critical_blocks)
-        critical_block_b = self.find_previous_critical_block(block_b, critical_blocks)
+        critical_block_a = self.find_previous_critical_block(
+            block_a, critical_blocks)
+        critical_block_b = self.find_previous_critical_block(
+            block_b, critical_blocks)
         return critical_block_a == critical_block_b
 
     def find_parallell_blocks(self, blocks, filter_func):
@@ -1386,21 +1253,17 @@ class Graph(object):
         # edges in and out
         other_blocks = list(other.blocks.keys()).copy()
         for b in self.blocks:
-            #print("Checking %d" % b)
             match = False
             for ob in other_blocks:
-                #print("   Checking %d" % ob)
                 sim_out = len(self.adj_list[b]) == len(other.adj_list[ob])
                 sim_in = self.n_edges_in(b) == other.n_edges_in(ob)
                 if sim_out and sim_in:
                     # Remove from list to check, and check next (break)
                     other_blocks.remove(ob)
-                    #print("      Match!")
                     match = True
                     break
             if not match:
                 # No match for block b, return False
-                #print("No match for block %d" % (b))
                 return False
 
         return True

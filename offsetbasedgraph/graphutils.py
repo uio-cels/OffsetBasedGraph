@@ -37,8 +37,6 @@ def _connect_without_flanks(graph, alt_loci_fn, name_translation):
 
         intervals = flanks.get_flanks(alt_locus_id, length,
                                       main_chr, start-1, end)
-        #for interval in intervals:
-        #    print(interval)
 
         n_starts = len([b for b in new_graph.blocks if not
                         new_graph.reverse_adj_list[b]])
@@ -53,8 +51,8 @@ def _connect_without_flanks(graph, alt_loci_fn, name_translation):
     return new_graph, final_trans
 
 
-
-def create_subgraph_around_alt_locus(graph, trans, alt_locus, padding=200000, alt_loci_fn='grch38_alt_loci.txt'):
+def create_subgraph_around_alt_locus(graph, trans, alt_locus, padding=200000,
+                                     alt_loci_fn='grch38_alt_loci.txt'):
     """
     Takes a translation from an original grch38 graph (created by create_initial_grch38_graph)
     and uses a translation from that graph to current graph
@@ -443,8 +441,10 @@ def _analyse_fuzzy_genes_on_graph(genes_list, genes_against, graph):
 def analyze_multipath_genes_for_alt(alt_id, alt_loci_genes, main_genes,
                                     graph, name_trans, ncbi_alignments_dir):
     print("Analysing genes on alt locus %s" % alt_id)
-
     genes_here = alt_loci_genes[alt_id]
+    if not (genes_here and main_genes[alt_id]):
+        return 0
+
     trans, complex_graph = merge_alt_using_cigar(graph, name_trans, alt_id,
                                                  ncbi_alignments_dir)
     full_trans = name_trans + trans
@@ -477,12 +477,13 @@ def analyze_multipath_genes_for_alt(alt_id, alt_loci_genes, main_genes,
         complex_graph)
 
 
-def fuzzy_gene_analysis(genes, text_graph, ncbi_alignments_dir, alt_loci_filename):
+def fuzzy_gene_analysis(genes, text_graph, ncbi_alignments_dir,
+                        alt_loci_filename):
     from offsetbasedgraph.graphutils import create_gene_dicts
     print("Readinng in genes")
 
-    alt_loci_genes, gene_name_dict, main_genes = create_gene_dicts(genes,
-                                                                   alt_loci_filename)
+    alt_loci_genes, gene_name_dict, main_genes = create_gene_dicts(
+        genes, alt_loci_filename)
 
     # alt loci genes are only genes on alt loci (nothing on main)
     # exon_dict contains only genes on main, index by offset of first exon

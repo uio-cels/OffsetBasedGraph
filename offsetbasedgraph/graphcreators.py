@@ -252,7 +252,7 @@ def merge_alt_using_cigar(original_numeric_grch38_graph,
             alt_end = int(d[3]) - 1 + 1
     except:
         print("Could not open alignment file alt_alignments/%s.alignment" %
-              os.paht.join(ncbi_alignments_dir, alt_id))
+              os.path.join(ncbi_alignments_dir, alt_id))
         return trans, trans.graph2
     main_chr = alt_id.split("_")[0]
 
