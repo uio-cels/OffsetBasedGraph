@@ -14,16 +14,5 @@ cd OffsetBasedGraph
 pip3 install -e .
 ```
 
-# Examples
-The following is a few examples for using the package. For full documentation, see https://pythonhosted.org/offsetbasedgraph/.
-
-### Creating a simple graph from GRCh38
-
-```
-
-```
-###
-
-# Documentation
-
-The official documentation can be found at https://pythonhosted.org/offsetbasedgraph/
+# Examples and documentation
+Examples for using the package can be found along with documentation at https://pythonhosted.org/offsetbasedgraph/.
