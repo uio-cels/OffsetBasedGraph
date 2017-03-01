@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='offsetbasedgraph',
-      version='1.0.1',
+      version='1.0.2',
       description='Offset based graph',
       url='http://github.com/uio-cels/offsetbasedgraph',
       author='Ivar Grytten and Knut Rand',

@@ -99,14 +99,14 @@ Positions consist of a region path ID and an offset::
     my_position = Position("chr1_some_alt", 100)
 
 
-Singlepath intervals contain a start position, end position and a list of region paths ids::
+Singlepath intervals consists of a start position, end position and a list of region paths ids::
 
     from offsetbasedgraph import Interval
     start_position = Position("chr1", 100)
     end_position = Position("chr1_some_alt", 100)
     interval = Interval(start_position, end_position, ["chr1", "chr1_some_alt"])
 
-The interval init method also accepts only the offsets instead of full start and end positions::
+The interval init method can also be initialized using only the start and end offsets instead of full start and end positions::
 
     interval = Interval(100, 100, ["chr1", "chr1_some_alt"])
 
