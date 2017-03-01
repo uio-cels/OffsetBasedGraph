@@ -1,3 +1,6 @@
+"""
+This is a collection of methods for creating and modifying graphs.
+"""
 import os
 import sys
 from .translation import Translation
@@ -10,13 +13,11 @@ import csv
 def merge_flanks(intervals, final_trans, new_graph, name_translation):
     """
     Merges the start and end flanks represented in intervals on the given graph
-    :param intervals: List of start and end flanks to merge
-    [start, start, end, end]
-    Intervals should be on first graph (i.e. name_translation.graph1)
+
+    :param intervals: List of start and end flanks to merge [start, start, end, end] Intervals should be on first graph (i.e. name_translation.graph1)
     :param final_trans: Trans that will be updated
     :param new_graph: Current graph
-    :param name_translation: Translation from human readable names to
-    numeric IDs. Can be an empty translation
+    :param name_translation: Translation from human readable names to numeric IDs. Can be an empty translation
     :return: Returns the new graph and translation as a tuple
     :rtype: (Graph, Translation)
     """
@@ -83,6 +84,7 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation,
     """
     Connects the alternative loci in the given file to the grch38 graph,
     without flanks.
+
     :param alt_loci_fn: Filename of file containing alternative loci.
     One alt locus on each line.
     Four columns: alt_locus_id  chr chr_start   chr_stop
@@ -139,6 +141,7 @@ def convert_to_numeric_graph(graph):
 def create_initial_grch38_graph(chrom_sizes_fn):
     """
     Creates an initial grch38 graph with no connected blocks
+
     :param chrom_sizes_fn: Filename of chrom sizes file
     :return: Returns a Graph with no connected blocks
     :rtype: Graph
@@ -221,20 +224,17 @@ def grch38_graph_to_numeric(original_grch38_graph):
 
 def merge_alt_using_cigar(original_numeric_grch38_graph,
                           trans, alt_id, ncbi_alignments_dir):
-    """
-    Uses a cigar string from ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_assembly_structure/
+    """Uses a cigar string from ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_assembly_structure/
     and merges the alt locus.
 
-    :param original_grch38_graph: Original numeric grch38 graph,
-    built by calling the method create_initial_grch38_graph and then
-    grch38_graph_to_numeric.
-    :param trans: Translation object from original grch38 graph to
-    numeric (returned by grch38_graph_to_numeric)
+    :param original_numeric_grch38_graph:
+    :param trans: Translation object from original grch38 graph to numeric (returned by grch38_graph_to_numeric)
     :param alt_id: Alt id (e.g. chr2_KI270774v1_alt)
-    :return: Returns the new graph and a translation object between
-    the original grch38 graph and the new graph
+    :param ncbi_alignments_dir: Directory containing preprocessed ncbi alignment files
+    :return: Returns the new graph and a translation object between the original grch38 graph and the new graph
     :rtype: (Graph, Translation)
     """
+
     # Find position of alt locus
     main_chr = ""
     main_start = 0

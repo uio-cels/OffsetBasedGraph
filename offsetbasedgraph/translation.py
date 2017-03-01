@@ -11,6 +11,7 @@ class Translation(object):
     """
     Holds information necessary to translate coordinates and intervals
     from one graph to another
+
     >>> forward_dict = {"chr1": [Interval(0, 100, ["chr1-0", "chr1-1", "chr1-2"])],
     "alt": [Interval(0,100, ["chr1-1, "alt-0"])]}
     >>> reverse_dict = {"chr1-0": [Interval(0, 50, ["chr1"])],
@@ -18,6 +19,7 @@ class Translation(object):
     "chr1-2": [Interval(110, 210, ["chr1"])],
     "alt-0": [Interval(50, 100, ["alt"])]}
     >>> translation = Translation(forward_dict, reverse_dict, graph)
+
     """
 
     def __init__(self, translate_dict={}, reverse_dict={},
