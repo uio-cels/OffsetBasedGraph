@@ -175,6 +175,9 @@ class Interval(BaseInterval):
                 return Position(region_path, total_offset)
             total_offset -= rp_length
 
+        if total_offset == 0:
+            return Position(region_path, rp_lens[-1])
+
         assert False, "No offset %d from interval %s using rp lens %s" % \
             (offset, self, list(rp_lens))
 

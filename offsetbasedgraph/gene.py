@@ -64,7 +64,7 @@ class MultiPathGene(object):
 
 class GeneBase(object):
     def __init__(self, name, transcription_region, exons,
-                 coding_region, strand):
+                 coding_region, strand, cds_status):
         self.name = name
         self.transcription_region = transcription_region
         self.coding_region = coding_region
@@ -73,6 +73,7 @@ class GeneBase(object):
         self.chrom = transcription_region.region_paths[0]
         self.graph = self.transcription_region.graph
         self.transcript_length = sum(exon.length() for exon in exons)
+        self.cds_status = cds_status
 
     def __eq__(self, other):
         """Check if genes are equal up to name
@@ -148,9 +149,10 @@ class Gene(GeneBase):
         exons = [Interval(start, end, [chrom]) for start, end in
                  zip(exon_starts, exon_ends)]
         strand = attr_dict["strand"]
+        cds_status = (attr_dict["cdsStartStat"], attr_dict["cdsEndStat"])
 
         return cls(attr_dict["name"], transcription_region, exons,
-                   coding_region, strand)
+                   coding_region, strand, cds_status)
 
     def translate(self, T):
         """Translate transcription_region and exons and return
@@ -163,10 +165,10 @@ class Gene(GeneBase):
         """
 
         t_transcription_region = T.translate(self.transcription_region)
-        t_coding_region = self.coding_region  # T.translate(self.coding_region)
+        t_coding_region = T.translate(self.coding_region)
         t_exons = [T.translate(exon) for exon in self.exons]
         return Gene(self. name, t_transcription_region, t_exons,
-                    t_coding_region, self.strand)
+                    t_coding_region, self.strand, self.cds_status)
 
     def get_transcript_length(self):
         """Return combined length of exons
@@ -258,7 +260,7 @@ class GeneIO(object):
     """Unfinished gene writer/reader"""
     def __init__(self, gene):
         self.gene = gene
-        
+
     def to_file_line(self):
         cur_rp = self.gene.transcription_region.region_paths[0]
         exon_strings = []
@@ -272,9 +274,18 @@ class GeneIO(object):
             self.gene.transcription_region.region_paths+[
                 str(self.gene.transcription_region.start_position.offset),
                 str(self.gene.transcription_region.end_position.offset)])
+
+        coding_region_string = ",".join(
+            self.gene.coding_region.region_paths+[
+                str(self.gene.coding_region.start_position.offset),
+                str(self.gene.coding_region.end_position.offset)])
+
+        cds_status_string = " ".join(self.gene.cds_status)
         return "\t".join([self.gene.name,
                           transcript_string,
-                          " ".join(exon_strings)])
+                          coding_region_string,
+                          " ".join(exon_strings),
+                          cds_status_string])
 
     @classmethod
     def parse_transcript_region(cls, transcript_string):
