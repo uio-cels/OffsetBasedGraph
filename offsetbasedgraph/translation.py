@@ -66,6 +66,7 @@ class Translation(object):
     def make_name_translation(cls, trans_dict, graph):
         """
         Creates a copied version of trans_dict where region path have name IDs
+
         :param trans_dict:
         :param graph:
         :return: Returns a new translation object
@@ -86,6 +87,7 @@ class Translation(object):
 
     def to_file(self, file_name):
         """Writes translation object to pickle
+
         :param file_name: File name
         """
         with open("%s" % file_name, "wb") as f:
@@ -308,6 +310,7 @@ class Translation(object):
     def __add__(self, other):
         """
         Combine (add) two translations.
+
         :param other: Another translation
         :return: Combined Translation
         :rtype: Translation
@@ -401,8 +404,9 @@ class Translation(object):
         return [rp_interval]
 
     def set_graph2(self, graph2):
-        """Set graph to on self and all Interval objects
-        in forward and reverse dict.
+        """Set graph2 ("other graph") and update all Interval objects
+        in forward dict so that they have this graph.
+
         :param graph2: Graph
         """
         self.graph2 = graph2
@@ -420,6 +424,7 @@ class Translation(object):
     def copy(self):
         """Make new Translation object with copies
         of forward and reverse translation dicts
+
         :rtype: Translation
 
         """

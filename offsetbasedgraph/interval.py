@@ -25,6 +25,11 @@ class Position(object):
     def copy(self):
         return Position(self.region_path_id, self.offset)
 
+    def notation(self):
+        """
+        :return: Returns a numan readable string notation
+        """
+        return "%s:%d" % (self.region_path_id, self.offset)
 
 class BaseInterval(object):
     def set_length_cache(self, l):
@@ -129,6 +134,7 @@ class Interval(BaseInterval):
 
     def contains_rp(self, region_path):
         """Check if interval uses region_path
+
         :param region_path: region path id
         :rtype: bool
         """
@@ -203,6 +209,14 @@ class Interval(BaseInterval):
         """
         :return: Returns a human readable notation of the interval
         """
+
+        out = ""
+        out += self.start_position.notation()
+        for rp in self.region_paths:
+            out += ", %s" % rp
+        out += ", %s" % self.end_position.notation()
+        return out
+
         return "%s, %s, [%s]" % (
             self.start_position.offset,
             self.end_position.offset,

@@ -64,6 +64,7 @@ def parse_genes_file(genes_fn):
     """
     Parses a file containing genes (on the format of UCSC),
     and returns a list of dicts
+
     :param genes_fn: File name
     :return: Returns a list of genes, one dict for each gene
     """

@@ -86,8 +86,8 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation,
     without flanks.
 
     :param alt_loci_fn: Filename of file containing alternative loci.
-    One alt locus on each line.
-    Four columns: alt_locus_id  chr chr_start   chr_stop
+        One alt locus on each line.
+        Four columns: alt_locus_id  chr chr_start   chr_stop
     :param filter_alt_loci: If not empty, only these alt loci will be connected
     :return: Returns the new graph and translation from graph to new graph
     :rtype: (Graph, Translation)

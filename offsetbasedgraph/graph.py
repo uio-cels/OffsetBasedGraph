@@ -516,6 +516,7 @@ class Graph(object):
     def n_edges_in(self, block):
         """
         Finds and returns the number of edges going in to a block
+
         :param block:
         :return: Returns the number of edges
         """
