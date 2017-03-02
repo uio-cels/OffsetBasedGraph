@@ -36,6 +36,7 @@ class BaseInterval(object):
 
     def _calculate_length(self):
         """Calculate length of interval
+
         :returns: lenght of interval
         :rtype: int
 

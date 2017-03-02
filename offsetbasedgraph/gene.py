@@ -31,6 +31,7 @@ class GeneList(object):
     @classmethod
     def from_file(cls, file_name):
         """Read gene list from csv file
+        
         :param file_name: csv file name
         :returns: list of genes
         :rtype: GeneList
@@ -189,6 +190,7 @@ class Gene(GeneBase):
         Difference between start and end positions of 
         transcription region as well as all exons must be
         less than tolerance
+
         :param other: Gene
         :param tolerance: allowed differnce (int)
         :rtype: bool

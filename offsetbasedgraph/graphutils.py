@@ -25,8 +25,9 @@ def create_subgraph_around_alt_locus(graph, trans, alt_locus, padding=200000,
     :param trans: Translation from original grch38 graph to current graph
     :param alt_locus: alt locus ID to create subgraph around
     :param padding: Padding. Number if basepairs to include around alt locus
-    :return: Returns subgraph, a translation object and
-    start position of the subgraph
+    :return: Returns subgraph,
+        a translation object and
+        start position of the subgraph
     """
 
     # For now, only use trans object to find which intervals in graph
@@ -79,6 +80,7 @@ def get_gene_objects_as_intervals(fn, graph=None):
     """
     Returns a dict. Keys are gene names and values are intervals
     representing the gene
+
     :param fn: File name of file containing genes (on the format of UCSC)
     :return:
     """

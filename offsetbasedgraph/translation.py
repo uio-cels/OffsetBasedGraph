@@ -27,6 +27,7 @@ class Translation(object):
         """
         Init the translation object with two dicts. Each dict has
         region path IDs as keys and a list of intervals as values.
+
         :param translate_dict: Mapping of region paths in graph1 to intervals
         in graph2
         :param reverse_dict: Mapping of region paths in graph2 to intervals
@@ -210,6 +211,7 @@ class Translation(object):
         """
         Translates a graph (forward). The graph has to be a subgraph of
         graph1 in the translation object.
+
         :param subgraph: Subgraph to translate.
         :return: Returns the translated subgraph
         """
@@ -238,6 +240,7 @@ class Translation(object):
     def translate_interval(self, interval, inverse=False):
         """
         Translate an interval between the two coordinate systems.
+
         :param interval: Interval
         :param inverse: wheter to use the inverse translation
         :return: Returns an interval. If inverse is True, a list of intervals
@@ -270,6 +273,7 @@ class Translation(object):
     def translate_position(self, position, inverse=False):
         """
         Translates a position
+
         :param position: Position
         :param inverse: If True, translate back
         :return: Returns the translated Position
