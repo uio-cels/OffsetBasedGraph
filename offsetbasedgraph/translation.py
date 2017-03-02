@@ -5,9 +5,6 @@ import pickle
 
 
 class Translation(object):
-
-
-
     """
     Holds information necessary to translate coordinates and intervals
     from one graph to another

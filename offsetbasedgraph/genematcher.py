@@ -1,4 +1,5 @@
 from collections import defaultdict
+from .gene import GeneIO
 import pickle
 
 
@@ -9,9 +10,11 @@ class GeneMatcher(object):
     def __init__(self, alt_gene, main_genes):
         self.is_cut = False
         self.alt_gene = alt_gene
-        self.main_genes = [gene for gene in main_genes if
-                           gene.strand == alt_gene.strand]
         self.category = self.classify_alt_gene(alt_gene)
+        self.main_genes = [gene for gene in main_genes if
+                           gene.strand == alt_gene.strand or
+                           self.category == "VAR"]
+
         self.merged_rps = [rp for rp in
                            alt_gene.transcription_region.region_paths
                            if self.is_merged(rp)]
@@ -28,8 +31,6 @@ class GeneMatcher(object):
         self.score = max_score
         self.match_gene = self.main_genes[
             self.scores.index(max_score)]
-
-        self.is_cut = self.alt_gene.transcript_length != self.match_gene.transcript_length
 
     @staticmethod
     def is_merged(name):
@@ -104,8 +105,32 @@ class GeneMatchings(object):
             for alt_gene in alt_genes:
                 self.matches.append(GeneMatcher(alt_gene, main_genes))
 
+    def calculate_summary_categories(self):
+        cat_1 = len([m for m in self.matches
+                     if m.category == "FLANK" and m.score == 5])
+        cat_2 = len([m for m in self.matches
+                     if m.category == "VAR" and m.score == 5])
+        cat_3 = len([m for m in self.matches
+                     if m.category == "FLANK+VAR" and m.score == 5])
+        cat_4 = len([m for m in self.matches if m.score in (3, 2)])
+        cat_5 = len(self.matches)-cat_1-cat_2-cat_3-cat_4
+        return [cat_1, cat_2, cat_3, cat_4, cat_5]
+
+    def find_unequal_length_uncut_isoforms(self):
+        return [(m.alt_gene, m.match_gene) for m in
+                self.matches if m.score == 2]
+
     def __str__(self):
         lines = []
+
+        #for pair in self.find_unequal_length_uncut_isoforms():
+        #    lines.append("")
+        #    lines.append(str(pair[0].transcript_length) + "\t" +
+        #                 GeneIO(pair[0]).to_file_line())
+        #    lines.append(str(pair[1].transcript_length) + "\t" +
+        #                 GeneIO(pair[1]).to_file_line())
+        #    lines.append(str(len(self.find_unequal_length_uncut_isoforms())))
+
         for category in GeneMatcher.categories:
             lines.append(category)
             category_mathes = [m for m in self.matches
@@ -115,7 +140,11 @@ class GeneMatchings(object):
                 score_dict[match.score] += 1
             lines.extend("\t%s:\t %s" % (self.codes[k], v)
                          for k, v in score_dict.items())
-
+    
+        summary_categories = self.calculate_summary_categories()
+        lines.extend(["", "Summary categories"])
+        lines.extend(["Cat %s:\t %s" % (i+1, c)
+                      for i, c in enumerate(summary_categories)])
         return "\n".join(lines)
 
     def __repr__(self):
