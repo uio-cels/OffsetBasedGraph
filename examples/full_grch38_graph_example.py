@@ -17,7 +17,7 @@ grch38_graph_with_flanks = name_graph
 print(grch38_graph_with_flanks.summary())
 
 # Translate example genes
-genes = GeneList.from_file("genes.example")
-translated_genes = genes.translate(final_translation)
-for gene in translated_genes.gene_list:
-    print(GeneIO(gene).to_file_line())
+gene_list = GeneList.from_file("genes.example")
+print(gene_list)
+translated_gene_list = gene_list.translate(final_translation)
+print(translated_gene_list)

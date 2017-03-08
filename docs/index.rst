@@ -149,8 +149,8 @@ alt locus. Using this translation object, we can translate intervals from an ori
 GRC3h8 graph (*graph*) to our *connected_graph*::
 
     from offsetbasedgraph.gene import GeneList
-    genes = GeneList.from_file("genes.example").gene_list
-    translated_genes = [g.translate(connected_trans) for g in genes]
+    gene_list = GeneList.from_file("genes.example")
+    translated_genes = gene_list.translate(connected_trans)
 
 We have noe successfully represented genes on a graph based on GRCh38.
 
@@ -171,6 +171,15 @@ NB: This code takes time to run, as remote sequence data needs to be downloaded:
     final_translation.graph2 = name_graph
 
     grch38_graph_with_flanks = name_graph
+
+    print(grch38_graph_with_flanks.summary())
+    
+    # Translate example genes
+    gene_list = GeneList.from_file("genes.example")
+    print(gene_list)
+
+    translated_gene_list = gene_list.translate(final_translation)
+    print(translated_gene_list)
 
 
 

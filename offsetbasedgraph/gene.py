@@ -61,6 +61,10 @@ class GeneList(object):
                             for gene in self.gene_list]
         return GeneList(translated_genes)
 
+    def __str__(self):
+        lines = [GeneIO(gene).to_file_line() for gene in self.gene_list]
+        return "GeneList:\n" + "\n".join(lines)
+
 
 class MultiPathGene(object):
     def __init__(self, name, multipath_interval):
