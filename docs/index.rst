@@ -9,7 +9,7 @@ making it possible to e.g. convert interval from one graph to another.
 
 Installation
 =================
-The package with dependencies can be installed with pip::
+The package with dependencies can be installed using pip::
 
     pip3 install offsetbasedgraph
 
@@ -47,6 +47,7 @@ and save that graph to file::
 The graph can later be read from file again::
 
     graph = Graph.from_file("mygraph.graph")
+
 
 Translating between graphs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -119,7 +120,8 @@ The package also supports some multipath intervals. See the documentation.
 Example using GRCh38
 =============================================
 This example assumes that you have clone the repository (see Installation) and that you are positioned in the
-examples directory.
+examples directory. The code for this example can be found in
+`examples/grch38_example.py`.
 
 Included in the package are some utility functions that makes it
 easy to create GRCh38-like graphs.
@@ -157,7 +159,8 @@ We have noe successfully represented genes on a graph based on GRCh38.
 Create full GRCh38 graph
 =============================================
 The following show a short snippet for building a graph from GRCh38, with flanks removed
-It assumes you are positioned in the examples directory.
+It assumes you are positioned in the examples directory. The code for this example can be found in
+`examples/full_grch38_graph_example.py`.
 
 NB: This code takes time to run, as remote sequence data needs to be downloaded::
 
@@ -196,11 +199,24 @@ Translation
 .. autoclass:: Translation
     :members:
 
-Interval and Position
+Singlepath intervals
 ^^^^^^^^^^^^^^^^^^^^^^^^
 .. autoclass:: Interval
     :members:
 
+Multi-path intervals
+^^^^^^^^^^^^^^^^^^^^^^^^
+.. autoclass:: GeneralMultiPathInterval
+    :members:
+
+.. autoclass:: CriticalPathsMultiPathInterval
+    :members:
+
+.. autoclass:: FuzzyMultipathInterval
+    :members:
+
+Position
+^^^^^^^^^^^^^^^^^^^^^^^^
 .. autoclass:: Position
     :members:
 

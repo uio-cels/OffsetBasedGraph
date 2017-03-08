@@ -1,6 +1,7 @@
 
 class Position(object):
     """ Represents a position  in the graph
+
     >>> Position("chr1-1", 100)
     """
 
@@ -101,6 +102,7 @@ class BaseInterval(object):
 class Interval(BaseInterval):
     """
     Represents an interval on a graph
+
     >>> Interval(Position("chr1-0", 10), Position("chr1-1", 100),
     ["chr1-0", "alt, "chr1-1"]), graph)
     """

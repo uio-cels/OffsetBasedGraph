@@ -245,8 +245,8 @@ class Translation(object):
 
         :param interval: Interval
         :param inverse: wheter to use the inverse translation
-        :return: Returns an interval. If inverse is True, a list of intervals
-        is returned.
+        :return: Returns an interval. If inverse is True,
+            a list of intervals is returned.
         """
         """
         Algorithm:
