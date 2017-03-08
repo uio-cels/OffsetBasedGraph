@@ -161,6 +161,7 @@ It assumes you are positioned in the examples directory.
 
 NB: This code takes time to run, as remote sequence data needs to be downloaded::
 
+    from offsetbasedgraph.graphutils import *
     graph = create_initial_grch38_graph("grch38.chrom.sizes")
     numeric_graph, name_translation = convert_to_numeric_graph(graph)
     new_numeric_graph, numeric_translation = connect_without_flanks(
