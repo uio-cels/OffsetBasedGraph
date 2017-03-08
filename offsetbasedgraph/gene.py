@@ -56,6 +56,11 @@ class GeneList(object):
 
         return True
 
+    def translate(self, translation):
+        translated_genes = [gene.translate(translation)
+                            for gene in self.gene_list]
+        return GeneList(translated_genes)
+
 
 class MultiPathGene(object):
     def __init__(self, name, multipath_interval):
