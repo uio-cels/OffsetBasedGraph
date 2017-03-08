@@ -75,6 +75,7 @@ class Graph(object):
     def from_file(file_name):
         """
         Load graph from pickle
+
         :param file_name: File name
         :rtype: Graph
         """
@@ -89,6 +90,7 @@ class Graph(object):
         """
         Writes the graph to file so that it later can be
         recreated using the from_file method
+
         :param file_name: File name
         :return:
         """
@@ -144,6 +146,7 @@ class Graph(object):
         """Connect position_a to position_b with an edge
         and split the region paths if necessary.
         Create translation object and new graph
+
         :param position_a: Position
         :param position_b: Position
         :returns: New graph and Translation object
@@ -236,6 +239,7 @@ class Graph(object):
 
     def assert_interval_in_graph(self, interval):
         """Check that whole interval is contained in self
+
         :param interval: Interval
         """
         for rp in interval.region_paths:
@@ -246,6 +250,7 @@ class Graph(object):
     def merge(self, intervals):
         """Merge the given intervals in the graph, and return
         the resulting graph after merge and a translation object.
+
         :param intervals: list of intevals to merge
         :returns: translation object, resulting graph
         :rtype: (Graph, Translation)
@@ -377,6 +382,7 @@ class Graph(object):
 
     def __eq__(self, other):
         """Check if all blocks and edges are equal
+
         :param other: Graph
         :rtype: bool
 
@@ -400,6 +406,7 @@ class Graph(object):
     @staticmethod
     def is_main_name(name):
         """Check if name comes from a block on the main path
+
         :param name: block_id
         :rtype: bool
         """
@@ -414,6 +421,7 @@ class Graph(object):
     def block_origin(name):
         """
         Checks if block is merged, alt or main based on the name
+
         :param name: block name
         :return: merged, alt or main
         """
@@ -508,6 +516,7 @@ class Graph(object):
     def n_edges_in(self, block):
         """
         Finds and returns the number of edges going in to a block
+
         :param block:
         :return: Returns the number of edges
         """
@@ -522,6 +531,7 @@ class Graph(object):
         Checks if this graph has identical
         structure (edges and blocks) to other graph.
         Size of region paths is ignores (and can be different).
+
         :param other: Graph to compare with
         :return: True if identical, otherwise False
         """
@@ -554,10 +564,12 @@ class Graph(object):
         """
         Creates a subgraph using existing edges and only the blocks
         send as argument
+
         :param blocks: list of block ids
-        :param alt_locus: If not None, alt loci blocks not from this
-        alt locus will not be added to graph
-        This wil typically be parallell alt loci that potentially can be added
+        :param alt_locus: If not None, alt loci blocks not from
+            this alt locus will not be added to graph.
+            This will typically be parallell alt loci that
+            potentially can be added
         :return: Returns a new graph
         """
         blocks = set(blocks)
@@ -627,10 +639,11 @@ class Graph(object):
                                        alt_locus=None, base_trans=None):
         """
         Creates a subgraph containing all the intervals
-        :param intervals: list of intervals. All region paths in the
-        intervals must create a connected subgraph.
+
+        :param intervals: list of intervals.
+            All region paths in the intervals must create a connected subgraph.
         :param padding: number of baseapairs that should be in graph
-        before first and after last intervals
+            before first and after last intervals
         :return:
         """
 
@@ -898,6 +911,7 @@ class Graph(object):
     def level_dict(blocks):
         """
         Return dict with block as key and level as value
+
         :param blocks: block_id
         :rtype: dict
 

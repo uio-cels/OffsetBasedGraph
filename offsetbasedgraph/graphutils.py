@@ -1,3 +1,7 @@
+"""
+A collection of utility functions used to work with Graphs and Translations using real data.
+"""
+
 from .interval import Interval
 from .graphcreators import *
 from .genematcher import GeneMatchings
@@ -16,12 +20,14 @@ def create_subgraph_around_alt_locus(graph, trans, alt_locus, padding=200000,
     (created by create_initial_grch38_graph)
     and uses a translation from that graph to current graph
     in order to filter out the subgraph around a particular alt locus.
+
     :param graph: Graph to create subgraph from
     :param trans: Translation from original grch38 graph to current graph
     :param alt_locus: alt locus ID to create subgraph around
     :param padding: Padding. Number if basepairs to include around alt locus
-    :return: Returns subgraph, a translation object and
-    start position of the subgraph
+    :return: Returns subgraph,
+        a translation object and
+        start position of the subgraph
     """
 
     # For now, only use trans object to find which intervals in graph
@@ -58,6 +64,7 @@ def parse_genes_file(genes_fn):
     """
     Parses a file containing genes (on the format of UCSC),
     and returns a list of dicts
+
     :param genes_fn: File name
     :return: Returns a list of genes, one dict for each gene
     """
@@ -74,6 +81,7 @@ def get_gene_objects_as_intervals(fn, graph=None):
     """
     Returns a dict. Keys are gene names and values are intervals
     representing the gene
+
     :param fn: File name of file containing genes (on the format of UCSC)
     :return:
     """
@@ -86,6 +94,7 @@ def analyze_genes_on_merged_graph(genes, translation):
     Find similarities between gene annotations on alt-loci and
     main chromosomes when represented on a merged graph
     Translate the genes to the merged graph and perform analysis
+
     :param genes: list of genes on original graph
     :param translation: translation from original to merged graph
     """
@@ -143,6 +152,7 @@ def create_gene_dicts(genes, alt_loci_fn, identical_names=False):
     """
     Takes a list of genes, and creates an alt loci dict and a gene name dict.
     The dicts index the genes on chromosome/alt_loci id
+
     :param genes: list of genes
     :return: alt loci dict, name dict, paralell_dict
     :rtype: defaultdict, defaultdict, defaultdict
@@ -320,6 +330,8 @@ def fuzzy_gene_analysis(genes, text_graph, ncbi_alignments_dir,
         print()
 
     print("RESULTS:")
-    print("%d genes on alternative loci have identical representation as at least one gene from the main chromosome." % equal_total)
+    print("""%d genes on alternative loci have identical
+    representation as at least one gene from the
+    main chromosome.""" % equal_total)
     print("In total %d genes on alt loci" % len(alt_loci_genes))
 

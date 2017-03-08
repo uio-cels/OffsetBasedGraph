@@ -28,12 +28,15 @@ Test that installation works, e.g. by trying to import the package::
 
 Quickstart
 =================
+The following are some simple examples to get you started. Alternatively, you can jump directly to the the
+documentation below.
+
 Create a simple graph
 ^^^^^^^^^^^^^^^^^^^^^^
 
-The only way to create a Graph is through the init method.
-The following creates a very simple graph consisting of two connected blocks,
-and saves that graph to file::
+Graphs can be created by passing a dict of blocks and a dict of edges to the init method.
+In the following example, we create a very simple graph consisting of two connected blocks,
+and save that graph to file::
 
     from offsetbasedgraph import Block, Graph
     blocks = {"chr1-part1": Block(20), "chr1-part2": Block(10)}
@@ -171,49 +174,53 @@ NB: This code takes time to run, as remote sequence data needs to be downloaded:
 
 
 
-
 Documentation
 ============================
 
 .. toctree::
    :maxdepth: 2
 
+
 .. automodule:: offsetbasedgraph
 
-
+Graph
+^^^^^^^^^^^^^^^^
 .. autoclass:: Graph
     :members:
-    :undoc-members:
     :inherited-members:
     :show-inheritance:
 
+Translation
+^^^^^^^^^^^^^^^^^^^^
 .. autoclass:: Translation
     :members:
 
+Interval and Position
+^^^^^^^^^^^^^^^^^^^^^^^^
 .. autoclass:: Interval
     :members:
 
 .. autoclass:: Position
     :members:
 
-
-
+Genes
+^^^^^^^^^^^^
 .. automodule:: offsetbasedgraph.gene
 
 .. autoclass:: Gene
     :members:
 
+Utility functions
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Graphutils
+"""""""""""""
+
 .. automodule:: offsetbasedgraph.graphutils
+    :members:
 
+Graphcreators
+"""""""""""""""""
 
-
-
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
+.. automodule:: offsetbasedgraph.graphcreators
+    :members:

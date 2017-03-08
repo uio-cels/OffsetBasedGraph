@@ -4,7 +4,7 @@ This is a python package for working with and representing offsetbased graphs.
 # Installation
 ### Using the Python package index:
 ```
-pip3 install offsedbasedgraph
+pip3 install offsetbasedgraph
 ```
 
 ### By cloning:

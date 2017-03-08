@@ -8,6 +8,7 @@ class Translation(object):
     """
     Holds information necessary to translate coordinates and intervals
     from one graph to another
+
     >>> forward_dict = {"chr1": [Interval(0, 100, ["chr1-0", "chr1-1", "chr1-2"])],
     "alt": [Interval(0,100, ["chr1-1, "alt-0"])]}
     >>> reverse_dict = {"chr1-0": [Interval(0, 50, ["chr1"])],
@@ -15,6 +16,7 @@ class Translation(object):
     "chr1-2": [Interval(110, 210, ["chr1"])],
     "alt-0": [Interval(50, 100, ["alt"])]}
     >>> translation = Translation(forward_dict, reverse_dict, graph)
+
     """
 
     def __init__(self, translate_dict={}, reverse_dict={},
@@ -22,6 +24,7 @@ class Translation(object):
         """
         Init the translation object with two dicts. Each dict has
         region path IDs as keys and a list of intervals as values.
+
         :param translate_dict: Mapping of region paths in graph1 to intervals
         in graph2
         :param reverse_dict: Mapping of region paths in graph2 to intervals
@@ -60,6 +63,7 @@ class Translation(object):
     def make_name_translation(cls, trans_dict, graph):
         """
         Creates a copied version of trans_dict where region path have name IDs
+
         :param trans_dict:
         :param graph:
         :return: Returns a new translation object
@@ -80,6 +84,7 @@ class Translation(object):
 
     def to_file(self, file_name):
         """Writes translation object to pickle
+
         :param file_name: File name
         """
         with open("%s" % file_name, "wb") as f:
@@ -205,6 +210,7 @@ class Translation(object):
         """
         Translates a graph (forward). The graph has to be a subgraph of
         graph1 in the translation object.
+
         :param subgraph: Subgraph to translate.
         :return: Returns the translated subgraph
         """
@@ -233,6 +239,7 @@ class Translation(object):
     def translate_interval(self, interval, inverse=False):
         """
         Translate an interval between the two coordinate systems.
+
         :param interval: Interval
         :param inverse: wheter to use the inverse translation
         :return: Returns an interval. If inverse is True, a list of intervals
@@ -265,6 +272,7 @@ class Translation(object):
     def translate_position(self, position, inverse=False):
         """
         Translates a position
+
         :param position: Position
         :param inverse: If True, translate back
         :return: Returns the translated Position
@@ -299,6 +307,7 @@ class Translation(object):
     def __add__(self, other):
         """
         Combine (add) two translations.
+
         :param other: Another translation
         :return: Combined Translation
         :rtype: Translation
@@ -392,8 +401,9 @@ class Translation(object):
         return [rp_interval]
 
     def set_graph2(self, graph2):
-        """Set graph to on self and all Interval objects
-        in forward and reverse dict.
+        """Set graph2 ("other graph") and update all Interval objects
+        in forward dict so that they have this graph.
+
         :param graph2: Graph
         """
         self.graph2 = graph2
@@ -411,6 +421,7 @@ class Translation(object):
     def copy(self):
         """Make new Translation object with copies
         of forward and reverse translation dicts
+
         :rtype: Translation
 
         """

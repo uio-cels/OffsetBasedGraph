@@ -28,7 +28,7 @@ class CriticalPathsMultiPathInterval(MultiPathInterval):
         :param start_pos: start Position
         :param end_pos: end Position
         :param critical_intervals: list of critical
-        intervals that the multipath interval needs to go through
+            intervals that the multipath interval needs to go through
         """
 
         self.start_pos = start_pos
@@ -61,6 +61,7 @@ class CriticalPathsMultiPathInterval(MultiPathInterval):
         """
         :param other:
         :return:
+
         NB: Only compare exact representation. Will give wrong result if equal,
         but different critical_intervals.
         TODO: Fix so that it compares the minimum representation
