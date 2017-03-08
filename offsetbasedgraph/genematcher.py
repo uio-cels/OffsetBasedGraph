@@ -1,5 +1,4 @@
 from collections import defaultdict
-from .gene import GeneIO
 import pickle
 
 
@@ -67,8 +66,8 @@ class GeneMatcher(object):
         paralell_rps = graph.find_parallell_blocks(alt_rps, graph.is_main_name)
         are_paralell = [rp in paralell_rps for rp in main_rps]
         eq_length = self.alt_gene.transcript_length == main_gene.transcript_length
-        d_length = abs(self.alt_gene.transcript_length - main_gene.transcript_length)
-        contained = main_gene.get_contained_pairs(self.alt_gene)
+        d_length = abs(self.alt_gene.transcript_length -
+                       main_gene.transcript_length)
         base_score = 0
         if all(are_paralell):
             if d_length < 5:
@@ -122,15 +121,6 @@ class GeneMatchings(object):
 
     def __str__(self):
         lines = []
-
-        #for pair in self.find_unequal_length_uncut_isoforms():
-        #    lines.append("")
-        #    lines.append(str(pair[0].transcript_length) + "\t" +
-        #                 GeneIO(pair[0]).to_file_line())
-        #    lines.append(str(pair[1].transcript_length) + "\t" +
-        #                 GeneIO(pair[1]).to_file_line())
-        #    lines.append(str(len(self.find_unequal_length_uncut_isoforms())))
-
         for category in GeneMatcher.categories:
             lines.append(category)
             category_mathes = [m for m in self.matches
@@ -140,7 +130,7 @@ class GeneMatchings(object):
                 score_dict[match.score] += 1
             lines.extend("\t%s:\t %s" % (self.codes[k], v)
                          for k, v in score_dict.items())
-    
+
         summary_categories = self.calculate_summary_categories()
         lines.extend(["", "Summary categories"])
         lines.extend(["Cat %s:\t %s" % (i+1, c)
