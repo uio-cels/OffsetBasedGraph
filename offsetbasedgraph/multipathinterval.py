@@ -59,9 +59,6 @@ class CriticalPathsMultiPathInterval(MultiPathInterval):
 
     def __eq__(self, other):
         """
-        :param other:
-        :return:
-
         NB: Only compare exact representation. Will give wrong result if equal,
         but different critical_intervals.
         TODO: Fix so that it compares the minimum representation
@@ -159,7 +156,7 @@ class FuzzyMultipathInterval(MultiPathInterval):
     def length(self):
         """
 
-        :returns: The length of the interval
+        :returns: The length of the central path of interval
         :rtype: int
 
         """
@@ -246,6 +243,7 @@ class GeneralMultiPathInterval(MultiPathInterval):
     def get_single_path_intervals(self):
         """
         Generate all single path intervals.
+
         :return: generator
         """
         intervals = []
