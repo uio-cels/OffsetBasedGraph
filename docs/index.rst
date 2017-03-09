@@ -15,7 +15,7 @@ The package with dependencies can be installed using pip::
 
 If you want to use the example data to run the examples using real data, you need to clone the repository::
 
-    git clone git@github.com:uio-cels/OffsetBasedGraph.git
+    git clone https://github.com/uio-cels/OffsetBasedGraph.git
     cd OffsetBasedGraph
     pip3 install -e
 

@@ -234,14 +234,11 @@ class Interval(BaseInterval):
         out = ""
         out += self.start_position.notation()
         for rp in self.region_paths:
-            out += ", %s" % rp
+            if rp != self.start_position.region_path_id and \
+                rp != self.end_position.region_path_id:
+                out += ", %s" % rp
         out += ", %s" % self.end_position.notation()
         return out
-
-        return "%s, %s, [%s]" % (
-            self.start_position.offset,
-            self.end_position.offset,
-            ', '.join([str(s) for s in self.region_paths]))
 
     def __str__(self):
         graph = "Graph"
