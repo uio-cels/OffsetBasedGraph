@@ -420,7 +420,7 @@ class Graph(object):
         :param name: block_id
         :rtype: bool
         """
-        
+
         if "alt" not in name:
             return True
         if name.count("chr") > 1:
@@ -495,9 +495,11 @@ class Graph(object):
         cur_block = start_block
         parallell_blocks = []
         while True:
+            print(cur_block)
             next_blocks = [b for b in self.adj_list[cur_block]
                            if filter_func(b)]
-            assert len(next_blocks) == 1
+            print(next_blocks)
+            assert len(next_blocks) == 1, str(self.adj_list[cur_block]) + cur_block
             cur_block = next_blocks[0]
             if cur_block == end_block:
                 break

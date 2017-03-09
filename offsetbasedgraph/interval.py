@@ -32,6 +32,7 @@ class Position(object):
         """
         return "%s:%d" % (self.region_path_id, self.offset)
 
+
 class BaseInterval(object):
     def set_length_cache(self, l):
         """Set length cache used by lenght()
@@ -163,6 +164,21 @@ class Interval(BaseInterval):
                 return False
 
         return True
+
+    def intersects(self, other):
+        common_rps = [rp for rp in self.region_paths
+                      if rp in other.region_paths]
+        if not common_rps:
+            return False
+        for rp in common_rps:
+            if rp == self.region_paths[0] and rp == other.region_paths[-1]:
+                if self.start_position.offset >= other.end_position.offset:
+                    continue
+            if rp == self.region_paths[-1] and rp == other.region_paths[0]:
+                if other.start_position.offset >= self.end_position.offset:
+                    continue
+            return True
+        return False
 
     def get_position_from_offset(self, offset, rp_lens=None):
         """Get position of with offset counted from the start of

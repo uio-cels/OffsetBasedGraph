@@ -65,7 +65,6 @@ class GeneMatcher(object):
         main_rps = main_gene.transcription_region.region_paths
         paralell_rps = graph.find_parallell_blocks(alt_rps, graph.is_main_name)
         are_paralell = [rp in paralell_rps for rp in main_rps]
-        eq_length = self.alt_gene.transcript_length == main_gene.transcript_length
         d_length = abs(self.alt_gene.transcript_length -
                        main_gene.transcript_length)
         base_score = 0
@@ -73,7 +72,7 @@ class GeneMatcher(object):
             if d_length < 5:
                 return 5+base_score
             return 4+base_score
-        if any(are_paralell):
+        if any(are_paralell) and main_gene.strand == self.alt_gene.strand:
             if d_length < 5:
                 return 3+base_score
             return 2+base_score

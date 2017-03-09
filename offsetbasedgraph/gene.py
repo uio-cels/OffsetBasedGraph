@@ -42,6 +42,12 @@ class GeneList(object):
                          reader]
         return cls(gene_list)
 
+    def to_tsv_file(self, file_name):
+        lines = [GeneIO(gene).to_file_line() for
+                 gene in self.gene_list]
+        with open(file_name, "w") as f:
+            f.write("\n".join(lines))
+
     def __eq__(self, other):
         if len(self.gene_list) != len(other.gene_list):
             return False
