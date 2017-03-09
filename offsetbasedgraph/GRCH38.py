@@ -4,7 +4,8 @@ from offsetbasedgraph.sequences import get_sequence_ucsc
 
 class AltLocus(object):
 
-    def __init__(self, name, length, chrom, start, end, find_flanks=True):
+    def __init__(self, name, length, chrom, start, end,
+                 region_name, alt_index, find_flanks=True):
         self.name = name
         self.length = length
         self.chrom = chrom
@@ -12,6 +13,8 @@ class AltLocus(object):
         self.end = end
         self.alt_interval = Interval(0, length, [name])
         self.main_interval = Interval(start, end, [chrom])
+        self.region_name = region_name
+        self.alt_index = alt_index
         if find_flanks:
             self.find_flanks()
 
@@ -32,7 +35,9 @@ class AltLocus(object):
         start = int(l[2])
         end = int(l[3])
         length = int(l[4])
-        return cls(name, length, chrom, start, end)
+        region_name = l[5]
+        alt_index = int(l[6].split("_")[0])
+        return cls(name, length, chrom, start, end, region_name, alt_index)
 
     def find_flanks(self):
         flank_intervals = get_flanks(
