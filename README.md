@@ -9,7 +9,7 @@ pip3 install offsetbasedgraph
 
 ### By cloning:
 ```
-git clone git@github.com:uio-cels/OffsetBasedGraph.git
+git clone https://github.com/uio-cels/OffsetBasedGraph.git
 cd OffsetBasedGraph
 pip3 install -e .
 ```

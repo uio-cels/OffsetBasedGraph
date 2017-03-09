@@ -15,3 +15,8 @@ tests/cover
 tests/.coverage
 .coverage
 data/tmp/*
+*.fasta
+*.txt
+*.org
+*.log
+*.pdf

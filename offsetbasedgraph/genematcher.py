@@ -9,9 +9,11 @@ class GeneMatcher(object):
     def __init__(self, alt_gene, main_genes):
         self.is_cut = False
         self.alt_gene = alt_gene
-        self.main_genes = [gene for gene in main_genes if
-                           gene.strand == alt_gene.strand]
         self.category = self.classify_alt_gene(alt_gene)
+        self.main_genes = [gene for gene in main_genes if
+                           gene.strand == alt_gene.strand or
+                           self.category == "VAR"]
+
         self.merged_rps = [rp for rp in
                            alt_gene.transcription_region.region_paths
                            if self.is_merged(rp)]
@@ -28,8 +30,6 @@ class GeneMatcher(object):
         self.score = max_score
         self.match_gene = self.main_genes[
             self.scores.index(max_score)]
-
-        self.is_cut = self.alt_gene.transcript_length != self.match_gene.transcript_length
 
     @staticmethod
     def is_merged(name):
@@ -66,8 +66,8 @@ class GeneMatcher(object):
         paralell_rps = graph.find_parallell_blocks(alt_rps, graph.is_main_name)
         are_paralell = [rp in paralell_rps for rp in main_rps]
         eq_length = self.alt_gene.transcript_length == main_gene.transcript_length
-        d_length = abs(self.alt_gene.transcript_length - main_gene.transcript_length)
-        contained = main_gene.get_contained_pairs(self.alt_gene)
+        d_length = abs(self.alt_gene.transcript_length -
+                       main_gene.transcript_length)
         base_score = 0
         if all(are_paralell):
             if d_length < 5:
@@ -104,6 +104,21 @@ class GeneMatchings(object):
             for alt_gene in alt_genes:
                 self.matches.append(GeneMatcher(alt_gene, main_genes))
 
+    def calculate_summary_categories(self):
+        cat_1 = len([m for m in self.matches
+                     if m.category == "FLANK" and m.score == 5])
+        cat_2 = len([m for m in self.matches
+                     if m.category == "VAR" and m.score == 5])
+        cat_3 = len([m for m in self.matches
+                     if m.category == "FLANK+VAR" and m.score == 5])
+        cat_4 = len([m for m in self.matches if m.score in (3, 2)])
+        cat_5 = len(self.matches)-cat_1-cat_2-cat_3-cat_4
+        return [cat_1, cat_2, cat_3, cat_4, cat_5]
+
+    def find_unequal_length_uncut_isoforms(self):
+        return [(m.alt_gene, m.match_gene) for m in
+                self.matches if m.score == 2]
+
     def __str__(self):
         lines = []
         for category in GeneMatcher.categories:
@@ -116,6 +131,10 @@ class GeneMatchings(object):
             lines.extend("\t%s:\t %s" % (self.codes[k], v)
                          for k, v in score_dict.items())
 
+        summary_categories = self.calculate_summary_categories()
+        lines.extend(["", "Summary categories"])
+        lines.extend(["Cat %s:\t %s" % (i+1, c)
+                      for i, c in enumerate(summary_categories)])
         return "\n".join(lines)
 
     def __repr__(self):

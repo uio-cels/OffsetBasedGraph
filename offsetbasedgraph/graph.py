@@ -54,6 +54,17 @@ class Graph(object):
 
         self._id = max([b for b in blocks if isinstance(b, int)] + [-1])
 
+    def summary(self):
+        """Return summary text
+
+        :rtype: str
+
+        """
+
+        n_blocks = len(self.blocks)
+        n_edges = sum(len(v) for v in self.adj_list.values())
+        return "Graph with %s blocks and %s edges" % (n_blocks, n_edges)
+
     def copy(self):
         """Make a copy of the graph
 
@@ -114,7 +125,6 @@ class Graph(object):
         """
         return [b for b in self.blocks if
                 len(self.adj_list[b]) == 0]
-
 
     def remove(self, block_id):
         """Remove a block including edges from the graph

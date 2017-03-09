@@ -8,5 +8,5 @@ connected_graph, connected_trans = connect_without_flanks(numeric_graph, "alt.lo
 print(connected_graph)
 
 from offsetbasedgraph.gene import GeneList
-genes = GeneList.from_file("genes.example").gene_list
-translated_genes = [g.translate(connected_trans) for g in genes]
+gene_list = GeneList.from_file("genes.example")
+translated_gene_list = gene_list.translate(connected_trans)

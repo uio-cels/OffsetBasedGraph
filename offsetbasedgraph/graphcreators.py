@@ -222,6 +222,18 @@ def grch38_graph_to_numeric(original_grch38_graph):
     return graph, trans
 
 
+def create_merged_grch38_graph(chrom_sizes_fn, alt_locations_file_name):
+    graph = create_initial_grch38_graph(chrom_sizes_fn)
+    numeric_graph, name_translation = convert_to_numeric_graph(graph)
+    new_numeric_graph, numeric_translation = connect_without_flanks(
+        numeric_graph, alt_locations_file_name, name_translation)
+    name_graph, new_name_translation = convert_to_text_graph(
+        new_numeric_graph, name_translation, numeric_translation)
+    final_translation = name_translation + numeric_translation + new_name_translation
+    final_translation.graph2 = name_graph
+    return name_graph, final_translation
+
+
 def merge_alt_using_cigar(original_numeric_grch38_graph,
                           trans, alt_id, ncbi_alignments_dir):
     """Uses a cigar string from ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/GCA_000001405.15_GRCh38_assembly_structure/

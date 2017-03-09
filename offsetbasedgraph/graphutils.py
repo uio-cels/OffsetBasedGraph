@@ -98,15 +98,8 @@ def analyze_genes_on_merged_graph(genes, translation):
     :param genes: list of genes on original graph
     :param translation: translation from original to merged graph
     """
-    cashed = False
     translation.block_lengths = None
-    if cashed:
-        translated = GeneList.from_pickle("trans_genes").gene_list
-    else:
-        translated = [gene.translate(translation) for gene in genes]
-        gene_list = GeneList(translated)
-        gene_list.to_file("trans_genes")
-
+    translated = [gene.translate(translation) for gene in genes]
     graph = translated[0].transcription_region.graph
     graph.critical_blocks = graph.find_all_critical_blocks()
     alt_genes = []
@@ -120,6 +113,7 @@ def analyze_genes_on_merged_graph(genes, translation):
     main_genes = GeneList(main_genes)
     matchings = GeneMatchings(alt_genes, main_genes)
     print(matchings)
+    return matchings
 
 
 def get_alt_loci_positions(alt_loci_file_name):

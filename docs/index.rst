@@ -3,9 +3,9 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-The Python package *OffsetBasedGraphs* is a simple implementation of offset-based sequence graphs.
-The package lets you represent graphs as well of the *Translation* (difference) between them,
-making it possible to e.g. convert interval from one graph to another.
+The Python package *OffsetBasedGraph* is a simple implementation of offset-based sequence graphs.
+The package lets you represent graphs as well as the *Translation* (difference) between them,
+making it possible to e.g. convert intervals from one graph to another.
 
 Installation
 =================
@@ -103,7 +103,7 @@ Positions consist of a region path ID and an offset::
     my_position = Position("chr1_some_alt", 100)
 
 
-Singlepath intervals consists of a start position, end position and a list of region paths ids::
+Singlepath intervals consist of a start position, end position and a list of region paths ids::
 
     from offsetbasedgraph import Interval
     start_position = Position("chr1", 100)
@@ -119,7 +119,7 @@ The package also supports some multipath intervals. See the documentation.
 
 Example using GRCh38
 =============================================
-This example assumes that you have clone the repository (see Installation) and that you are positioned in the
+This example assumes that you have cloned the repository (see Installation) and that you are positioned in the
 examples directory. The code for this example can be found in
 `examples/grch38_example.py`.
 
@@ -151,14 +151,14 @@ alt locus. Using this translation object, we can translate intervals from an ori
 GRC3h8 graph (*graph*) to our *connected_graph*::
 
     from offsetbasedgraph.gene import GeneList
-    genes = GeneList.from_file("genes.example").gene_list
-    translated_genes = [g.translate(connected_trans) for g in genes]
+    gene_list = GeneList.from_file("genes.example")
+    translated_genes = gene_list.translate(connected_trans)
 
-We have noe successfully represented genes on a graph based on GRCh38.
+We have now successfully represented genes on a graph based on GRCh38.
 
 Create full GRCh38 graph
 =============================================
-The following show a short snippet for building a graph from GRCh38, with flanks removed
+The following shows a short snippet for building a graph from GRCh38, with merged flanks.
 It assumes you are positioned in the examples directory. The code for this example can be found in
 `examples/full_grch38_graph_example.py`.
 
@@ -175,6 +175,15 @@ NB: This code takes time to run, as remote sequence data needs to be downloaded:
     final_translation.graph2 = name_graph
 
     grch38_graph_with_flanks = name_graph
+
+    print(grch38_graph_with_flanks.summary())
+    
+    # Translate example genes
+    gene_list = GeneList.from_file("genes.example")
+    print(gene_list)
+
+    translated_gene_list = gene_list.translate(final_translation)
+    print(translated_gene_list)
 
 
 
