@@ -208,7 +208,6 @@ def convert_to_sequential(graph, alt_loci_file_name):
         alt_locus = alt_loci.lookup[pruned_name]
         new_name = alt_locus.region_name + "_" + str(alt_locus.alt_index)
         while new_name in a_to_b.values():
-            print(new_name)
             new_name += "*"
         a_to_b[block] = new_name
         paralell_rps = graph.find_parallell_blocks(block, graph.is_main_name)
