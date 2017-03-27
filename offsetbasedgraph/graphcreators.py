@@ -206,13 +206,18 @@ def convert_to_sequential(graph, alt_loci_file_name):
             continue
         pruned_name = "chr" + block.split("chr")[-1]
         alt_locus = alt_loci.lookup[pruned_name]
-        new_name = alt_locus.region_name + str(alt_locus.alt_index)
+        new_name = alt_locus.region_name + "_" + str(alt_locus.alt_index)
+        while new_name in a_to_b.values():
+            print(new_name)
+            new_name += "*"
         a_to_b[block] = new_name
-        paralell_rps = graph.find_parallell_blocks(block)
+        paralell_rps = graph.find_parallell_blocks(block, graph.is_main_name)
         for main_block in paralell_rps:
             if main_block not in a_to_b:
                 a_to_b[main_block] = alt_locus.region_name
-    
+            else:
+                assert alt_locus.region_name == a_to_b[main_block]
+    main_dict = {}
     for block in graph.get_first_blocks():
         chr_id = "chr" + block.split("chr")[1]
         cur_block = block
@@ -222,12 +227,12 @@ def convert_to_sequential(graph, alt_loci_file_name):
         while True:
             if cur_block in a_to_b:
                 if a_to_b[cur_block] != cur_region:
-                    cur_region = a_to_b[block]
+                    cur_region = a_to_b[cur_block]
                     region_counter = 0
-                a_to_b[cur_block] = cur_region + "0_" + str(region_counter)
+                a_to_b[cur_block] = cur_region + "_0_" + str(region_counter)
                 region_counter += 1
             else:
-                a_to_b[cur_block] = chr_id + "_" + chr_counter
+                main_dict[cur_block] = chr_id + "_" + str(chr_counter)
                 chr_counter += 1
 
             next_blocks = graph.adj_list[cur_block]
@@ -236,11 +241,8 @@ def convert_to_sequential(graph, alt_loci_file_name):
             main_nexts = [b for b in next_blocks if graph.is_main_name(b)]
             assert len(main_nexts) == 1
             cur_block = main_nexts[0]
+    a_to_b.update(main_dict)
     return Translation.make_name_translation(a_to_b, graph)
-
-
-
-            
     new_dict = {}
     
     # Set ids for rps in trans dict
@@ -266,7 +268,6 @@ def convert_to_sequential(graph, alt_loci_file_name):
     new_graph = trans.translate_subgraph(graph)
     trans.graph2 = new_graph
     return new_graph, trans
-
 
 
 def grch38_graph_to_numeric(original_grch38_graph):
@@ -365,5 +366,3 @@ def merge_alt_using_cigar(original_numeric_grch38_graph,
     trans.set_graph2(new_graph)
 
     return trans, new_graph
-
-

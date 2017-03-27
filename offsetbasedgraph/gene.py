@@ -43,10 +43,11 @@ class GeneList(object):
         return cls(gene_list)
 
     def to_tsv_file(self, file_name):
+        header = "# Name\t TranscriptionRegion \t CodingRegion \t Exons \CodingStatus"
         lines = [GeneIO(gene).to_file_line() for
                  gene in self.gene_list]
         with open(file_name, "w") as f:
-            f.write("\n".join(lines))
+            f.write(header + "\n" + "\n".join(lines))
 
     def __eq__(self, other):
         if len(self.gene_list) != len(other.gene_list):
