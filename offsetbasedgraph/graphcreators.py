@@ -98,8 +98,13 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation,
     new_graph = graph
     final_trans = Translation(graph=graph)
     final_trans.graph2 = graph
-    # n_alt_loci = len(alt_loci.alt_loci)
+    n_alt_loci = len(alt_loci.alt_loci)
     for i, alt_locus in enumerate(alt_loci.alt_loci):
+        sys.stdout.write('\r  Merging %s: ' % alt_locus.name +
+                         str(round(100 * i / max(1, n_alt_loci))) +
+                         ' % finished ' + ' ' * 20)
+        sys.stdout.flush()
+
         if len(filter_alt_loci) > 0 and alt_locus.name not in filter_alt_loci:
             continue
 
