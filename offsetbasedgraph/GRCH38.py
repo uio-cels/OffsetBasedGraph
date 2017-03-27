@@ -85,7 +85,7 @@ class AltLoci(object):
             sys.stdout.flush()
 
             alt_loci.append(AltLocus.from_file_line(line))
-
+        print()
         return cls(alt_loci)
 
 
