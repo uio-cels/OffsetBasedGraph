@@ -495,10 +495,8 @@ class Graph(object):
         cur_block = start_block
         parallell_blocks = []
         while True:
-            print(cur_block)
             next_blocks = [b for b in self.adj_list[cur_block]
                            if filter_func(b)]
-            print(next_blocks)
             assert len(next_blocks) == 1, str(self.adj_list[cur_block]) + cur_block
             cur_block = next_blocks[0]
             if cur_block == end_block:

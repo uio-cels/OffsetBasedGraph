@@ -36,7 +36,7 @@ class AltLocus(object):
         end = int(l[3])
         length = int(l[4])
         region_name = l[5]
-        alt_index = int(l[6].split("_")[0])
+        alt_index = int(l[6].split("_")[-1])
         return cls(name, length, chrom, start, end, region_name, alt_index)
 
     def find_flanks(self):
