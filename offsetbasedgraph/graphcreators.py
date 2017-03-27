@@ -101,7 +101,7 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation,
     n_alt_loci = len(alt_loci.alt_loci)
     for i, alt_locus in enumerate(alt_loci.alt_loci):
         sys.stdout.write('\r  Merging %s: ' % alt_locus.name +
-                         str(round(100 * i / max(1, n_alt_loci))) +
+                         str(round(100 * i*i / max(1, n_alt_loci)**2)) +
                          ' % finished ' + ' ' * 20)
         sys.stdout.flush()
 
