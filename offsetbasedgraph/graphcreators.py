@@ -98,13 +98,8 @@ def connect_without_flanks(graph, alt_loci_fn, name_translation,
     new_graph = graph
     final_trans = Translation(graph=graph)
     final_trans.graph2 = graph
-    n_alt_loci = len(alt_loci.alt_loci)
+    # n_alt_loci = len(alt_loci.alt_loci)
     for i, alt_locus in enumerate(alt_loci.alt_loci):
-        sys.stdout.write('\r  Merging %s: ' % alt_locus.name +
-                         str(round(100 * i / max(1, n_alt_loci))) +
-                         ' % finished ' + ' ' * 20)
-        sys.stdout.flush()
-
         if len(filter_alt_loci) > 0 and alt_locus.name not in filter_alt_loci:
             continue
 
@@ -208,7 +203,6 @@ def convert_to_sequential(graph, alt_loci_file_name):
         alt_locus = alt_loci.lookup[pruned_name]
         new_name = alt_locus.region_name + "_" + str(alt_locus.alt_index)
         while new_name in a_to_b.values():
-            print(new_name)
             new_name += "*"
         a_to_b[block] = new_name
         paralell_rps = graph.find_parallell_blocks(block, graph.is_main_name)

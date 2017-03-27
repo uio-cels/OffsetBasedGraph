@@ -1,5 +1,6 @@
 from offsetbasedgraph import Interval, Position
 from offsetbasedgraph.sequences import get_sequence_ucsc
+import sys
 
 
 class AltLocus(object):
@@ -70,15 +71,20 @@ class AltLoci(object):
     @classmethod
     def from_file(cls, filename, filter_alt_loci=[]):
         with open(filename) as f:
-            alt_loci = []
-            for line in f.readlines():
-                if line.startswith("#"):
-                    continue
+            lines = f.readlines()
+        alt_loci = []
+        n_alt_loci = len(lines)
+        for i, line in enumerate(lines):
+            if line.startswith("#"):
+                continue
+            if len(filter_alt_loci) > 0 and line.split()[0] not in filter_alt_loci:
+                continue
+            sys.stdout.write('\r  Reading %s: ' % line.split()[0] +
+                             str(round(100 * i / max(1, n_alt_loci))) +
+                             ' % finished ' + ' ' * 20)
+            sys.stdout.flush()
 
-                if len(filter_alt_loci) > 0 and line.split()[0] not in filter_alt_loci:
-                    continue
-
-                alt_loci.append(AltLocus.from_file_line(line))
+            alt_loci.append(AltLocus.from_file_line(line))
 
         return cls(alt_loci)
 
