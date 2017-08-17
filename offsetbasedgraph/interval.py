@@ -109,7 +109,7 @@ class Interval(BaseInterval):
     """
 
     def __init__(self, start_position, end_position,
-                 region_paths=None, graph=None):
+                 region_paths=None, graph=None, direction=1):
         """Initialize interval with either:
         (Position, Position, [list(str)])
         (int, int, list(str)) or
