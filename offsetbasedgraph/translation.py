@@ -264,7 +264,8 @@ class Translation(object):
                                                   inverse)
             return SimpleMultipathInterval(
                 [Interval(sp, sp, [sp.region_path_id],
-                          graph=self._get_other_graph(inverse))
+                          graph=self._get_other_graph(inverse),
+                          direction = interval.direction)
                  for sp in start_poses])
 
         return self._translate_interval_nontrivial(interval, inverse)
@@ -593,11 +594,14 @@ class Translation(object):
         if is_simple:
             return SingleMultiPathInterval(
                 Interval(new_starts[0], new_ends[0], new_region_paths,
-                         graph=self._get_other_graph(inverse)))
+                         graph=self._get_other_graph(inverse),
+                         direction=interval.direction))
 
         return GeneralMultiPathInterval(
-            new_starts, new_ends,
-            new_region_paths, self._get_other_graph(inverse))
+                new_starts,
+                new_ends,
+                new_region_paths,
+                self._get_other_graph(inverse))
 
     def _get_range(self):
         rps = []
