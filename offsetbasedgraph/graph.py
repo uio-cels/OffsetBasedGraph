@@ -54,6 +54,9 @@ class Graph(object):
 
         self._id = max([b for b in blocks if isinstance(b, int)] + [-1])
 
+    def node_size(self, node_id):
+        return self.blocks[node_id].length()
+
     def summary(self):
         """Return summary text
 
