@@ -134,6 +134,7 @@ class Interval(BaseInterval):
         assert self.start_position.region_path_id == self.region_paths[0]
 
         self.length_cache = None
+        self.direction = direction
 
     def contains_rp(self, region_path):
         """Check if interval uses region_path
