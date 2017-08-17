@@ -144,6 +144,19 @@ class Interval(BaseInterval):
         """
         return (region_path in self.region_paths)
 
+    def contains_position(self, position):
+        if position.region_path_id not in self.region_paths:
+            return False
+        if position.region_path_id in self.region_paths[1:-1]:
+            return True
+        if position.region_path_id == self.region_paths[0]:
+            if position.offset < self.start_position.offset:
+                return False
+        if position.region_path_id == self.region_paths[-1]:
+            if position.offset >= self.end_position.offset:
+                return False
+        return True
+
     def contains(self, other, tolerance=0):
         """Check if transcription region and all exons of other
         are contained in self. Accecpt difference in start and end
