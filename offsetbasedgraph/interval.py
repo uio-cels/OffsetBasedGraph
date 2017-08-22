@@ -1,3 +1,26 @@
+import json
+
+class IntervalCollection(object):
+    def __init__(self, intervals):
+        self.intervals = intervals
+
+    @classmethod
+    def create_generator_from_file(cls, file_name):
+        f = open(file_name)
+        intervals = (Interval.from_file_line(line) for line in f.readlines())
+        return cls(intervals)
+
+    def __iter__(self):
+        return self.intervals.__iter__()
+
+    def to_file(self, file_name):
+        f = open(file_name, "w")
+        for interval in self.intervals:
+            f.writelines(["%s\n" % interval.to_file_line()])
+        f.close()
+        return file_name
+
+
 
 class Position(object):
     """ Represents a position  in the graph
@@ -280,6 +303,18 @@ class Interval(BaseInterval):
             if end_position.region_path_id != start_position.region_path_id:
                 region_paths.append(end_position.region_path_id)
         self.region_paths = region_paths
+
+    def to_file_line(self):
+        object = {"start": self.start_position.offset,
+                  "end": self.end_position.offset,
+                  "region_paths": self.region_paths,
+                  "direction": self.direction
+                 }
+        return json.dumps(object)
+
+    def from_file_line(self, line):
+        object = json.loads(line)
+        return Interval(object["start"], object["end"], object["region_paths"], direction=object["direction"])
 
     def __deepcopy__(self, memo):
         return Interval(self.start_position, self.end_position,

@@ -1,6 +1,6 @@
 import unittest
 import dummygraph
-from offsetbasedgraph import Interval, Position
+from offsetbasedgraph import Interval, Position, IntervalCollection
 
 
 class TestInterval(unittest.TestCase):
@@ -65,6 +65,21 @@ class TestInterval(unittest.TestCase):
         splits = interval.split([7])
         self.assertEqual(splits[0].join(splits[1]),
                          interval)
+
+
+class TestIntervalCollection(unittest.TestCase):
+    def test_to_file_from_file(self):
+        intervals = (
+                        Interval(0, 5, [1]),
+                        Interval(0, 3, [2])
+                    )
+        collection = IntervalCollection(intervals)
+        print(collection.intervals)
+        collection.to_file("test_intervalcollection.tmp")
+
+        collection2 = IntervalCollection.create_generator_from_file("test_intervalcollection.tmp")
+        self.assertTrue(collection.intervals == collection2.intervals)
+
 
 
 if __name__ == "__main__":
