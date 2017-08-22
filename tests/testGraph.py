@@ -465,6 +465,52 @@ class TestGraph(unittest.TestCase):
         self.assertEqual(len(subgraph.blocks), 4)
 
 
+    def test_get_arbitrary_linear_graph(self):
+        initial_graph = Graph(
+            {
+                1: Block(10),
+                2: Block(10),
+                3: Block(10),
+                4: Block(10)
+            },
+            {
+                1: [2, 4],
+                2: [3],
+                4: [3]
+            }
+        )
+
+        graph, trans = initial_graph.get_arbitrary_linear_graph()
+
+        self.assertTrue(len(graph.blocks) == 1)
+        self.assertTrue(len(graph.adj_list) == 0)
+        self.assertTrue(list(graph.blocks.values())[0].length() == 30)
+
+        # Case 2
+        initial_graph = Graph(
+            {
+                1: Block(10),
+                2: Block(10),
+                3: Block(10),
+                4: Block(10),
+                5: Block(10),
+                6: Block(5)
+            },
+            {
+                1: [2, 4],
+                2: [3],
+                4: [3],
+                5: [6]
+            }
+        )
+
+
+        graph, trans = initial_graph.get_arbitrary_linear_graph()
+
+        self.assertTrue(len(graph.blocks) == 2)
+        self.assertTrue(len(graph.adj_list) == 0)
+        sum_length = sum([b.length ()for b in graph.blocks.values()])
+        self.assertEqual(sum_length, 45)
 
 if __name__ == "__main__":
     unittest.main()

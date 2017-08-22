@@ -943,3 +943,48 @@ class Graph(object):
                 reverse_edges[edge].append(block)
 
         return reverse_edges
+
+    def get_arbitrary_linear_graph(self):
+        """
+        Returns a linear graph consisiting of an arbitrary path through the original graph,
+        and a translation to this graph.
+        """
+
+        trans_forward = {}
+        trans_back = {}
+        new_blocks = {}
+        new_adj_list = {}
+
+        i = 0
+        for start_block in self.get_first_blocks():
+            chrom_name = "chr_artificial_%d" % i
+            linear_chromosome_size = 0
+            offset = 0
+            linear_blocks = []
+            current_block = start_block
+            last_block_lengt = 0
+            while True:
+                linear_blocks.append(current_block)
+                #new_blocks[current_block] = self.blocks[current_block]
+                block_length = self.blocks[current_block].length()
+                trans_forward[current_block] = [Interval(offset, offset + block_length, [chrom_name])]
+                offset += block_length
+                last_block_lengt = block_length
+                next_blocks = self.adj_list[current_block]
+
+                if len(next_blocks) < 1:
+                    break
+
+                #new_adj_list[current_block] = [next_blocks[0]]
+                current_block = next_blocks[0]
+
+            new_blocks[chrom_name] = Block(offset)
+            # Forward trans
+            trans_back[chrom_name] = [Interval(0, last_block_lengt, linear_blocks, self)]
+
+            i += 1
+
+        graph = Graph(new_blocks, new_adj_list)
+        trans = Translation(trans_forward, trans_back, self)
+
+        return graph, trans
