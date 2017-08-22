@@ -78,8 +78,10 @@ class TestIntervalCollection(unittest.TestCase):
         collection.to_file("test_intervalcollection.tmp")
 
         collection2 = IntervalCollection.create_generator_from_file("test_intervalcollection.tmp")
-        self.assertTrue(collection.intervals == collection2.intervals)
 
+        #self.assertTrue(collection.intervals == collection2.intervals)
+        for i, interval in enumerate(collection2):
+            self.assertEqual(interval, intervals[i])
 
 
 if __name__ == "__main__":

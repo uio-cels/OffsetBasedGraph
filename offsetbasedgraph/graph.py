@@ -962,14 +962,14 @@ class Graph(object):
             offset = 0
             linear_blocks = []
             current_block = start_block
-            last_block_lengt = 0
+            last_block_length = 0
             while True:
                 linear_blocks.append(current_block)
                 #new_blocks[current_block] = self.blocks[current_block]
                 block_length = self.blocks[current_block].length()
                 trans_forward[current_block] = [Interval(offset, offset + block_length, [chrom_name])]
                 offset += block_length
-                last_block_lengt = block_length
+                last_block_length = block_length
                 next_blocks = self.adj_list[current_block]
 
                 if len(next_blocks) < 1:
@@ -980,11 +980,17 @@ class Graph(object):
 
             new_blocks[chrom_name] = Block(offset)
             # Forward trans
-            trans_back[chrom_name] = [Interval(0, last_block_lengt, linear_blocks, self)]
+            trans_back[chrom_name] = [Interval(0, last_block_length, linear_blocks, self)]
 
             i += 1
 
         graph = Graph(new_blocks, new_adj_list)
-        trans = Translation(trans_forward, trans_back, self)
+        for intervals in trans_forward.values():
+            for interval in intervals:
+                interval.graph = graph
 
-        return graph, trans
+        trans = Translation(trans_forward, trans_back, self)
+        return graph,trans
+
+    def number_of_basepairs(self):
+        return sum([b.length() for b in self.blocks.values()])

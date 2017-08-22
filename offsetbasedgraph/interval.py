@@ -312,9 +312,10 @@ class Interval(BaseInterval):
                  }
         return json.dumps(object)
 
-    def from_file_line(self, line):
+    @classmethod
+    def from_file_line(cls, line):
         object = json.loads(line)
-        return Interval(object["start"], object["end"], object["region_paths"], direction=object["direction"])
+        return cls(object["start"], object["end"], object["region_paths"], direction=object["direction"])
 
     def __deepcopy__(self, memo):
         return Interval(self.start_position, self.end_position,
