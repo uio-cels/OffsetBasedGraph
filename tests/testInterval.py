@@ -66,6 +66,18 @@ class TestInterval(unittest.TestCase):
         self.assertEqual(splits[0].join(splits[1]),
                          interval)
 
+    def test_hash(self):
+        interval1 = Interval(5, 10, [1, 2, 3, 4])
+        interval2 = Interval(5, 10, [1, 2, 3, 4])
+        interval_different = Interval(4, 10, [1, 2, 3, 4])
+        interval_different2 = Interval(5, 11, [1, 2, 3, 4])
+        interval_different3 = Interval(5, 10, [1, 2, 3, 5])
+
+        self.assertEqual(interval2.hash(), interval2.hash())
+        self.assertTrue(interval1.hash() != interval_different.hash())
+        self.assertTrue(interval1.hash() != interval_different2.hash())
+        self.assertTrue(interval1.hash() != interval_different3.hash())
+
 
 class TestIntervalCollection(unittest.TestCase):
     def test_to_file_from_file(self):
