@@ -1,6 +1,7 @@
 import json
 import hashlib
 
+
 class IntervalCollection(object):
     def __init__(self, intervals):
         self.intervals = intervals
@@ -20,7 +21,6 @@ class IntervalCollection(object):
             f.writelines(["%s\n" % interval.to_file_line()])
         f.close()
         return file_name
-
 
 
 class Position(object):
