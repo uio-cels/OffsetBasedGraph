@@ -992,5 +992,25 @@ class Graph(object):
         trans = Translation(trans_forward, trans_back, self)
         return graph,trans
 
+    def contains_interval(self, interval):
+        """
+        :param interval:
+        :return: Returns true if the interval exists in the graph
+        """
+        print("Warning not tested. Not correct.")
+        for rp in interval.region_paths:
+            if rp not in self.blocks:
+                return False
+
+        if interval.start_position.offset >= \
+                self.blocks[interval.start_position.region_path_id]:
+            return False
+
+        if interval.end_position.offset > \
+                    self.blocks[interval.end_position.region_path_id]:
+            return False
+
+        return True
+
     def number_of_basepairs(self):
         return sum([b.length() for b in self.blocks.values()])

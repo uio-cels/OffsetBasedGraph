@@ -305,6 +305,32 @@ class Translation(object):
 
         return positions
 
+    def interval_has_translation(self, interval, inverse=False):
+        for rp in interval.region_paths:
+            if not self.region_path_has_translation(rp, inverse):
+                return False
+        return True
+
+    def region_path_has_translation(self, rp_id, inverse=False):
+        """
+        :return: Returns true if the region path has a translation
+        """
+        if not inverse and rp_id in self._a_to_b:
+            return True
+        elif inverse and rp_id in self._b_to_a:
+            return True
+
+        if not inverse and self.graph2 is None:
+            raise Exception("Graph2 cannot be None when checking if forward translation of rp has translation")
+        if inverse and self.graph1 is None:
+            raise Exception("Graph1 cannot be None when checking if inverse translation of rp has translation")
+
+        g = self.graph1 if inverse else self.graph2
+        if rp_id in g.blocks:
+            return True
+
+        return False
+
     def __add__(self, other):
         """
         Combine (add) two translations.
