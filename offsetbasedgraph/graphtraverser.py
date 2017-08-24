@@ -8,7 +8,6 @@ class GeneralArea(object):
 
 
 def update_areas(areas, new_areas):
-    print("#", areas, new_areas)
     for node_id, intervals in new_areas.items():
         if node_id not in areas:
             areas[node_id] = intervals
@@ -16,7 +15,6 @@ def update_areas(areas, new_areas):
         old_intervals = areas[node_id]
         tuples = [(idx, (-1)**i) for i, idx in enumerate(old_intervals + intervals)]
         tuples.sort(key=lambda x: 3*x[0]-x[1])
-        print(tuples)
         cum_code = 0
         filtered = []
         for idx, code in tuples:
@@ -26,7 +24,6 @@ def update_areas(areas, new_areas):
             if cum_code == 0:
                 filtered.append(idx)
         areas[node_id] = filtered
-    print("=", areas)
 
 
 class GraphTraverser(object):
