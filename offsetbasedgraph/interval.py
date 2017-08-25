@@ -326,9 +326,10 @@ class Interval(BaseInterval):
         """
         :return: Returns a unique hash as int of the path of the interval
         """
-        string = "%s-%s-%s"  % (str(self.start_position),
+        string = "%s-%s-%s-%d"  % (str(self.start_position),
                                 str(self.end_position),
-                                str(self.region_paths))
+                                str(self.region_paths),
+                                self.direction)
         hex_hash = hashlib.md5(string.encode('utf-8')).hexdigest()[0:9]
         return int(hex_hash, 16)
 

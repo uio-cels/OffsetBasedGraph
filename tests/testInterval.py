@@ -73,10 +73,13 @@ class TestInterval(unittest.TestCase):
         interval_different2 = Interval(5, 11, [1, 2, 3, 4])
         interval_different3 = Interval(5, 10, [1, 2, 3, 5])
 
+        interval1_minus = Interval(5, 10, [1, 2, 3, 4], direction=-1)
+
         self.assertEqual(interval2.hash(), interval2.hash())
         self.assertTrue(interval1.hash() != interval_different.hash())
         self.assertTrue(interval1.hash() != interval_different2.hash())
         self.assertTrue(interval1.hash() != interval_different3.hash())
+        self.assertTrue(interval1.hash() != interval1_minus.hash())
 
 
 class TestIntervalCollection(unittest.TestCase):
