@@ -13,7 +13,8 @@ def update_areas(areas, new_areas):
             areas[node_id] = intervals
             continue
         old_intervals = areas[node_id]
-        tuples = [(idx, (-1)**i) for i, idx in enumerate(old_intervals + intervals)]
+        tuples = [(idx, (-1)**i) for i, idx in
+                  enumerate(old_intervals + intervals)]
         tuples.sort(key=lambda x: 3*x[0]-x[1])
         cum_code = 0
         filtered = []
@@ -78,7 +79,6 @@ class GraphTraverser(object):
             all_areas = {start_node: [0, point.offset]}
         else:
             all_areas = {start_node: [point.offset, node_length]}
-
         adj_list = self.graph.adj_list if length >= 0 else self.graph.reverse_adj_list
         if length >= 0:
             new_offset -= node_length
@@ -89,3 +89,16 @@ class GraphTraverser(object):
                 new_offset)
             update_areas(all_areas, areas)
         return all_areas
+
+    def extend_from_block(self, node_id, length, is_reverse, visited):
+        if node_id in visited and visited[node_id] >= length:
+            return
+        visited[node_id] = length
+        if length <= self.graph.node_size(node_id):
+            return
+        
+        adj_list = self.graph.reverse_adj_list if is_reverse else self.graph.adj_list
+        remaining = length-self.graph.node_size(node_id)
+        for next_id in adj_list[node_id]:
+            self.extend_from_block(next_id, remaining, is_reverse, visited)
+        

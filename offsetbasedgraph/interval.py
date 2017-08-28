@@ -87,14 +87,14 @@ class BaseInterval(object):
             "Graph is none and length cache is None and\
             interval has more than 1 rp. Cannot compute length"
 
-        rp_lengths = [self.graph.blocks[rp].length()
+        rp_lengths = [self.graph.node_size(rp)
                       for rp in self.region_paths[:-1]]
         r_sum = sum(rp_lengths)
         length = r_sum-self.start_position.offset+self.end_position.offset
 
         assert length >= 0,\
             "Length is %d for interval %s. r_lengths: %s. Graph: %s"\
-            % (length, self, rp_lengths, self.graph)
+            % (length, self, rp_lengths)
 
         return length
 
