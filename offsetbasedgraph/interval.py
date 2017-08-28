@@ -10,6 +10,7 @@ class IntervalCollection(object):
     def create_generator_from_file(cls, file_name):
         f = open(file_name)
         intervals = (Interval.from_file_line(line) for line in f.readlines())
+        f.close()
         return cls(intervals)
 
     def __iter__(self):
@@ -21,6 +22,9 @@ class IntervalCollection(object):
             f.writelines(["%s\n" % interval.to_file_line()])
         f.close()
         return file_name
+
+    def copy(self):
+        return IntervalCollection.create_generator_from_file(self.to_file("copy.tmp"))
 
 
 class Position(object):
