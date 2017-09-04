@@ -37,6 +37,8 @@ class IntervalCollection(object):
         finally:
             f.close()
 
+        return file_name
+
     @classmethod
     def from_gzip(cls, file_name):
         import gzip
