@@ -98,6 +98,26 @@ class TestIntervalCollection(unittest.TestCase):
         for i, interval in enumerate(collection2):
             self.assertEqual(interval, intervals[i])
 
+    def test_gzip(self):
+        intervals = (
+                        Interval(0, 5, [1]),
+                        Interval(0, 1, [1]),
+                        Interval(1, 4, [1,2]),
+                        Interval(1, 4, [1,2]),
+                        Interval(1, 4, [1,2]),
+                        Interval(1, 4, [1,2]),
+                        Interval(0, 3, [2])
+                    )
+        collection = IntervalCollection(intervals)
+        print(collection.intervals)
+        collection.to_gzip("test_intervalcollection.gzip")
+
+        collection2 = IntervalCollection.from_gzip("test_intervalcollection.gzip")
+
+        #self.assertTrue(collection.intervals == collection2.intervals)
+        for i, interval in enumerate(collection2):
+            self.assertEqual(interval, intervals[i])
+
 
 if __name__ == "__main__":
     unittest.main()

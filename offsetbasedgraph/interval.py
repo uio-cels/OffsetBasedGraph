@@ -1,5 +1,7 @@
 import json
 import hashlib
+import gzip
+import io
 
 
 class IntervalCollection(object):
@@ -25,6 +27,25 @@ class IntervalCollection(object):
 
     def copy(self):
         return IntervalCollection.create_generator_from_file(self.to_file("copy.tmp"))
+
+    def to_gzip(self, file_name):
+        f = gzip.open(file_name, "wb")
+        try:
+            for interval in self.intervals:
+                line = "%s\n" % interval.to_file_line()
+                f.write(line.encode())
+        finally:
+            f.close()
+
+    @classmethod
+    def from_gzip(cls, file_name):
+        import gzip
+        import io
+        gz = gzip.open(file_name, 'r')
+        f = io.BufferedReader(gz)
+        intervals = (Interval.from_file_line(line.decode("utf-8")) for line in f.readlines())
+        f.close()
+        return cls(intervals)
 
 
 class Position(object):
