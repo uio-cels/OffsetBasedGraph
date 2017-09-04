@@ -334,7 +334,7 @@ class Interval(BaseInterval):
                                 str(self.end_position),
                                 str(self.region_paths),
                                 self.direction)
-        hex_hash = hashlib.md5(string.encode('utf-8')).hexdigest()[0:9]
+        hex_hash = hashlib.md5(string.encode('utf-8')).hexdigest()[0:12]
         return int(hex_hash, 16)
 
 
