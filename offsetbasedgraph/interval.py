@@ -18,7 +18,7 @@ class IntervalCollection(object):
     def __iter__(self):
         return self.intervals.__iter__()
 
-    def to_file(self, file_name):
+    def to_text_file(self, file_name):
         f = open(file_name, "w")
         for interval in self.intervals:
             f.writelines(["%s\n" % interval.to_file_line()])
@@ -26,7 +26,14 @@ class IntervalCollection(object):
         return file_name
 
     def copy(self):
-        return IntervalCollection.create_generator_from_file(self.to_file("copy.tmp"))
+        return IntervalCollection.from_file(self.to_file("copy.tmp"))
+
+    def to_file(self, file_name):
+        return self.to_text_file(file_name)
+
+    @classmethod
+    def from_file(cls, file_name):
+        return cls.create_generator_from_file(file_name)
 
     def to_gzip(self, file_name):
         f = gzip.open(file_name, "wb")
@@ -357,7 +364,7 @@ class Interval(BaseInterval):
                                 str(self.end_position),
                                 str(self.region_paths),
                                 self.direction)
-        hex_hash = hashlib.md5(string.encode('utf-8')).hexdigest()[0:12]
+        hex_hash = hashlib.md5(string.encode('utf-8')).hexdigest()[0:15]
         return int(hex_hash, 16)
 
 
