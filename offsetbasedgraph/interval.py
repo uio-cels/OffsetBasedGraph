@@ -28,12 +28,18 @@ class IntervalCollection(object):
     def copy(self):
         return IntervalCollection.from_file(self.to_file("copy.tmp"))
 
-    def to_file(self, file_name):
-        return self.to_text_file(file_name)
+    def to_file(self, file_name, text_file=False):
+        if text_file:
+            return self.to_text_file(file_name)
+        else:
+            return self.to_gzip(file_name)
 
     @classmethod
-    def from_file(cls, file_name):
-        return cls.create_generator_from_file(file_name)
+    def from_file(cls, file_name, text_file=False):
+        if text_file:
+            return cls.create_generator_from_file(file_name)
+        else:
+           return cls.from_gzip(file_name)
 
     def to_gzip(self, file_name):
         f = gzip.open(file_name, "wb")
