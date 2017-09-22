@@ -23,6 +23,6 @@ class TestGraphWithReversals(unittest.TestCase):
 
         self.assertEqual(graph_with_reversals, graph)
 
-        
+
 if __name__ == "__main__":
     unittest.main()

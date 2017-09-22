@@ -34,6 +34,9 @@ class BlockCollection(dict):
 
         return super().__contains__(abs(name))
 
+    def __getitem__(self, key):
+        return super().__getitem__(abs(key))
+
 
 class Graph(object):
     """

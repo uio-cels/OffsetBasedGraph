@@ -15,3 +15,5 @@ class GraphWithReversals(Graph):
     def block_in_graph(self, block_id):
         if block_id in self.blocks:
             return True
+
+
