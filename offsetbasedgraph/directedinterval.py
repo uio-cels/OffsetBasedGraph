@@ -58,7 +58,7 @@ class DirectedInterval(Interval):
         for i in range(len(self.region_paths) - 1):
             from_rp = self.region_paths[i]
             to_rp = self.region_paths[i+1]
-            print("Checking from %d to %d, positive? %d" % (from_rp, to_rp, plus_strand))
+            #print("Checking from %d to %d, positive? %d" % (from_rp, to_rp, plus_strand))
 
             if to_rp in self.graph.adj_list[from_rp]:
                 if plus_strand:

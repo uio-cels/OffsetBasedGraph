@@ -71,6 +71,19 @@ class TestDirectedInterval(unittest.TestCase):
 
 
 
+        graph = GraphWithReversals(
+            {1: Block(3),
+             2: Block(3)},
+            {1: [2],
+             -2: [-1]}
+        )
+        interval = DirectedInterval(1, 1, [1, 2], graph)
+        self.assertTrue(interval.can_be_on_positive_strand())
+        self.assertTrue(interval.can_be_on_negative_strand())
+
+
+
+
 
 if __name__ == "__main__":
     unittest.main()
