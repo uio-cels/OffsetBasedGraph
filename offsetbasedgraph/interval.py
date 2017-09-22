@@ -130,7 +130,7 @@ class BaseInterval(object):
         length = r_sum-self.start_position.offset+self.end_position.offset
 
         assert length >= 0,\
-            "Length is %d for interval %s. r_lengths: %s. Graph: %s"\
+            "Length is %d for interval %s. r_lengths: %s."\
             % (length, self, rp_lengths)
 
         return length
