@@ -3,6 +3,7 @@ from .interval import Interval, Position
 from .translation import Translation
 import pickle
 import os
+import numpy as np
 
 
 class Block(object):
@@ -21,6 +22,20 @@ class Block(object):
 
     def __repr__(self):
         return self.__str__()
+
+
+class BlockCollection(dict):
+    def __init__(self, *args, **kwargs):
+        super(BlockCollection, self).__init__(*args, **kwargs)
+
+    def __contains__(self, name):
+        assert isinstance(name, (int, np.integer)) , \
+            "Block collection can only deal with numeric block IDs"
+
+        return super().__contains__(abs(name))
+
+    def __getitem__(self, key):
+        return super().__getitem__(abs(key))
 
 
 class Graph(object):
