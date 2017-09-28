@@ -60,7 +60,7 @@ class Graph(object):
         :param blocks: dict{block_id: block_length}
         :param adj_list: dict{block_id: [neighbour_ids...]}
         """
-        self.blocks = blocks
+        self.blocks = BlockCollection(blocks)
         self.adj_list = defaultdict(list, adj_list)
         if rev_adj_list is not None:
             self.reverse_adj_list = rev_adj_list
@@ -955,7 +955,7 @@ class Graph(object):
         reverse_edges = defaultdict(list)
         for block, edges in adj_list.items():
             for edge in edges:
-                reverse_edges[edge].append(block)
+                reverse_edges[-edge].append(-block)
 
         return reverse_edges
 

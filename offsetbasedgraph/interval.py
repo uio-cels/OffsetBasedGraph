@@ -1,66 +1,6 @@
 import json
 import hashlib
 import gzip
-import io
-
-
-class IntervalCollection(object):
-    def __init__(self, intervals):
-        self.intervals = intervals
-
-    @classmethod
-    def create_generator_from_file(cls, file_name):
-        f = open(file_name)
-        intervals = (Interval.from_file_line(line) for line in f.readlines())
-        f.close()
-        return cls(intervals)
-
-    def __iter__(self):
-        return self.intervals.__iter__()
-
-    def to_text_file(self, file_name):
-        f = open(file_name, "w")
-        for interval in self.intervals:
-            f.writelines(["%s\n" % interval.to_file_line()])
-        f.close()
-        return file_name
-
-    def copy(self):
-        return IntervalCollection.from_file(self.to_file("copy.tmp"))
-
-    def to_file(self, file_name, text_file=False):
-        if text_file:
-            return self.to_text_file(file_name)
-        else:
-            return self.to_gzip(file_name)
-
-    @classmethod
-    def from_file(cls, file_name, text_file=False):
-        if text_file:
-            return cls.create_generator_from_file(file_name)
-        else:
-           return cls.from_gzip(file_name)
-
-    def to_gzip(self, file_name):
-        f = gzip.open(file_name, "wb")
-        try:
-            for interval in self.intervals:
-                line = "%s\n" % interval.to_file_line()
-                f.write(line.encode())
-        finally:
-            f.close()
-
-        return file_name
-
-    @classmethod
-    def from_gzip(cls, file_name):
-        import gzip
-        import io
-        gz = gzip.open(file_name, 'r')
-        f = io.BufferedReader(gz)
-        intervals = (Interval.from_file_line(line.decode("utf-8")) for line in f.readlines())
-        f.close()
-        return cls(intervals)
 
 
 class Position(object):
@@ -374,4 +314,63 @@ class Interval(BaseInterval):
         return int(hex_hash, 16)
 
 
+class IntervalCollection(object):
+    interval_class = Interval
 
+    def __init__(self, intervals):
+        self.intervals = intervals
+
+    @classmethod
+    def create_generator_from_file(cls, file_name):
+        f = open(file_name)
+        intervals = (cls.interval_class.from_file_line(line) for line in f.readlines())
+        f.close()
+        return cls(intervals)
+
+    def __iter__(self):
+        return self.intervals.__iter__()
+
+    def to_text_file(self, file_name):
+        f = open(file_name, "w")
+        for interval in self.intervals:
+            f.writelines(["%s\n" % interval.to_file_line()])
+        f.close()
+        return file_name
+
+    def copy(self):
+        return IntervalCollection.from_file(self.to_file("copy.tmp"))
+
+    def to_file(self, file_name, text_file=True):
+        if text_file:
+            return self.to_text_file(file_name)
+        else:
+            return self.to_gzip(file_name)
+
+    @classmethod
+    def from_file(cls, file_name, text_file=True):
+        if text_file:
+            return cls.create_generator_from_file(file_name)
+        else:
+           return cls.from_gzip(file_name)
+
+    def to_gzip(self, file_name):
+        f = gzip.open(file_name, "wb")
+        try:
+            for interval in self.intervals:
+                line = "%s\n" % interval.to_file_line()
+                f.write(line.encode())
+        finally:
+            f.close()
+
+        return file_name
+
+    @classmethod
+    def from_gzip(cls, file_name):
+        import gzip
+        import io
+        gz = gzip.open(file_name, 'r')
+        f = io.BufferedReader(gz)
+        intervals = (cls.interval_class.from_file_line(line.decode("utf-8"))
+                     for line in f.readlines())
+        f.close()
+        return cls(intervals)
