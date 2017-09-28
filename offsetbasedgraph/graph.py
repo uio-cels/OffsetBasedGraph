@@ -969,6 +969,7 @@ class Graph(object):
         trans_back = {}
         new_blocks = {}
         new_adj_list = {}
+        visited = {}
 
         i = 0
         for start_block in self.get_first_blocks():
@@ -979,6 +980,7 @@ class Graph(object):
             current_block = start_block
             last_block_length = 0
             while True:
+                visited[current_block] = True
                 linear_blocks.append(current_block)
                 #new_blocks[current_block] = self.blocks[current_block]
                 block_length = self.blocks[current_block].length()
@@ -991,7 +993,20 @@ class Graph(object):
                     break
 
                 #new_adj_list[current_block] = [next_blocks[0]]
-                current_block = next_blocks[0]
+                next_block = None
+                for block in next_blocks:
+                    if block in visited:
+                        print("Visited %d" % block)
+                        print(visited)
+                        continue
+                    else:
+                        next_block = block
+                        break
+
+                if next_block is None:
+                    break
+
+                current_block = next_block
 
             new_blocks[chrom_name] = Block(offset)
             # Forward trans
