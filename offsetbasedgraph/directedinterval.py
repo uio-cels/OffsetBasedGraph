@@ -65,7 +65,6 @@ class DirectedInterval(Interval):
                 if plus_strand:
                     return True
 
-            print(self.graph.reverse_adj_list[from_rp])
             if to_rp in self.graph.reverse_adj_list[from_rp]:
                 if not plus_strand:
                     return True
