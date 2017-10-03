@@ -177,9 +177,14 @@ class Interval(BaseInterval):
         if other.region_paths[0] == self.region_paths[0]:
             if other.start_position.offset < self.start_position.offset-tolerance:
                 return False
+
         if other.region_paths[-1] == self.region_paths[-1]:
             if other.end_position.offset > self.end_position.offset + tolerance:
                 return False
+
+        if other.region_paths[-1] == self.region_paths[-1] and other.region_paths[0] == self.region_paths[0] \
+                and (self.start_position.offset > other.end_position.offset or self.end_position.offset < other.start_position.offset):
+            return False
 
         return True
 
