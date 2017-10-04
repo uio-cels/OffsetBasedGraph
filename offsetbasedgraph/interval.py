@@ -83,7 +83,11 @@ class BaseInterval(object):
 
         """
         eq = self.start_position == other.start_position
+        if not eq:
+            return False
         eq &= self.end_position == other.end_position
+        if not eq:
+            return False
         eq &= self.region_paths == other.region_paths
         return eq
 
@@ -172,8 +176,6 @@ class Interval(BaseInterval):
         :rtype: bool
 
         """
-        if not all(rp in self.region_paths for rp in other.region_paths):
-            return False
         if other.region_paths[0] == self.region_paths[0]:
             if other.start_position.offset < self.start_position.offset-tolerance:
                 return False
@@ -184,6 +186,12 @@ class Interval(BaseInterval):
 
         if other.region_paths[-1] == self.region_paths[-1] and other.region_paths[0] == self.region_paths[0] \
                 and (self.start_position.offset > other.end_position.offset or self.end_position.offset < other.start_position.offset):
+            return False
+
+        if len(self.region_paths) != len(other.region_paths):
+            return False
+
+        if not all(rp in self.region_paths for rp in other.region_paths):
             return False
 
         return True
