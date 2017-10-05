@@ -188,9 +188,6 @@ class Interval(BaseInterval):
                 and (self.start_position.offset > other.end_position.offset or self.end_position.offset < other.start_position.offset):
             return False
 
-        if len(self.region_paths) != len(other.region_paths):
-            return False
-
         if not all(rp in self.region_paths for rp in other.region_paths):
             return False
 
@@ -315,11 +312,16 @@ class Interval(BaseInterval):
         return Interval(self.start_position, self.end_position,
                         self.region_paths, self.graph)
 
-    def hash(self):
+    def hash(self, ignore_direction=False):
         """
         :return: Returns a unique hash as int of the path of the interval
         """
-        string = "%s-%s-%s-%d"  % (str(self.start_position),
+        if ignore_direction:
+            string = "%s-%s-%s"  % (str(self.start_position),
+                                    str(self.end_position),
+                                    str(self.region_paths))
+        else:
+            string = "%s-%s-%s-%d"  % (str(self.start_position),
                                 str(self.end_position),
                                 str(self.region_paths),
                                 self.direction)
