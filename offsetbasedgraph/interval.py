@@ -143,6 +143,7 @@ class Interval(BaseInterval):
 
         self.length_cache = None
         self.direction = direction
+        self._hash_cashe = None
 
     def contains_rp(self, region_path):
         """Check if interval uses region_path
@@ -316,6 +317,8 @@ class Interval(BaseInterval):
         """
         :return: Returns a unique hash as int of the path of the interval
         """
+        if self._hash_cashe is not None:
+            return self._hash_cashe
         if ignore_direction:
             string = "%s-%s-%s"  % (str(self.start_position),
                                     str(self.end_position),
@@ -326,7 +329,9 @@ class Interval(BaseInterval):
                                 str(self.region_paths),
                                 self.direction)
         hex_hash = hashlib.md5(string.encode('utf-8')).hexdigest()[0:15]
-        return int(hex_hash, 16)
+        h = int(hex_hash, 16)
+        self._hash_cashe = h
+        return h
 
 
 class IntervalCollection(object):
