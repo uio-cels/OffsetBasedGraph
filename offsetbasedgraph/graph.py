@@ -100,8 +100,8 @@ class Graph(object):
         new_graph = Graph(new_blocks, new_adjs, True)
         return new_graph
 
-    @staticmethod
-    def from_file(file_name):
+    @classmethod
+    def from_file(cls, file_name):
         """
         Load graph from pickle
 
@@ -110,7 +110,9 @@ class Graph(object):
         """
         if os.path.isfile("%s" % file_name):
             with open("%s" % file_name, "rb") as f:
-                return pickle.loads(f.read())
+                obj = pickle.loads(f.read())
+                assert isinstance(obj, cls)
+                return obj
         else:
             print("Warning: Graph not found" % file_name)
             return None

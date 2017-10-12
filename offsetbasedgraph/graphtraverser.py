@@ -1,4 +1,3 @@
-from offsetbasedgraph import Graph, Position
 
 
 class GeneralArea(object):
@@ -30,11 +29,24 @@ def update_areas(areas, new_areas):
 class GraphTraverser(object):
     def __init__(self, graph, direction=+1):
         self.graph = graph
+        self.node_sizes = graph._node_sizes
         self.adj_list = graph.adj_list
         if direction < 0:
             self.adj_list = graph.reverse_adj_list
 
-    def extend_from_block(self, node_id, length, visited):
+    def extend_from_block(self, start_node_id, start_length, visited):
+        stack = [(start_node_id, start_length)]
+        while stack:
+            node_id, length = stack.pop(0)
+            if visited[node_id] >= length:
+                continue
+            visited[node_id] = length
+            remaining = length-self.node_sizes[abs(node_id)]
+            # ]graph.node_size(node_id)
+            stack.extend([(next_id, remaining) for
+                          next_id in self.adj_list[node_id]])
+
+    def extend_from_block_rec(self, node_id, length, visited):
         if node_id in visited and visited[node_id] >= length:
             return
         visited[node_id] = length

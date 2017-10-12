@@ -294,9 +294,9 @@ class Interval(BaseInterval):
         return json.dumps(object)
 
     @classmethod
-    def from_file_line(cls, line):
+    def from_file_line(cls, line, graph=None):
         object = json.loads(line)
-        return cls(object["start"], object["end"], object["region_paths"], direction=object["direction"])
+        return cls(object["start"], object["end"], object["region_paths"], direction=object["direction"], graph=graph)
 
     def __deepcopy__(self, memo):
         return Interval(self.start_position, self.end_position,
@@ -340,18 +340,18 @@ class IntervalCollection(object):
     def copy(self):
         return IntervalCollection.from_file(self.to_file("copy.tmp"))
 
-    def to_file(self, file_name, text_file=True):
+    def to_file(self, file_name, text_file=False):
         if text_file:
             return self.to_text_file(file_name)
         else:
             return self.to_gzip(file_name)
 
     @classmethod
-    def from_file(cls, file_name, text_file=True):
+    def from_file(cls, file_name, text_file=False, graph=None):
         if text_file:
             return cls.create_generator_from_file(file_name)
         else:
-           return cls.from_gzip(file_name)
+            return cls.from_gzip(file_name, graph=graph)
 
     def to_gzip(self, file_name):
         f = gzip.open(file_name, "wb")
@@ -365,12 +365,12 @@ class IntervalCollection(object):
         return file_name
 
     @classmethod
-    def from_gzip(cls, file_name):
+    def from_gzip(cls, file_name, graph=None):
         import gzip
         import io
         gz = gzip.open(file_name, 'r')
         f = io.BufferedReader(gz)
-        intervals = (cls.interval_class.from_file_line(line.decode("utf-8"))
+        intervals = (cls.interval_class.from_file_line(line.decode("utf-8"), graph=graph)
                      for line in f.readlines())
         f.close()
         return cls(intervals)
