@@ -1,6 +1,7 @@
 import json
 import hashlib
 import gzip
+import numpy as np
 
 
 class Position(object):
@@ -83,7 +84,11 @@ class BaseInterval(object):
 
         """
         eq = self.start_position == other.start_position
+        if not eq:
+            return False
         eq &= self.end_position == other.end_position
+        if not eq:
+            return False
         eq &= self.region_paths == other.region_paths
         return eq
 
@@ -139,6 +144,7 @@ class Interval(BaseInterval):
 
         self.length_cache = None
         self.direction = direction
+        self._hash_cashe = None
 
     def contains_rp(self, region_path):
         """Check if interval uses region_path
@@ -172,14 +178,20 @@ class Interval(BaseInterval):
         :rtype: bool
 
         """
-        if not all(rp in self.region_paths for rp in other.region_paths):
-            return False
         if other.region_paths[0] == self.region_paths[0]:
             if other.start_position.offset < self.start_position.offset-tolerance:
                 return False
+
         if other.region_paths[-1] == self.region_paths[-1]:
             if other.end_position.offset > self.end_position.offset + tolerance:
                 return False
+
+        if other.region_paths[-1] == self.region_paths[-1] and other.region_paths[0] == self.region_paths[0] \
+                and (self.start_position.offset > other.end_position.offset or self.end_position.offset < other.start_position.offset):
+            return False
+
+        if not all(rp in self.region_paths for rp in other.region_paths):
+            return False
 
         return True
 
@@ -293,6 +305,15 @@ class Interval(BaseInterval):
                  }
         return json.dumps(object)
 
+    def get_reverse(self):
+        assert self.graph is not None, "Graph cannot be None when reversing interval"
+        start_node_size = self.graph.node_size(self.start_position.region_path_id)
+        end_node_size = self.graph.node_size(self.end_position.region_path_id)
+        start_offset = end_node_size - self.end_position.offset
+        end_offset = start_node_size - self.start_position.offset
+        reversed_rps = list(-np.array(self.region_paths))
+        return Interval(start_offset, end_offset, reversed_rps)
+
     @classmethod
     def from_file_line(cls, line, graph=None):
         object = json.loads(line)
@@ -302,16 +323,25 @@ class Interval(BaseInterval):
         return Interval(self.start_position, self.end_position,
                         self.region_paths, self.graph)
 
-    def hash(self):
+    def hash(self, ignore_direction=False):
         """
         :return: Returns a unique hash as int of the path of the interval
         """
-        string = "%s-%s-%s-%d"  % (str(self.start_position),
+        if self._hash_cashe is not None:
+            return self._hash_cashe
+        if ignore_direction:
+            string = "%s-%s-%s"  % (str(self.start_position),
+                                    str(self.end_position),
+                                    str(self.region_paths))
+        else:
+            string = "%s-%s-%s-%d"  % (str(self.start_position),
                                 str(self.end_position),
                                 str(self.region_paths),
                                 self.direction)
         hex_hash = hashlib.md5(string.encode('utf-8')).hexdigest()[0:15]
-        return int(hex_hash, 16)
+        h = int(hex_hash, 16)
+        self._hash_cashe = h
+        return h
 
 
 class IntervalCollection(object):
