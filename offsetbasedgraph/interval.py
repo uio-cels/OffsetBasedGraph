@@ -1,6 +1,7 @@
 import json
 import hashlib
 import gzip
+import numpy as np
 
 
 class Position(object):
@@ -303,6 +304,15 @@ class Interval(BaseInterval):
                   "direction": self.direction
                  }
         return json.dumps(object)
+
+    def get_reverse(self):
+        assert self.graph is not None, "Graph cannot be None when reversing interval"
+        start_node_size = self.graph.node_size(self.start_position.region_path_id)
+        end_node_size = self.graph.node_size(self.end_position.region_path_id)
+        start_offset = end_node_size - self.end_position.offset
+        end_offset = start_node_size - self.start_position.offset
+        reversed_rps = list(-np.array(self.region_paths))
+        return Interval(start_offset, end_offset, reversed_rps)
 
     @classmethod
     def from_file_line(cls, line):
