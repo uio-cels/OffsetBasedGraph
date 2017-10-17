@@ -135,7 +135,7 @@ class Graph(object):
         :rtype: list(Graph)
         """
         return [b for b in self.blocks if
-                len(self.reverse_adj_list[b]) == 0]
+                len(self.reverse_adj_list[-b]) == 0]
 
     def get_last_blocks(self):
         """
