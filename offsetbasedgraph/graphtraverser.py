@@ -59,7 +59,6 @@ class GraphTraverserUsingSequence(BaseGraphTraverser):
         return False
 
     def search_from_node(self, node_id):
-        #self.extend_from_block_recursive(node_id, 0)
         self.extend_from_block(node_id)
         self.valid_nodes_in_path[node_id] = True
 
@@ -69,7 +68,6 @@ class GraphTraverserUsingSequence(BaseGraphTraverser):
 
         sorted_keys = sorted(self.end_nodes.items(), key=operator.itemgetter(1))
         end_nodes_in_longest_path = sorted_keys[-1][0]
-
 
         nodes = []
         current_node = end_nodes_in_longest_path
@@ -92,15 +90,6 @@ class GraphTraverserUsingSequence(BaseGraphTraverser):
 
     def get_nodes_found(self):
         return self._get_paths_by_backtracking()
-        print("Valid paths:")
-        print(self.valid_nodes_in_path)
-
-        nodes = []
-        for node, val in self.traversed_nodes.items():
-            if val:
-                nodes.append(node)
-
-        return nodes
 
     def extend_from_block(self, start_node_id):
         stack = [(start_node_id, 0 , 0)]
@@ -108,14 +97,6 @@ class GraphTraverserUsingSequence(BaseGraphTraverser):
             node_id, offset, prev_node = stack.pop(0)
             print("Checking node %d, offset %d" % (node_id,  offset))
             node_size = self.graph.node_size(node_id)
-
-            """
-            if node_id in self.visited:
-                print(" already visited")
-                continue
-
-            self.visited[node_id] = True
-            """
 
             if self._stop_recursion(node_id, offset):
                 print("Stopping at %d" % node_id)
@@ -132,43 +113,6 @@ class GraphTraverserUsingSequence(BaseGraphTraverser):
                 if len(self.adj_list[node_id]) == 0:
                     print("Found end node at %d" % node_id)
                     self.end_nodes[node_id] = offset + node_size
-
-    def extend_from_block_recursive(self, node_id, offset):
-        print("Checking from %d, offset %d" % (node_id, offset))
-        #print("Checking from %d, offset %d, nodes found: %s" % (node_id, offset, nodes_found))
-        node_size = self.graph.node_size(node_id)
-
-        if self.path_found:
-            print("  Already found a path")
-            return
-
-        if self._stop_recursion(node_id, offset):
-            print("Stopping at %d" % node_id)
-            if node_size + offset == len(self.search_sequence):
-                print("Found path")
-                self.path_found = True
-            return False
-
-        #new_nodes_found = nodes_found.copy()
-        #new_nodes_found.append(node_id)
-
-        n_valid_paths = 0
-        for next_id in self.adj_list[node_id]:
-            if self.extend_from_block_recursive(next_id, offset + node_size):
-                n_valid_paths += 1
-                self.valid_nodes_in_path[next_id] = True
-
-        if n_valid_paths > 0:
-            return True
-        else:
-            if node_size + offset == len(self.search_sequence):
-                self.path_found = True
-                print("  Found path, sequence stopping")
-            print("  No new valid edges")
-            return True
-
-        return False
-
 
 
 class GraphTraverser(BaseGraphTraverser):
