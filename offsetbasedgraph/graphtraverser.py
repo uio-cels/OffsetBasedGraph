@@ -115,18 +115,21 @@ class GraphTraverserUsingSequence(BaseGraphTraverser):
                     self.end_nodes[node_id] = offset + node_size
 
 
-class GraphTraverser(BaseGraphTraverser):
-    def __init__(self, graph, visited, direction=+1):
-        super(GraphTraverser, self).__init__(graph, direction)
-        self.visited = visited
+class GraphTraverser(object):
+    def __init__(self, graph, direction=+1):
+        self.graph = graph
+        self.node_sizes = graph._node_sizes
+        self.adj_list = graph.adj_list
+        if direction < 0:
+            self.adj_list = graph.reverse_adj_list
 
-    def extend_from_block(self, start_node_id, start_length):
+    def extend_from_block(self, start_node_id, start_length, visited):
         stack = [(start_node_id, start_length)]
         while stack:
             node_id, length = stack.pop(0)
-            if self.visited[node_id] >= length:
+            if visited[node_id] >= length:
                 continue
-            self.visited[node_id] = length
+            visited[node_id] = length
             remaining = length-self.node_sizes[abs(node_id)]
             # ]graph.node_size(node_id)
             stack.extend([(next_id, remaining) for
@@ -141,62 +144,3 @@ class GraphTraverser(BaseGraphTraverser):
         remaining = length-self.graph.node_size(node_id)
         for next_id in self.adj_list[node_id]:
             self.extend_from_block(next_id, remaining, visited)
-
-#    def shift(self, position, offset):
-#        node_id = position.region_path_id
-#        start_offset = position.offset
-#        cur_node_size = self.graph.node_size(node_id)
-#        new_offset = start_offset+offset
-#        if cur_node_size > new_offset and new_offset >= 0:
-#            return [Position(node_id, new_offset)]
-#
-#        if new_offset >= 0:
-#            new_offset -= cur_node_size
-#            shifted_positions = []
-#            adj_list = self.graph.adj_list if offset >= 0 else self.graph.reverse_adj_list
-#        for next_node in adj_list[node_id]:
-#            next_start = 0 if offset >= 0 else self.graph.node_size(next_node)
-#            shifted_positions.extend(
-#                self.shift(Position(next_node, next_start),
-#                           new_offset))
-#        return shifted_positions
-#
-#    def guided_shift(self, interval, offset):
-#        interval_length = interval.length()
-#        if interval_length > abs(offset):
-#            if offset < 0:
-#                offset = interval_length-offset
-#            return [interval.get_position_from_offset(offset)]
-#
-#        if offset < 0:
-#            return self.shift(interval.start_position,
-#                              offset+interval_length)
-#
-#        return self.shift(interval.end_position,
-#                          offset-interval_length)
-#
-#    def get_areas_from_point(self, point, length):
-#        start_node = point.region_path_id
-#        start_offset = point.offset
-#        node_length = self.graph.node_size(start_node)
-#        new_offset = start_offset + length
-#        if node_length > new_offset and new_offset >= 0:
-#            interval = [start_offset, new_offset]
-#            if length < 0:
-#                interval = interval[::-1]
-#            return {start_node: interval}
-#
-#        if length < 0:
-#            all_areas = {start_node: [0, point.offset]}
-#        else:
-#            all_areas = {start_node: [point.offset, node_length]}
-#        adj_list = self.graph.adj_list if length >= 0 else self.graph.reverse_adj_list
-#        if length >= 0:
-#            new_offset -= node_length
-#        for next_node in adj_list[start_node]:
-#            next_offset = 0 if length >= 0 else self.graph.node_size(next_node)
-#            areas = self.get_areas_from_point(
-#                Position(next_node, next_offset),
-#                new_offset)
-#            update_areas(all_areas, areas)
-#        return all_areas
