@@ -400,7 +400,45 @@ class Interval(BaseInterval):
         #print("Nodes: %s" % nodes)
         return Interval(start_pos, end_pos, nodes)
 
+    def to_areas(self):
+        areas = {}
+        for rp in self.region_paths:
+            areas[rp] = np.zeros(self.graph.node_size(rp))
 
+        if len(self.region_paths) == 1:
+            areas[self.start_position.region_path_id][self.start_position.offset:self.end_position.offset] = 1
+        else:
+            for rp in self.region_paths:
+                rp_size = self.graph.node_size(rp)
+                if rp == self.region_paths[0]:
+                    areas[rp][self.start_position.offset:rp_size] = 1
+
+                if rp == self.region_paths[-1]:
+                    areas[rp][0:self.end_position.offset] = 1
+
+                if rp in self.region_paths[1:-1]:
+                    areas[rp][0:rp_size] = 1
+
+        return areas
+
+    def overlap(self, other):
+        assert self.graph is not None
+        assert other.graph is not None
+        areas = self.to_areas()
+        other_areas = other.to_areas()
+        #print(areas)
+        #print(other_areas)
+        overlap = 0
+        for rp in areas:
+            if rp in other_areas:
+                overlap += np.sum(areas[rp][np.where(areas[rp] == other_areas[rp])])
+
+        return overlap
+
+    def is_approx_equal(self, other, allowed_mismatches=1):
+        if self.overlap(other) >= self.length() - allowed_mismatches:
+            return True
+        return False
 
 class IntervalCollection(object):
     interval_class = Interval

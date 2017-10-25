@@ -124,6 +124,44 @@ class TestInterval(unittest.TestCase):
         self.assertEqual(interval.get_subinterval(10, 20), Interval(4, 4, [2, 3]))
         self.assertEqual(interval.get_subinterval(10, 16), Interval(4, 10, [2]))
 
+    def test_overlap(self):
+        graph = Graph(
+            {
+                1: Block(10),
+                2: Block(10),
+                3: Block(10)
+            },
+            {
+                1: [2],
+                2: [3],
+                3: [1]
+            }
+        )
+
+        interval1 = Interval(0, 10, [1, 2], graph)
+        interval2 = Interval(0, 10, [1, 2], graph)
+        self.assertEqual(interval1.overlap(interval2), 20)
+
+        interval1 = Interval(5, 10, [1, 2], graph)
+        interval2 = Interval(0, 10, [1, 2], graph)
+        self.assertEqual(interval1.overlap(interval2), 15)
+
+        interval1 = Interval(5, 7, [1], graph)
+        interval2 = Interval(0, 10, [1, 2], graph)
+        self.assertEqual(interval1.overlap(interval2), 2)
+
+        interval1 = Interval(5, 7, [1], graph)
+        interval2 = Interval(6, 7, [1], graph)
+        self.assertEqual(interval1.overlap(interval2), 1)
+
+        interval1 = Interval(8, 2, [1, 2, 3, 1], graph)
+        interval2 = Interval(0, 10, [1], graph)
+        self.assertEqual(interval1.overlap(interval2), 4)
+
+        interval1 = Interval(8, 2, [1, 2, 3, 1], graph)
+        interval2 = Interval(0, 2, [1, 2], graph)
+        self.assertEqual(interval1.overlap(interval2), 6)
+
 
 class TestIntervalCollection(unittest.TestCase):
     def test_to_file_from_file(self):
