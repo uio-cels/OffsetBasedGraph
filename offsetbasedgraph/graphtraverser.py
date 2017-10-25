@@ -127,7 +127,7 @@ class GraphTraverserUsingSequence(BaseGraphTraverser):
         return self._get_paths_by_backtracking()
 
     def get_interval_found(self):
-        nodes = self._get_paths_by_backtracking()
+        nodes = self.path
         end_pos = self.graph.node_size(nodes[-1])
         return Interval(0, end_pos, nodes, self.graph)
 
