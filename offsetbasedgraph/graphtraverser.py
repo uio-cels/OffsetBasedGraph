@@ -62,69 +62,9 @@ class GraphTraverserUsingSequence(BaseGraphTraverser):
 
     def search_from_node(self, node_id):
         self.extend_from_block(node_id)
-        #self.valid_nodes_in_path[node_id] = True
-
-    def _get_paths_by_backtracking(self):
-        print("Backtracking")
-        print("N end nodes: %d" % len(self.end_nodes))
-
-        reversed_sequence = self.search_sequence[::-1]
-
-        sorted_keys = sorted(self.end_nodes.items(), key=operator.itemgetter(1))
-        print("Sorted keys")
-        #print(sorted_keys)
-        end_nodes_in_longest_path = sorted_keys[-1][0]
-
-        nodes = []
-        current_node = end_nodes_in_longest_path
-        print("Backtracking from %d" % current_node)
-        offset = 0
-        while True:
-            #print("  %d" % current_node)
-            nodes.append(current_node)
-            node_size = self.graph.node_size(current_node)
-            print(node_size)
-            correct_seq = reversed_sequence[offset:offset+node_size]
-            graph_seq = self.graph_sequence_retriever.get_sequence_on_directed_node(-current_node)
-            print(correct_seq)
-            print(graph_seq)
-            print(len(correct_seq))
-            print("Last char: -%s-" % correct_seq[-1])
-            print("First char: -%s-" % correct_seq[0])
-            print(len(graph_seq))
-            assert graph_seq == correct_seq
-
-            print("Current node: %d" % current_node)
-            next = None
-            prev_candidates = []
-            for previous in self.graph.reverse_adj_list[-current_node]:
-                #print("   prev: %d" % previous)
-                if -previous in self.traversed_nodes:
-                    print("Checking candidate %d" % -previous)
-                    prev_node_size = self.graph.node_size(previous)
-                    correct_seq = reversed_sequence[offset+node_size:offset+node_size+prev_node_size]
-                    seq_on_prev = self.graph_sequence_retriever.get_sequence_on_directed_node(previous)
-                    print(correct_seq)
-                    print(seq_on_prev)
-                    if correct_seq == seq_on_prev:
-                        prev_candidates.append(-previous)
-
-            offset += node_size
-            print("Len prev candidates")
-            print(len(prev_candidates))
-            assert len(prev_candidates) <= 1
-
-            if len(prev_candidates) == 0:
-                break
-            next = prev_candidates[0]
-
-            current_node = next
-
-        return nodes[::-1]
 
     def get_nodes_found(self):
         return self.path
-        return self._get_paths_by_backtracking()
 
     def get_interval_found(self):
         nodes = self.path
@@ -133,33 +73,31 @@ class GraphTraverserUsingSequence(BaseGraphTraverser):
 
     def extend_from_block(self, start_node_id):
         path = []
-        stack = [(start_node_id, 0 , 0, [])]
+        stack = [(start_node_id, 0 , 0, 1)]
+        i = 0
         while stack:
-            node_id, offset, prev_node, path = stack.pop(0)
-            print("Checking node %d, offset %d, path: %s" % (node_id,  offset, path))
+            #if i % 10000 == 0:
+            #    print("Node %i" % i)
+            #i += 1
+            node_id, offset, prev_node, n_nodes = stack.pop()
+            #print("Checking node %d, offset %d, path: %s" % (node_id,  offset, path))
             node_size = self.graph.node_size(node_id)
-            path = path.copy()
+            n_delete = len(path)-n_nodes + 1
+            #print("Deleting from end of paths: %d" % n_delete)
+            if n_delete > 0:
+                del path[-n_delete:]
+            #print("Path after cutting: %s" % path)
             path.append(node_id)
+
             if self._stop_recursion(node_id, offset):
                 #print("Stopping at %d" % node_id)
                 self.end_nodes[prev_node] = offset
-                if offset < len(self.search_sequence):
-                    print("Stopping at invalid end, offset %d" % offset)
-                    if prev_node in self.traversed_nodes:
-                        del self.traversed_nodes[prev_node]
             else:
-                #print("Offset + node size: %d, len sequence: %d" % (node_size + offset, len(self.search_sequence)))
-                self.traversed_nodes[node_id] = True
-
-                stack.extend([(next_id, offset + node_size, node_id, path) for
+                stack.extend([(next_id, offset + node_size, node_id, n_nodes + 1) for
                               next_id in self.adj_list[node_id]])
 
-                if len(self.adj_list[node_id]) == 0:
-                    #print("Found end node at %d, offset %d" % (node_id, offset + node_size))
-                    self.end_nodes[node_id] = offset + node_size
-
                 if node_size + offset == len(self.search_sequence):
-                    print("Found end at node %d, offset %d" % (node_id, offset + node_size))
+                    #print("Found end at node %d, offset %d" % (node_id, offset + node_size))
                     self.path = path
                     return
 
