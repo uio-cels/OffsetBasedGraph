@@ -343,6 +343,62 @@ class Interval(BaseInterval):
         self._hash_cashe = h
         return h
 
+    def position_at_offset(self, offset):
+        assert offset >= 0, "Offset %d is negative" % offset
+        assert offset <= self.length(), "Offset %d > interval length %d" % (offset, self.length())
+        assert self.graph is not None
+
+        current_offset = 0
+        i = 0
+        for rp in self.region_paths:
+            node_size = self.graph.node_size(rp)
+            length_to_end = node_size
+            if i == 0:
+                length_to_end -= self.start_position.offset
+            i += 1
+
+            if current_offset + length_to_end > offset:
+                return Position(rp, (node_size - length_to_end - current_offset) + offset)
+
+            current_offset += length_to_end
+
+    def _nodes_between_offets(self, start, end):
+        nodes = []
+        current_offset = 0
+        i = 0
+        for rp in self.region_paths:
+            node_size = self.graph.node_size(rp)
+            length_to_end = node_size
+            if i == 0:
+                length_to_end -= self.start_position.offset
+                #current_offset += self.start_position.offset
+            i += 1
+            #print("    Rp %d, start: %d, end: %d, current offset: %d" % (rp, start, end, current_offset))
+            if start <= current_offset + length_to_end and end > current_offset:
+                #print("   adding %d" % rp)
+                nodes.append(rp)
+
+            if end < current_offset:
+                break
+            current_offset += length_to_end
+
+        return nodes
+
+    def get_subinterval(self, start_offset, end_offset):
+        start_pos = self.position_at_offset(start_offset)
+        end_pos = self.position_at_offset(end_offset)
+        #print("Start pos: %s" % start_pos)
+        #print("End pos: %s" % end_pos)
+
+        # Hack when end is on end of RP
+        if end_pos.offset == 0:
+            end_pos = self.position_at_offset(end_offset - 1)
+            end_pos.offset += 1
+
+        nodes = self._nodes_between_offets(start_offset, end_offset)
+        #print("Nodes: " % nodes)
+        return Interval(start_pos, end_pos, nodes)
+
 
 class IntervalCollection(object):
     interval_class = Interval
