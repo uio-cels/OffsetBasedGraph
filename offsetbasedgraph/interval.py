@@ -17,6 +17,7 @@ class Position(object):
         """
         self.region_path_id = region_path_id
         self.offset = offset
+        #assert isinstance(offset, int), "Position offset %s is not int, %s" % (offset, type(offset))
 
     def __eq__(self, other):
         return self.region_path_id == other.region_path_id \
@@ -298,8 +299,8 @@ class Interval(BaseInterval):
         self.region_paths = region_paths
 
     def to_file_line(self):
-        object = {"start": self.start_position.offset,
-                  "end": self.end_position.offset,
+        object = {"start": int(self.start_position.offset),
+                  "end": int(self.end_position.offset),
                   "region_paths": self.region_paths,
                   "direction": self.direction
                  }
@@ -373,8 +374,8 @@ class Interval(BaseInterval):
                 length_to_end -= self.start_position.offset
                 #current_offset += self.start_position.offset
             i += 1
-            #print("    Rp %d, start: %d, end: %d, current offset: %d" % (rp, start, end, current_offset))
-            if start <= current_offset + length_to_end and end > current_offset:
+            if start < current_offset + length_to_end and end > current_offset:
+                #print("    Rp %d, start: %d, end: %d, current offset: %d" % (rp, start, end, current_offset))
                 #print("   adding %d" % rp)
                 nodes.append(rp)
 
@@ -396,8 +397,9 @@ class Interval(BaseInterval):
             end_pos.offset += 1
 
         nodes = self._nodes_between_offets(start_offset, end_offset)
-        #print("Nodes: " % nodes)
+        #print("Nodes: %s" % nodes)
         return Interval(start_pos, end_pos, nodes)
+
 
 
 class IntervalCollection(object):
