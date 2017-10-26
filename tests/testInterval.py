@@ -162,6 +162,23 @@ class TestInterval(unittest.TestCase):
         interval2 = Interval(0, 2, [1, 2], graph)
         self.assertEqual(interval1.overlap(interval2), 6)
 
+    def test_contains_correct_order(self):
+
+        interval = Interval(0, 10, [1, 2, 3, 4, 5, 6, 7])
+
+        other = Interval(0, 10, [1, 2, 3])
+        self.assertTrue(interval.contains_in_correct_order(other))
+
+        other = Interval(0, 10, [1, 2, 4])
+        self.assertFalse(interval.contains_in_correct_order(other))
+
+        other = Interval(0, 10, [1, 2, 5])
+        self.assertFalse(interval.contains_in_correct_order(other))
+
+        other = Interval(0, 10, [4, 5, 6])
+        self.assertTrue(interval.contains_in_correct_order(other))
+
+        
 
 class TestIntervalCollection(unittest.TestCase):
     def test_to_file_from_file(self):
