@@ -1,8 +1,33 @@
 import unittest
 import numpy as np
-from offsetbasedgraph.distancematrix import DistanceIndex
+from offsetbasedgraph.distancematrix import DistanceIndex, NodeDistances
 from offsetbasedgraph import GraphWithReversals, Block
 from itertools import chain
+
+
+class TestNodeDistances(unittest.TestCase):
+    def setUp(self):
+        self.node_dists = NodeDistances({1: 10, -1: 20, 2: 30})
+        self.node_dists2 = NodeDistances({1: 20, -2: 20, 2: 20})
+
+    def test_add(self):
+        added = self.node_dists + 10
+        self.assertEqual(
+            added,
+            NodeDistances({1: 20, -1: 30, 2: 40}))
+
+    def test_update(self):
+        self.node_dists.update(self.node_dists2)
+        self.assertEqual(
+            self.node_dists,
+            NodeDistances({1: 10, -2: 20, 2: 20, -1: 20}))
+
+    def test_max_distance(self):
+        node_distances = NodeDistances(
+            {1: 10, -1: 20, 2: 30, 10: 50, 100: 100},
+            max_distance=40)
+        self.assertEqual(node_distances, self.node_dists)
+
 
 class TestDistanceIndex(unittest.TestCase):
     def setUp(self):
