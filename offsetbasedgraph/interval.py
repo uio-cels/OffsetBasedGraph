@@ -196,6 +196,17 @@ class Interval(BaseInterval):
 
         return True
 
+    def contains_in_correct_order(self, other):
+        if not self.contains(other):
+            return False
+
+        # Check order
+        rps = self.region_paths
+        other_rps = other.region_paths
+        n = len(other_rps)
+
+        return any((other_rps == rps[i:i+n]) for i in range(len(rps)-n+1))
+
     def intersects(self, other):
         common_rps = [rp for rp in self.region_paths
                       if rp in other.region_paths]
@@ -436,7 +447,8 @@ class Interval(BaseInterval):
         return overlap
 
     def is_approx_equal(self, other, allowed_mismatches=1):
-        if self.overlap(other) >= self.length() - allowed_mismatches:
+        overlap = self.overlap(other)
+        if  overlap > 0 and overlap >= self.length() - allowed_mismatches:
             return True
         return False
 
@@ -447,9 +459,16 @@ class IntervalCollection(object):
         self.intervals = intervals
 
     @classmethod
-    def create_generator_from_file(cls, file_name):
+    def create_generator_from_file(cls, file_name, graph=None):
         f = open(file_name)
-        intervals = (cls.interval_class.from_file_line(line) for line in f.readlines())
+        intervals = (cls.interval_class.from_file_line(line, graph=graph) for line in f.readlines())
+        f.close()
+        return cls(intervals)
+
+    @classmethod
+    def create_list_from_file(cls, file_name, graph=None):
+        f = open(file_name)
+        intervals = [cls.interval_class.from_file_line(line, graph=graph) for line in f.readlines()]
         f.close()
         return cls(intervals)
 
@@ -475,7 +494,7 @@ class IntervalCollection(object):
     @classmethod
     def from_file(cls, file_name, text_file=False, graph=None):
         if text_file:
-            return cls.create_generator_from_file(file_name)
+            return cls.create_generator_from_file(file_name, graph=graph)
         else:
             return cls.from_gzip(file_name, graph=graph)
 
