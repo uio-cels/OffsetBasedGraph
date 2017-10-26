@@ -75,6 +75,11 @@ class NodeDistancesNP(object):
     def items(self):
         return zip(self.node_ids, self.distances)
 
+    def get_nodes_with_margin(self, node_sizes):
+        margin_sizes = self.distances+node_sizes[np.abs(self.node_ids)]
+        small_distances = margin_sizes < self.max_distance
+        return self.node_ids[small_distances]
+
 
 class DistanceIndex(object):
     def __init__(self, graph, max_distance):
@@ -139,12 +144,10 @@ class DistanceIndex(object):
         self.partial_neighbours = {}
         for node_id, distances in self.distances.items():
             if node_id > 0:
-                covered = [
-                    abs(other_id) for other_id, d in
-                    chain(distances.items(), self.distances[-node_id].items())
-                    if d + self.graph.node_size(other_id) <= self.max_distance]
-
-                self.covered_neighbours[node_id] = list(sorted(set(covered)))
+                pos_covered = np.abs(distances.get_nodes_with_margin(self.graph._node_sizes))
+                neg_covered = np.abs(self.distances[-node_id].get_nodes_with_margin(self.graph._node_sizes))
+                all_covered = np.unique(np.concatenate((pos_covered, neg_covered)))
+                self.covered_neighbours[node_id] = list(np.sort(all_covered))
         for node_id, distances in self.distances.items():
             partial = [(other_id, self.max_distance-d)
                        for other_id, d in distances.items()
