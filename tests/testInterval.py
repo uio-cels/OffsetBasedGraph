@@ -178,7 +178,6 @@ class TestInterval(unittest.TestCase):
         other = Interval(0, 10, [4, 5, 6])
         self.assertTrue(interval.contains_in_correct_order(other))
 
-        
 
 class TestIntervalCollection(unittest.TestCase):
     def test_to_file_from_file(self):

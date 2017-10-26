@@ -80,7 +80,7 @@ class GraphTraverserUsingSequence(BaseGraphTraverser):
             #    print("Node %i" % i)
             #i += 1
             node_id, offset, prev_node, n_nodes = stack.pop()
-            #print("Checking node %d, offset %d, path: %s" % (node_id,  offset, path))
+            print("Checking node %d, offset %d, " % (node_id,  offset))
             node_size = self.graph.node_size(node_id)
             n_delete = len(path)-n_nodes + 1
             #print("Deleting from end of paths: %d" % n_delete)
@@ -90,7 +90,7 @@ class GraphTraverserUsingSequence(BaseGraphTraverser):
             path.append(node_id)
 
             if self._stop_recursion(node_id, offset):
-                #print("Stopping at %d" % node_id)
+                print("Stopping at %d" % node_id)
                 self.end_nodes[prev_node] = offset
             else:
                 stack.extend([(next_id, offset + node_size, node_id, n_nodes + 1) for

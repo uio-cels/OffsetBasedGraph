@@ -132,7 +132,7 @@ class Interval(BaseInterval):
         assert region_paths is None or isinstance(region_paths, list),\
             "Region paths must be None or list"
 
-        if isinstance(start_position, int):
+        if isinstance(start_position, int) or np.issubdtype(start_position, np.integer):
             self._offset_init(start_position, end_position, region_paths)
         else:
             self._position_init(start_position, end_position, region_paths)
@@ -195,6 +195,15 @@ class Interval(BaseInterval):
             return False
 
         return True
+
+    def contains_in_order_any_direction(self, other):
+        if self.contains_in_correct_order(other):
+            return True
+
+        if self.contains_in_correct_order(other.get_reverse()):
+            return True
+
+        return False
 
     def contains_in_correct_order(self, other):
         if not self.contains(other):
