@@ -1,14 +1,18 @@
 from collections import deque, defaultdict
+from itertools import chain
 import numpy as np
 
 
 class NodeDistances(object):
-    def __init__(self, distances=None, max_distance=None):
-        self.distances = distances if distances is not None else {}
+    def __init__(self, max_distance=None):
+        self.distances = {}
         self.max_distance = max_distance
-        if max_distance is not None:
-            self.distances = {node_id: distance for node_id, distance in
-                              self.items() if distance < max_distance}
+
+    @classmethod
+    def from_dict(cls, distances, max_distance=None):
+        obj = cls(max_distance)
+        obj.distances = distances
+        return obj
 
     def set_distance(self, node_id, distance):
         if node_id in self.distances and self.distances[node_id] <= distance:
@@ -22,7 +26,7 @@ class NodeDistances(object):
     __repr__ = __str__
 
     def __add__(self, distance):
-        return self.__class__({node_id: prev_distance+distance
+        return self.from_dict({node_id: prev_distance+distance
                                for node_id, prev_distance in
                                self.distances.items()},
                               self.max_distance)
@@ -36,6 +40,40 @@ class NodeDistances(object):
 
     def items(self):
         return self.distances.items()
+
+    def clean(self):
+        self.distances = {node_id: distance for node_id, distance in
+                          self.items() if distance < self.max_distance}
+
+    def clean_to_numpy(self):
+        node_ids = np.array(list(self.distances.keys()), dtype="int")
+        distances = np.array([self.distances[node_id] for node_id in node_ids])
+        small_distances = distances <= self.max_distance
+        return NodeDistancesNP(node_ids[small_distances],
+                               distances[small_distances],
+                               self.max_distance)
+
+
+class NodeDistancesNP(object):
+    def __init__(self, node_ids, distances, max_distance=None):
+        self.node_ids = node_ids
+        self.distances = distances
+        self.max_distance = max_distance
+
+    def __str__(self):
+        return str(self.node_ids) + "\n" + str(self.distances)
+
+    __repr__ = __str__
+
+    def __add__(self, distance):
+        return NodeDistancesNP(self.node_ids, self.distances + distance,
+                               self.max_distance)
+
+    def __eq__(self, other):
+        return self.distances == other.distances and self.node_ids == other.node_ids
+
+    def items(self):
+        return zip(self.node_ids, self.distances)
 
 
 class DistanceIndex(object):
@@ -71,9 +109,8 @@ class DistanceIndex(object):
         stack = deque([(node_id, node_size) for node_id
                        in self.adj_list[start_node_id]])
 
-        distances = NodeDistances({start_node_id: 0,
-                                   -start_node_id: node_size},
-                                  self.max_distance)
+        distances = NodeDistances(self.max_distance)
+                                  
         while stack:
             node_id, distance = stack.pop()
             if distance > self.max_distance:
@@ -88,10 +125,14 @@ class DistanceIndex(object):
                 next_nodes = self.adj_list[node_id]
                 for next_node in next_nodes:
                     stack.append((next_node, new_dist))
-            next_nodes = self.adj_list[-node_id]
-            for next_node in next_nodes:
-                stack.append((next_node, distance))
-        self.distances[start_node_id] = distances
+            if -node_id in self.distances:
+                new_distances = self.distances[-node_id] + (distance - self.graph.node_size(node_id))
+                distances.update(new_distances)
+            else:
+                next_nodes = self.adj_list[-node_id]
+                for next_node in next_nodes:
+                    stack.append((next_node, distance))
+        self.distances[start_node_id] = distances.clean_to_numpy()
 
     def _convert_distance_dicts(self):
         self.covered_neighbours = {}
@@ -99,8 +140,10 @@ class DistanceIndex(object):
         for node_id, distances in self.distances.items():
             if node_id > 0:
                 covered = [
-                    abs(other_id) for other_id, d in list(distances.items())+list(self.distances[-node_id].items())
-                    if d+self.graph.node_size(other_id) <= self.max_distance]
+                    abs(other_id) for other_id, d in
+                    chain(distances.items(), self.distances[-node_id].items())
+                    if d + self.graph.node_size(other_id) <= self.max_distance]
+
                 self.covered_neighbours[node_id] = list(sorted(set(covered)))
         for node_id, distances in self.distances.items():
             partial = [(other_id, self.max_distance-d)
