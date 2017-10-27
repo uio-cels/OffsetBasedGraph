@@ -1,6 +1,7 @@
 from collections import deque, defaultdict
 from itertools import chain
 import numpy as np
+import pickle
 
 
 class NodeDistances(object):
@@ -77,8 +78,14 @@ class NodeDistancesNP(object):
 
     def get_nodes_with_margin(self, node_sizes):
         margin_sizes = self.distances+node_sizes[np.abs(self.node_ids)]
-        small_distances = margin_sizes < self.max_distance
-        return self.node_ids[small_distances]
+        self.__within_margin = margin_sizes < self.max_distance
+        return self.node_ids[self.__within_margin]
+
+    def get_remains(self):
+        not_within_margin = np.logical_not(self.__within_margin)  # NOT
+        remains = self.max_distance-self.distances[not_within_margin]
+        remain_ids = self.node_ids[not_within_margin]
+        return self.__class__(remain_ids, remains, self.max_distance)
 
 
 class DistanceIndex(object):
@@ -149,9 +156,11 @@ class DistanceIndex(object):
                 all_covered = np.unique(np.concatenate((pos_covered, neg_covered)))
                 self.covered_neighbours[node_id] = list(np.sort(all_covered))
         for node_id, distances in self.distances.items():
-            partial = [(other_id, self.max_distance-d)
-                       for other_id, d in distances.items()
-                       if abs(other_id) not in self.covered_neighbours[abs(node_id)]]
+            partial = distances.get_remains()
+            self.partial_neighbours[node_id] = [
+                (other_id, dist) for other_id, dist in sorted(partial.items(), key=lambda x: x[0]) if
+                abs(other_id) not in self.covered_neighbours[abs(node_id)]]
 
-            self.partial_neighbours[node_id] = list(
-                sorted(partial, key=lambda x: x[0]))
+    def to_file(self, file_name):
+        with open("%s" % file_name, "wb") as f:
+            pickle.dump(self, f)
