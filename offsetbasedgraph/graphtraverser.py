@@ -55,8 +55,12 @@ class GraphTraverserUsingSequence(BaseGraphTraverser):
 
     def _stop_recursion(self, node_id, offset):
         node_size = self.graph.node_size(node_id)
-        if self.graph_sequence_retriever.get_sequence_on_directed_node(node_id) \
-                != self.search_sequence[offset:offset+node_size]:
+        correct_seq = self.search_sequence[offset:offset+node_size]
+        #print(correct_seq)
+        graph_seq = self.graph_sequence_retriever.get_sequence_on_directed_node(node_id)
+        #print(graph_seq)
+
+        if graph_seq != correct_seq:
             return True
         return False
 
@@ -73,16 +77,18 @@ class GraphTraverserUsingSequence(BaseGraphTraverser):
 
     def extend_from_block(self, start_node_id):
         path = []
-        stack = [(start_node_id, 0 , 0, 1)]
+        stack = [(start_node_id, 0, 0, 0)]
         i = 0
         while stack:
             #if i % 10000 == 0:
             #    print("Node %i" % i)
             #i += 1
             node_id, offset, prev_node, n_nodes = stack.pop()
-            print("Checking node %d, offset %d, " % (node_id,  offset))
+            #if node_id in [6512, 6508, 6511] or node_id < 0:
+            print("Checking node %d, offset %d. Added from %d" % (node_id,  offset, prev_node))
             node_size = self.graph.node_size(node_id)
-            n_delete = len(path)-n_nodes + 1
+            n_delete = len(path)-n_nodes
+            #print("N nodes to here: %d" % n_nodes)
             #print("Deleting from end of paths: %d" % n_delete)
             if n_delete > 0:
                 del path[-n_delete:]
@@ -97,7 +103,7 @@ class GraphTraverserUsingSequence(BaseGraphTraverser):
                               next_id in self.adj_list[node_id]])
 
                 if node_size + offset == len(self.search_sequence):
-                    #print("Found end at node %d, offset %d" % (node_id, offset + node_size))
+                    print("Found end at node %d, offset %d" % (node_id, offset + node_size))
                     self.path = path
                     return
 

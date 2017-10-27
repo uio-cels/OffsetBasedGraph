@@ -67,8 +67,55 @@ class TestGraphTraverserUsingSequence(unittest.TestCase):
         traverser.search_from_node(1)
         self.assertEqual(traverser.get_nodes_found(), [1, 4, 5])
 
+    def test_many_paths_to_same_node(self):
+        blocks= {i: Block(1) for i in range(1, 6)}
+        edges = {
+                    1: [2, 5],
+                    2: [3, 5],
+                    3: [4, 5],
+                    4: [5]
+        }
+        graph = GraphWithReversals(blocks, edges)
+
+        search_sequence = "AAAG"
+        sequence_retriever = SequenceRetriever(
+            {1: "A",
+             2: "A",
+             3: "A",
+             4: "A",
+             5: "G"
+             }
+        )
+
+        traverser = GraphTraverserUsingSequence(graph, search_sequence, sequence_retriever)
+        traverser.search_from_node(1)
+        self.assertEqual(traverser.get_nodes_found(), [1, 2, 3, 5])
 
 
+    def test_reversal(self):
+        blocks= {i: Block(1) for i in range(1, 6)}
+        edges = {
+                    1: [2, 5],
+                    2: [-2, 3],
+                    -2: [5],
+                    3: [4],
+                    4: [5]
+        }
+        graph = GraphWithReversals(blocks, edges)
+
+        search_sequence = "AAAG"
+        sequence_retriever = SequenceRetriever(
+            {1: "A",
+             2: "A",
+             3: "T",
+             4: "A",
+             5: "G"
+             }
+        )
+
+        traverser = GraphTraverserUsingSequence(graph, search_sequence, sequence_retriever)
+        traverser.search_from_node(1)
+        self.assertEqual(traverser.get_nodes_found(), [1, 2, -2, 5])
 
 if __name__ == "__main__":
     unittest.main()
