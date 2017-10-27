@@ -179,6 +179,20 @@ class DistanceIndex(object):
             self.convert_pos_and_neg_node_distances(node_id)
 
     def to_file(self, file_name):
-        with open("%s" % file_name, "wb") as f:
-            pass
-            # pickle.dump(self, f)
+        with open("%s" % file_name+".cov", "wb") as f:
+            pickle.dump(self.covered_neighbours, f)
+
+        with open("%s" % file_name+".par", "wb") as f:
+            pickle.dump(self.partial_neighbours, f)
+
+    @classmethod
+    def from_file(cls, graph, max_distance, file_name):
+        obj = cls(graph, max_distance)
+        with open("%s.cov" % file_name, "rb") as f:
+            cov = pickle.loads(f.read())
+            obj.covered_neighbours = cov
+
+        with open("%s.par" % file_name, "rb") as f:
+            par = pickle.loads(f.read())
+            obj.partial_neighbours = par
+        return obj
