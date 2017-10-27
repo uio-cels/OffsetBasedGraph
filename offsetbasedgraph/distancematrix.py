@@ -152,21 +152,33 @@ class DistanceIndex(object):
                     stack.append((next_node, distance))
         self.distances[start_node_id] = distances.clean_to_numpy()
 
+    def convert_pos_and_neg_node_distances(self, node_id):
+        distances = self.distances[node_id]
+        neg_distances = self.distances[-node_id]
+        pos_covered = np.abs(distances.get_nodes_with_margin(self.graph._node_sizes))
+        neg_covered = np.abs(neg_distances.get_nodes_with_margin(self.graph._node_sizes))
+        all_covered = np.unique(np.concatenate((pos_covered, neg_covered)))
+        self.covered_neighbours[node_id] = np.sort(all_covered)
+        pos_partial = distances.get_remains()
+        neg_partial = neg_distances.get_remains()
+        self.partial_neighbours[node_id] = np.array([
+            (other_id, dist) for other_id, dist in sorted(pos_partial.items(), key=lambda x: x[0]) if
+            abs(other_id) not in self.covered_neighbours[abs(node_id)]])
+        self.partial_neighbours[-node_id] = np.array([
+            (other_id, dist) for other_id, dist in sorted(neg_partial.items(), key=lambda x: x[0]) if
+            abs(other_id) not in self.covered_neighbours[abs(node_id)]])
+        del self.distances[node_id]
+        del self.distances[-node_id]
+
     def _convert_distance_dicts(self):
         self.covered_neighbours = {}
         self.partial_neighbours = {}
-        for node_id, distances in self.distances.items():
-            if node_id > 0:
-                pos_covered = np.abs(distances.get_nodes_with_margin(self.graph._node_sizes))
-                neg_covered = np.abs(self.distances[-node_id].get_nodes_with_margin(self.graph._node_sizes))
-                all_covered = np.unique(np.concatenate((pos_covered, neg_covered)))
-                self.covered_neighbours[node_id] = list(np.sort(all_covered))
-        for node_id, distances in self.distances.items():
-            partial = distances.get_remains()
-            self.partial_neighbours[node_id] = [
-                (other_id, dist) for other_id, dist in sorted(partial.items(), key=lambda x: x[0]) if
-                abs(other_id) not in self.covered_neighbours[abs(node_id)]]
+
+        pos_node_ids = [node_id for node_id in self.distances if node_id > 0]
+        for node_id in pos_node_ids:
+            self.convert_pos_and_neg_node_distances(node_id)
 
     def to_file(self, file_name):
         with open("%s" % file_name, "wb") as f:
-            pickle.dump(self, f)
+            pass
+            # pickle.dump(self, f)
