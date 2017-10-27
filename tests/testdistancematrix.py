@@ -52,7 +52,8 @@ class TestDistanceIndex(unittest.TestCase):
         covered_neighbours[10].extend([5, 6])
         covered_neighbours[9].extend([5, 6])
         self.covered_neighbours = {
-            i: list(sorted(l)) for i, l in covered_neighbours.items()}
+            i: np.array(list(sorted(l)))
+            for i, l in covered_neighbours.items()}
 
     def _create_true_partial_list(self):
         partial_neighbours = {
@@ -70,20 +71,27 @@ class TestDistanceIndex(unittest.TestCase):
         partial_neighbours[8].extend([(-5, 5), (6, 5)])
         partial_neighbours[9].extend([(-4, 5), (7, 5)])
         partial_neighbours[-10].extend([(-4, 5), (7, 5)])
-        self.partial_neighbours = {i: list(sorted(l, key=lambda x: x[0]))
-                                   for i, l in partial_neighbours.items()}
+        self.partial_neighbours = {
+            i: np.array(list(sorted(l, key=lambda x: x[0])))
+            for i, l in partial_neighbours.items()}
+
+    def assertArrayDictsEqual(self, d1, d2):
+        self.assertEqual(len(d1.keys()), len(d2.keys()))
+        for node_id in d1:
+            self.assertTrue(np.all(d1[node_id] == d2[node_id]))
 
     def test_create(self):
         distance_index = DistanceIndex(self.graph, 25)
         distance_index.create()
-        self.assertEqual(distance_index.covered_neighbours,
-                         self.covered_neighbours)
+
+        self.assertArrayDictsEqual(distance_index.covered_neighbours,
+                                   self.covered_neighbours)
         for node_id in distance_index.partial_neighbours:
             print(node_id,
                   distance_index.partial_neighbours[node_id],
                   self.partial_neighbours[node_id])
-        self.assertEqual(distance_index.partial_neighbours,
-                         self.partial_neighbours)
+        self.assertArrayDictsEqual(distance_index.partial_neighbours,
+                                   self.partial_neighbours)
 
 
 if __name__ == "__main__":
