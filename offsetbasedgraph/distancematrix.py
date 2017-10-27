@@ -64,6 +64,9 @@ class NodeDistancesNP(object):
     def __str__(self):
         return str(self.node_ids) + "\n" + str(self.distances)
 
+    def __len__(self):
+        return self.node_ids.size
+
     __repr__ = __str__
 
     def __add__(self, distance):
@@ -108,15 +111,18 @@ class DistanceIndex(object):
         self.distances = {}
         i = 0
         for node_id in self.graph.blocks.keys():
-            if i % 10000 == 0:
-                print(i)
-            i += 1
             self._find_close_to_node(node_id)
             self._find_close_to_node(-node_id)
+            if i % 1000 == 0:
+                print("#", i)
+                print(len(self.distances[node_id]))
+                print(len(self.distances[-node_id]))
+
+            i += 1
+
         self._convert_distance_dicts()
 
     def _find_close_to_node(self, start_node_id):
-
         node_size = self.graph.node_size(start_node_id)
         stack = deque([(node_id, node_size) for node_id
                        in self.adj_list[start_node_id]])
