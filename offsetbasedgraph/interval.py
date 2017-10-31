@@ -455,6 +455,12 @@ class Interval(BaseInterval):
 
         return overlap
 
+    def approx_contains(self, other, allowed_mismatches=1):
+        overlap = other.overlap(self)
+        if  overlap > 0 and overlap >= other.length() - allowed_mismatches:
+            return True
+        return False
+
     def is_approx_equal(self, other, allowed_mismatches=1):
         overlap = self.overlap(other)
         if  overlap > 0 and overlap >= self.length() - allowed_mismatches:
