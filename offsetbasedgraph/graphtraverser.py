@@ -47,7 +47,7 @@ class GraphTravserserBetweenNodes(BaseGraphTraverser):
     def __init__(self, graph):
         self.graph = graph
 
-    def get_greedy_subgraph_between_nodes(self, start, end):
+    def get_greedy_subgraph_between_nodes(self, start, end, include_start_and_end=True):
         blocks = {}
         edges = defaultdict(list)
 
@@ -57,15 +57,19 @@ class GraphTravserserBetweenNodes(BaseGraphTraverser):
             current_node, prev = stack.pop()
             #print("Current node: %d, prev: %s" % (current_node, prev))
 
-            blocks[current_node] = self.graph.blocks[current_node]
+            if include_start_and_end or (current_node != start and current_node != end):
+                blocks[current_node] = self.graph.blocks[current_node]
+
             if prev is not None:
-                edges[prev].append(current_node)
+                if include_start_and_end or (prev != start and current_node != end):
+                    edges[prev].append(current_node)
 
             if current_node == end:
                 continue
 
             nexts = self.graph.adj_list[current_node]
             stack.extend([(next_id, current_node) for next_id in nexts])
+
 
         return Graph(blocks, edges)
 
