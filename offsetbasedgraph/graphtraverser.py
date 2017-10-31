@@ -1,6 +1,7 @@
 from collections import defaultdict
 import operator
 from .interval import Interval
+from .graph import Graph
 
 class GeneralArea(object):
     def __init__(self, complete_region_paths, touched_areas):
@@ -41,6 +42,35 @@ class BaseGraphTraverser(object):
         raise NotImplementedError()
 
 
+class GraphTravserserBetweenNodes(BaseGraphTraverser):
+
+    def __init__(self, graph):
+        self.graph = graph
+
+    def get_greedy_subgraph_between_nodes(self, start, end):
+        blocks = {}
+        edges = defaultdict(list)
+
+        stack = [(start, None)]
+        i = 0
+        while stack:
+            current_node, prev = stack.pop()
+            #print("Current node: %d, prev: %s" % (current_node, prev))
+
+            blocks[current_node] = self.graph.blocks[current_node]
+            if prev is not None:
+                edges[prev].append(current_node)
+
+            if current_node == end:
+                continue
+
+            nexts = self.graph.adj_list[current_node]
+            stack.extend([(next_id, current_node) for next_id in nexts])
+
+        return Graph(blocks, edges)
+
+
+
 class GraphTraverserUsingSequence(BaseGraphTraverser):
     def __init__(self, graph, search_sequence, graph_sequence_retriever, direction=+1):
         super(GraphTraverserUsingSequence, self).__init__(graph, direction)
@@ -56,9 +86,9 @@ class GraphTraverserUsingSequence(BaseGraphTraverser):
     def _stop_recursion(self, node_id, offset):
         node_size = self.graph.node_size(node_id)
         correct_seq = self.search_sequence[offset:offset+node_size]
-        #print(correct_seq)
+        print("Linear seq: %s" % correct_seq)
         graph_seq = self.graph_sequence_retriever.get_sequence_on_directed_node(node_id)
-        #print(graph_seq)
+        print("Graph seq : %s" % graph_seq)
 
         if graph_seq != correct_seq:
             return True
@@ -77,15 +107,20 @@ class GraphTraverserUsingSequence(BaseGraphTraverser):
 
     def extend_from_block(self, start_node_id):
         path = []
-        stack = [(start_node_id, 0, 0, 0)]
+        stack = [(start_node_id, 0, 0, 0, [])]
         i = 0
         while stack:
             #if i % 10000 == 0:
             #    print("Node %i" % i)
             #i += 1
-            node_id, offset, prev_node, n_nodes = stack.pop()
+            node_id, offset, prev_node, n_nodes, path_to_here = stack.pop()
             #if node_id in [6512, 6508, 6511] or node_id < 0:
             print("Checking node %d, offset %d. Added from %d" % (node_id,  offset, prev_node))
+
+
+            new_path_to_here = path_to_here.copy()
+            new_path_to_here.append(node_id)
+            print("    Path: %s" % new_path_to_here)
             node_size = self.graph.node_size(node_id)
             n_delete = len(path)-n_nodes
             #print("N nodes to here: %d" % n_nodes)
@@ -99,8 +134,10 @@ class GraphTraverserUsingSequence(BaseGraphTraverser):
                 print("Stopping at %d" % node_id)
                 self.end_nodes[prev_node] = offset
             else:
-                stack.extend([(next_id, offset + node_size, node_id, n_nodes + 1) for
-                              next_id in self.adj_list[node_id]])
+                nexts = self.adj_list[node_id]
+                print("     Next: %s" % nexts)
+                stack.extend([(next_id, offset + node_size, node_id, n_nodes + 1, new_path_to_here) for
+                              next_id in nexts])
 
                 if node_size + offset == len(self.search_sequence):
                     print("Found end at node %d, offset %d" % (node_id, offset + node_size))

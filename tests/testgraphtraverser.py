@@ -1,7 +1,40 @@
-from offsetbasedgraph.graphtraverser import GraphTraverser, GraphTraverserUsingSequence
+from offsetbasedgraph.graphtraverser import GraphTraverser, GraphTraverserUsingSequence, GraphTravserserBetweenNodes
 from offsetbasedgraph import Graph, Block, Interval, GraphWithReversals
 from pyvg.sequences import SequenceRetriever
 import unittest
+
+class TestGraphTravserserBetweenNodes(unittest.TestCase):
+
+    def setUp(self):
+        self.simple_graph = Graph(
+            {i: Block(3) for i in range(1, 9)},
+            {
+                1: [2, 3],
+                 2: [4],
+                 3: [4],
+                 4: [5],
+                 5: [6, 7],
+                 6: [8],
+                 7: [8]
+             })
+
+    def test_simple(self):
+        traverser = GraphTravserserBetweenNodes(self.simple_graph)
+        subgraph = traverser.get_greedy_subgraph_between_nodes(1, 4)
+        correct_subgraph = Graph({i: Block(3) for i in range(1, 5)},
+                                 {
+                                    1: [2, 3],
+                                    2: [4],
+                                    3: [4]
+                                 })
+        self.assertEqual(correct_subgraph, subgraph)
+
+    def test_simple2(self):
+
+        traverser = GraphTravserserBetweenNodes(self.simple_graph)
+        subgraph = traverser.get_greedy_subgraph_between_nodes(1, 8)
+        self.assertEqual(self.simple_graph, subgraph)
+
 
 class TestGraphTraverserUsingSequence(unittest.TestCase):
 
