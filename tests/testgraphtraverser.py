@@ -18,6 +18,96 @@ class TestGraphTravserserBetweenNodes(unittest.TestCase):
                  7: [8]
              })
 
+        self.hierarchical_graph = Graph(
+            {i: Block(3) for i in range(1, 13)},
+            {
+                11: [1],
+                1: [2, 3],
+                2: [7, 8],
+                3: [4, 5],
+                4: [6],
+                5: [6],
+                6: [10],
+                7: [9],
+                8: [9],
+                9: [10],
+                10: [12]
+             })
+
+    def test_snarl_traverser(self):
+        graph = Graph(
+            {
+                1: Block(3),
+                2: Block(3),
+                3: Block(3),
+                4: Block(3)
+            },
+            {
+                1: [2, 4],
+                2: [3],
+                4: [3]
+            }
+        )
+
+        traverser = GraphTravserserBetweenNodes(graph)
+        subgraph = traverser.get_snarl_subgraph(1, 3, print_debug=True)
+        correct_subgraph = Graph({2: Block(3), 4: Block(3)}, {})
+        self.assertEqual(correct_subgraph, subgraph)
+
+    def test_snarl_traverser2(self):
+
+
+        traverser = GraphTravserserBetweenNodes(self.hierarchical_graph)
+        subgraph = traverser.get_snarl_subgraph(3, 6, print_debug=True)
+        correct_subgraph = Graph({4: Block(3), 5: Block(3)}, {})
+        self.assertEqual(correct_subgraph, subgraph)
+
+    def test_snarl_traverser_hierarchical(self):
+        traverser = GraphTravserserBetweenNodes(self.hierarchical_graph)
+        subgraph = traverser.get_snarl_subgraph(1, 10, include_start_and_end=True, print_debug=True)
+        correct_subgraph = Graph({i: Block(3) for i in range(1, 11)},
+                                 {
+                                     1: [2, 3],
+                                     2: [7, 8],
+                                     3: [4, 5],
+                                     4: [6],
+                                     5: [6],
+                                     7: [9],
+                                     8: [9],
+                                     6: [10],
+                                     9: [10]
+                                 })
+
+        print("Subgraph")
+        print(subgraph)
+
+        self.assertEqual(correct_subgraph, subgraph)
+
+
+
+    def test_simple_snarl_traverser(self):
+        graph = Graph({i: Block(3) for i in range(1, 7)},
+                      {
+                          1: [2, 3, 5],
+                          2: [4],
+                          3: [4],
+                          5: [6]
+                      })
+
+        traverser = GraphTravserserBetweenNodes(graph)
+        subgraph = traverser.get_snarl_subgraph(1, 4)
+        correct_subgraph = Graph({2: Block(3), 3: Block(3)}, {})
+        self.assertEqual(correct_subgraph, subgraph)
+
+        traverser = GraphTravserserBetweenNodes(graph)
+        subgraph = traverser.get_snarl_subgraph(1, 6, include_start_and_end=True)
+        correct_subgraph = Graph({1: Block(3), 5: Block(3), 6: Block(3)},
+                                 {1: [5],
+                                  5: [6]
+                                  })
+
+        self.assertEqual(correct_subgraph, subgraph)
+
     def test_simple(self):
         traverser = GraphTravserserBetweenNodes(self.simple_graph)
         subgraph = traverser.get_greedy_subgraph_between_nodes(1, 4)
@@ -58,6 +148,7 @@ class TestGraphTraverserUsingSequence(unittest.TestCase):
              4: "CCC"
              }
         )
+
 
     def test_simple(self):
         print(self.simple_graph.reverse_adj_list)

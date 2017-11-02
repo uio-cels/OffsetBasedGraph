@@ -46,8 +46,88 @@ class GraphTravserserBetweenNodes(BaseGraphTraverser):
 
     def __init__(self, graph):
         self.graph = graph
+        self._visited = {}
 
-    def get_greedy_subgraph_between_nodes(self, start, end, include_start_and_end=True):
+    def get_snarl_subgraph(self, start, end, include_start_and_end=False, print_debug=False):
+        blocks = self._get_blocks_in_snarl_subgraph(start, end, print_debug=print_debug)
+
+        if include_start_and_end:
+            blocks.append(start)
+            blocks.append(end)
+
+        #print("Blocks: %s" % blocks)
+
+        blocks = list(set(blocks))
+        block_dict = {}
+        for block in blocks:
+            block_dict[block] = self.graph.blocks[block]
+
+        edges = defaultdict(list)
+        for block in blocks:
+            for edge in self.graph.adj_list[block]:
+                if edge in block_dict:
+                    edges[block].append(edge)
+
+
+        return Graph(block_dict, edges)
+
+    def _get_blocks_in_snarl_subgraph(self, start, end, include_start_and_end=True, print_debug=False):
+        # Subgraph is connnected to graph by only two other nodes (start and end). Start can have other edges out,
+        # than those into subgraph
+        blocks = []
+        visited = {}
+        visited_false_paths = {}
+        stack = [(start, 0, 0, [])]
+        i = 0
+
+        did_find_end_node = False
+
+        while stack:
+            node_id, n_nodes_to_here, prev_node, path = stack.pop()
+            new_path = path.copy()
+            if print_debug:
+                print("%d: Current node: %d. End: %d" % (i, node_id, end))
+
+            i += 1
+
+            if node_id == end:
+                blocks.extend(new_path)
+                did_find_end_node = True
+                for n in path:
+                    visited[n] = True
+                if print_debug:
+                    print("  Reached end")
+                continue
+
+            if node_id in visited:
+                blocks.extend(new_path)
+                if print_debug:
+                    print("Already visited  ")
+                continue
+
+            if node_id != start:
+                new_path.append(node_id)
+
+            #visited[node_id] = True
+
+            nexts = self.graph.adj_list[node_id]
+            #if print_debug:
+            #    print("Nexts: %s " % nexts)
+            if len(nexts) == 0:
+                if print_debug:
+                    print("   Reached end, do not add path")
+                continue  # Do not add path
+
+            stack.extend([(next_id, n_nodes_to_here + 1, node_id, new_path) for next_id in nexts])
+
+        assert did_find_end_node, "Did not find end node between %d and %d" % (start, end)
+
+        return list(set(blocks))
+
+
+
+    def get_greedy_subgraph_between_nodes(self, start, end, include_start_and_end=True, print_debug=False):
+        # Faster: Assumes everything after start node is the subgraph
         blocks = {}
         edges = defaultdict(list)
 
@@ -55,7 +135,8 @@ class GraphTravserserBetweenNodes(BaseGraphTraverser):
         i = 0
         while stack:
             current_node, prev = stack.pop()
-            #print("Current node: %d, prev: %s" % (current_node, prev))
+            if print_debug:
+                print("Current node: %d, prev: %s" % (current_node, prev))
 
             if include_start_and_end or (current_node != start and current_node != end):
                 blocks[current_node] = self.graph.blocks[current_node]
@@ -64,10 +145,18 @@ class GraphTravserserBetweenNodes(BaseGraphTraverser):
                 if include_start_and_end or (prev != start and current_node != end):
                     edges[prev].append(current_node)
 
+            if current_node in self._visited:
+                #print("  Already visited %d" % current_node)
+                continue
+
+            self._visited[current_node] = True
             if current_node == end:
                 continue
 
             nexts = self.graph.adj_list[current_node]
+            if print_debug:
+                print("  Nexts: %s" % nexts)
+
             stack.extend([(next_id, current_node) for next_id in nexts])
 
 
@@ -90,9 +179,9 @@ class GraphTraverserUsingSequence(BaseGraphTraverser):
     def _stop_recursion(self, node_id, offset):
         node_size = self.graph.node_size(node_id)
         correct_seq = self.search_sequence[offset:offset+node_size]
-        print("Linear seq: %s" % correct_seq)
+        #print("Linear seq: %s" % correct_seq)
         graph_seq = self.graph_sequence_retriever.get_sequence_on_directed_node(node_id)
-        print("Graph seq : %s" % graph_seq)
+        #print("Graph seq : %s" % graph_seq)
 
         if graph_seq != correct_seq:
             return True
@@ -114,12 +203,8 @@ class GraphTraverserUsingSequence(BaseGraphTraverser):
         stack = [(start_node_id, 0, 0, 0, [])]
         i = 0
         while stack:
-            #if i % 10000 == 0:
-            #    print("Node %i" % i)
-            #i += 1
             node_id, offset, prev_node, n_nodes, path_to_here = stack.pop()
-            #if node_id in [6512, 6508, 6511] or node_id < 0:
-            print("Checking node %d, offset %d. Added from %d" % (node_id,  offset, prev_node))
+            #print("Checking node %d, offset %d. Added from %d" % (node_id,  offset, prev_node))
 
 
             new_path_to_here = path_to_here.copy()
@@ -127,26 +212,22 @@ class GraphTraverserUsingSequence(BaseGraphTraverser):
             print("    Path: %s" % new_path_to_here)
             node_size = self.graph.node_size(node_id)
             n_delete = len(path)-n_nodes
-            #print("N nodes to here: %d" % n_nodes)
-            #print("Deleting from end of paths: %d" % n_delete)
             if n_delete > 0:
                 del path[-n_delete:]
-            #print("Path after cutting: %s" % path)
+
             path.append(node_id)
 
             if self._stop_recursion(node_id, offset):
-                print("Stopping at %d" % node_id)
                 self.end_nodes[prev_node] = offset
             else:
                 nexts = self.adj_list[node_id]
-                print("     Next: %s" % nexts)
                 stack.extend([(next_id, offset + node_size, node_id, n_nodes + 1, new_path_to_here) for
                               next_id in nexts])
 
                 if node_size + offset == len(self.search_sequence):
-                    print("Found end at node %d, offset %d" % (node_id, offset + node_size))
                     self.path = path
                     return
+
 
 class GraphTraverser(object):
     def __init__(self, graph, direction=+1):
