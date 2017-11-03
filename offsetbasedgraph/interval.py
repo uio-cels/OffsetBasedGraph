@@ -132,10 +132,12 @@ class Interval(BaseInterval):
         assert region_paths is None or isinstance(region_paths, list),\
             "Region paths must be None or list"
 
-        if isinstance(start_position, int) or np.issubdtype(start_position, np.integer):
+        if isinstance(start_position, Position):
+            self._position_init(start_position, end_position, region_paths)
+        elif isinstance(start_position, int) or (isinstance(start_position, np.ndarray) and np.issubdtype(start_position, np.integer)):
             self._offset_init(start_position, end_position, region_paths)
         else:
-            self._position_init(start_position, end_position, region_paths)
+            raise Exception("%s is not Position or int" % start_position)
 
         self.graph = graph
         self.rp_lens_tmp = None
