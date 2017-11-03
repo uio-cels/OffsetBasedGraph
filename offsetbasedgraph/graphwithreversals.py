@@ -23,6 +23,50 @@ class GraphWithReversals(Graph):
                                                  create_reverse_adj_list=create_reverse_adj_list,
                                                  rev_adj_list=rev_adj_list)
 
+    def _possible_node_ids(self):
+        node_ids = list(self.blocks.keys())
+        possible_ids = node_ids + [-n for n in node_ids]
+        return possible_ids
+
+    def get_last_blocks(self):
+        """
+        :param graph: Graph
+        :return: Returns a list of all blocks having no incoming edges
+        :rtype: list(Graph)
+        """
+        return [b for b in self._possible_node_ids() if self._is_end_block(b)]
+
+    def _is_start_block(self, node_id):
+        has_edges_out = bool(len(self.adj_list[node_id]))
+        has_edges_in = bool(len(self.reverse_adj_list[-node_id]))
+        return has_edges_out and (not has_edges_in)
+
+    def _is_end_block(self, node_id):
+        has_edges_out = bool(len(self.adj_list[node_id]))
+        has_edges_in = bool(len(self.reverse_adj_list[-node_id]))
+        return (not has_edges_out) and has_edges_in
+
+    def get_first_blocks(self):
+        """
+        :param graph: Graph
+        :return: Return a list of all blocks having no incoming edges
+        :rtype: list(Graph)
+        """
+        print("#######################################")
+        return [b for b in self._possible_node_ids()
+                if self._is_start_block(b)]
+
+    def _add_edge(self, block_a, block_b):
+        """Add edge from a to b, in both adj_list
+        and reveres_adj_list
+
+        :param block_a: from block
+        :param block_b: to block
+        """
+        print("!!!!!", block_a, block_b)
+        self.adj_list[block_a].append(block_b)
+        self.reverse_adj_list[-block_b].append(-block_a)
+
     def node_size(self, node_id):
         return self._node_sizes[abs(node_id)]
 
