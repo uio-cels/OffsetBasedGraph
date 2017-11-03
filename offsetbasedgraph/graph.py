@@ -3,6 +3,7 @@ from .interval import Interval, Position
 from .translation import Translation
 import pickle
 import os
+import numpy as np
 
 
 class Block(object):
@@ -21,6 +22,20 @@ class Block(object):
 
     def __repr__(self):
         return self.__str__()
+
+
+class BlockCollection(dict):
+    def __init__(self, *args, **kwargs):
+        super(BlockCollection, self).__init__(*args, **kwargs)
+
+    def __contains__(self, name):
+        assert isinstance(name, (int, np.integer)) , \
+            "Block collection can only deal with numeric block IDs"
+
+        return super().__contains__(abs(name))
+
+    def __getitem__(self, key):
+        return super().__getitem__(abs(key))
 
 
 class Graph(object):
@@ -45,7 +60,7 @@ class Graph(object):
         :param blocks: dict{block_id: block_length}
         :param adj_list: dict{block_id: [neighbour_ids...]}
         """
-        self.blocks = blocks
+        self.blocks = BlockCollection(blocks)
         self.adj_list = defaultdict(list, adj_list)
         if rev_adj_list is not None:
             self.reverse_adj_list = rev_adj_list
@@ -85,8 +100,8 @@ class Graph(object):
         new_graph = Graph(new_blocks, new_adjs, True)
         return new_graph
 
-    @staticmethod
-    def from_file(file_name):
+    @classmethod
+    def from_file(cls, file_name):
         """
         Load graph from pickle
 
@@ -95,7 +110,9 @@ class Graph(object):
         """
         if os.path.isfile("%s" % file_name):
             with open("%s" % file_name, "rb") as f:
-                return pickle.loads(f.read())
+                obj = pickle.loads(f.read())
+                assert isinstance(obj, cls)
+                return obj
         else:
             print("Warning: Graph not found" % file_name)
             return None
@@ -118,7 +135,7 @@ class Graph(object):
         :rtype: list(Graph)
         """
         return [b for b in self.blocks if
-                len(self.reverse_adj_list[b]) == 0]
+                len(self.reverse_adj_list[-b]) == 0]
 
     def get_last_blocks(self):
         """
@@ -940,7 +957,7 @@ class Graph(object):
         reverse_edges = defaultdict(list)
         for block, edges in adj_list.items():
             for edge in edges:
-                reverse_edges[edge].append(block)
+                reverse_edges[-edge].append(-block)
 
         return reverse_edges
 
@@ -954,6 +971,7 @@ class Graph(object):
         trans_back = {}
         new_blocks = {}
         new_adj_list = {}
+        visited = {}
 
         i = 0
         for start_block in self.get_first_blocks():
@@ -964,6 +982,7 @@ class Graph(object):
             current_block = start_block
             last_block_length = 0
             while True:
+                visited[current_block] = True
                 linear_blocks.append(current_block)
                 #new_blocks[current_block] = self.blocks[current_block]
                 block_length = self.blocks[current_block].length()
@@ -976,7 +995,20 @@ class Graph(object):
                     break
 
                 #new_adj_list[current_block] = [next_blocks[0]]
-                current_block = next_blocks[0]
+                next_block = None
+                for block in next_blocks:
+                    if block in visited:
+                        print("Visited %d" % block)
+                        print(visited)
+                        continue
+                    else:
+                        next_block = block
+                        break
+
+                if next_block is None:
+                    break
+
+                current_block = next_block
 
             new_blocks[chrom_name] = Block(offset)
             # Forward trans

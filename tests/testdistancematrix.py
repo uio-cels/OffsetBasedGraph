@@ -1,0 +1,98 @@
+import unittest
+import numpy as np
+from offsetbasedgraph.distancematrix import DistanceIndex, NodeDistances
+from offsetbasedgraph import GraphWithReversals, Block
+from itertools import chain
+
+
+class TestNodeDistances(unittest.TestCase):
+    def setUp(self):
+        self.node_dists = NodeDistances.from_dict({1: 10, -1: 20, 2: 30})
+        self.node_dists2 = NodeDistances.from_dict({1: 20, -2: 20, 2: 20})
+
+    def test_add(self):
+        added = self.node_dists + 10
+        self.assertEqual(
+            added,
+            NodeDistances.from_dict({1: 20, -1: 30, 2: 40}))
+
+    def test_update(self):
+        self.node_dists.update(self.node_dists2)
+        self.assertEqual(
+            self.node_dists,
+            NodeDistances.from_dict({1: 10, -2: 20, 2: 20, -1: 20}))
+
+    def test_max_distance(self):
+        node_distances = NodeDistances.from_dict(
+            {1: 10, -1: 20, 2: 30, 10: 50, 100: 100},
+            max_distance=40)
+        node_distances.clean()
+        self.assertEqual(node_distances, self.node_dists)
+
+
+class TestDistanceIndex(unittest.TestCase):
+    def setUp(self):
+        nodes = {i: Block(10) for i in range(1, 11)}
+        edges = {i: [i+1] for i in range(1, 10)}
+        edges[5] += [10]
+        self.graph = GraphWithReversals(nodes, edges)
+        self._n_nodes = len(self.graph.blocks.values())
+        self._create_true_covered_list()
+        self._create_true_partial_list()
+        # self.maxDiff = None
+
+    def _create_true_covered_list(self):
+        covered_neighbours = {i: [i] for i in range(1, 11)}
+        for i in range(1, 10):
+            covered_neighbours[i].append((i+1))
+        for i in range(2, 11):
+            covered_neighbours[i].append(i-1)
+        covered_neighbours[5].extend([9, 10])
+        covered_neighbours[6].extend([9, 10])
+        covered_neighbours[10].extend([5, 6])
+        covered_neighbours[9].extend([5, 6])
+        self.covered_neighbours = {
+            i: np.array(list(sorted(l)))
+            for i, l in covered_neighbours.items()}
+
+    def _create_true_partial_list(self):
+        partial_neighbours = {
+            i: [] for i in chain(range(1, 11), range(-10, 0))}
+        for i in range(1, 9):
+            partial_neighbours[i].append((i+2, 5))
+        for i in range(3, 11):
+            partial_neighbours[-i].append((-i+2, 5))
+        partial_neighbours[5].append((-8, 5))
+        partial_neighbours[-6].append((-8, 5))
+
+        partial_neighbours[4].extend([(-9, 5), (10, 5)])
+        partial_neighbours[-7].extend([(-9, 5), (10, 5)])
+
+        partial_neighbours[8].extend([(-5, 5), (6, 5)])
+        partial_neighbours[9].extend([(-4, 5), (7, 5)])
+        partial_neighbours[-10].extend([(-4, 5), (7, 5)])
+        self.partial_neighbours = {
+            i: np.array(list(sorted(l, key=lambda x: x[0])))
+            for i, l in partial_neighbours.items()}
+
+    def assertArrayDictsEqual(self, d1, d2):
+        self.assertEqual(len(d1.keys()), len(d2.keys()))
+        for node_id in d1:
+            self.assertTrue(np.all(d1[node_id] == d2[node_id]))
+
+    def test_create(self):
+        distance_index = DistanceIndex(self.graph, 25)
+        distance_index.create()
+
+        self.assertArrayDictsEqual(distance_index.covered_neighbours,
+                                   self.covered_neighbours)
+        for node_id in distance_index.partial_neighbours:
+            print(node_id,
+                  distance_index.partial_neighbours[node_id],
+                  self.partial_neighbours[node_id])
+        self.assertArrayDictsEqual(distance_index.partial_neighbours,
+                                   self.partial_neighbours)
+
+
+if __name__ == "__main__":
+    unittest.main()

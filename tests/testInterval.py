@@ -1,6 +1,6 @@
 import unittest
 import dummygraph
-from offsetbasedgraph import Interval, Position, IntervalCollection
+from offsetbasedgraph import Interval, Position, IntervalCollection, Graph, Block
 
 
 class TestInterval(unittest.TestCase):
@@ -80,6 +80,103 @@ class TestInterval(unittest.TestCase):
         self.assertTrue(interval1.hash() != interval_different2.hash())
         self.assertTrue(interval1.hash() != interval_different3.hash())
         self.assertTrue(interval1.hash() != interval1_minus.hash())
+
+    def test_position_at_offset(self):
+        graph = Graph(
+            {
+                1: Block(10),
+                2: Block(10),
+                3: Block(10)
+            },
+            {
+                1: [2],
+                2: [3]
+            }
+        )
+        interval = Interval(4, 6, [1, 2, 3], graph)
+
+        self.assertEqual(interval.position_at_offset(0), Position(1, 4))
+        self.assertEqual(interval.position_at_offset(1), Position(1, 5))
+        self.assertEqual(interval.position_at_offset(2), Position(1, 6))
+        self.assertEqual(interval.position_at_offset(5), Position(1, 9))
+        self.assertEqual(interval.position_at_offset(6), Position(2, 0))
+        self.assertEqual(interval.position_at_offset(7), Position(2, 1))
+        self.assertEqual(interval.position_at_offset(16), Position(3, 0))
+        self.assertEqual(interval.position_at_offset(21), Position(3, 5))
+
+    def test_get_subinterval(self):
+        graph = Graph(
+            {
+                1: Block(10),
+                2: Block(10),
+                3: Block(10)
+            },
+            {
+                1: [2],
+                2: [3]
+            }
+        )
+        interval = Interval(4, 6, [1, 2, 3], graph)
+        self.assertEqual(interval.get_subinterval(0, 1), Interval(4, 5, [1]))
+        self.assertEqual(interval.get_subinterval(0, 10), Interval(4, 4, [1, 2]))
+        self.assertEqual(interval.get_subinterval(0, 11), Interval(4, 5, [1, 2]))
+        self.assertEqual(interval.get_subinterval(1, 20), Interval(5, 4, [1, 2, 3]))
+        self.assertEqual(interval.get_subinterval(10, 20), Interval(4, 4, [2, 3]))
+        self.assertEqual(interval.get_subinterval(10, 16), Interval(4, 10, [2]))
+
+    def test_overlap(self):
+        graph = Graph(
+            {
+                1: Block(10),
+                2: Block(10),
+                3: Block(10)
+            },
+            {
+                1: [2],
+                2: [3],
+                3: [1]
+            }
+        )
+
+        interval1 = Interval(0, 10, [1, 2], graph)
+        interval2 = Interval(0, 10, [1, 2], graph)
+        self.assertEqual(interval1.overlap(interval2), 20)
+
+        interval1 = Interval(5, 10, [1, 2], graph)
+        interval2 = Interval(0, 10, [1, 2], graph)
+        self.assertEqual(interval1.overlap(interval2), 15)
+
+        interval1 = Interval(5, 7, [1], graph)
+        interval2 = Interval(0, 10, [1, 2], graph)
+        self.assertEqual(interval1.overlap(interval2), 2)
+
+        interval1 = Interval(5, 7, [1], graph)
+        interval2 = Interval(6, 7, [1], graph)
+        self.assertEqual(interval1.overlap(interval2), 1)
+
+        interval1 = Interval(8, 2, [1, 2, 3, 1], graph)
+        interval2 = Interval(0, 10, [1], graph)
+        self.assertEqual(interval1.overlap(interval2), 4)
+
+        interval1 = Interval(8, 2, [1, 2, 3, 1], graph)
+        interval2 = Interval(0, 2, [1, 2], graph)
+        self.assertEqual(interval1.overlap(interval2), 6)
+
+    def test_contains_correct_order(self):
+
+        interval = Interval(0, 10, [1, 2, 3, 4, 5, 6, 7])
+
+        other = Interval(0, 10, [1, 2, 3])
+        self.assertTrue(interval.contains_in_correct_order(other))
+
+        other = Interval(0, 10, [1, 2, 4])
+        self.assertFalse(interval.contains_in_correct_order(other))
+
+        other = Interval(0, 10, [1, 2, 5])
+        self.assertFalse(interval.contains_in_correct_order(other))
+
+        other = Interval(0, 10, [4, 5, 6])
+        self.assertTrue(interval.contains_in_correct_order(other))
 
 
 class TestIntervalCollection(unittest.TestCase):

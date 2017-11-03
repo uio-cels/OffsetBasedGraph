@@ -1,6 +1,7 @@
 import unittest
 import dummygraph
-from offsetbasedgraph import Graph, Block, Interval, Position, Translation
+from offsetbasedgraph import Graph, Block, Interval, Position, Translation, BlockCollection
+
 
 DEBUG = False
 
@@ -511,6 +512,13 @@ class TestGraph(unittest.TestCase):
         self.assertTrue(len(graph.adj_list) == 0)
         sum_length = sum([b.length ()for b in graph.blocks.values()])
         self.assertEqual(sum_length, 45)
+
+    def test_block_collection(self):
+        blocks = BlockCollection({1: Block(10), 2: Block(12)})
+
+        self.assertTrue(1 in blocks)
+        self.assertTrue(2 in blocks)
+        self.assertTrue(3 not in blocks)
 
 if __name__ == "__main__":
     unittest.main()

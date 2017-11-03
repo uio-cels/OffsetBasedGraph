@@ -1,67 +1,7 @@
 import json
 import hashlib
 import gzip
-import io
 import numpy as np
-
-
-class IntervalCollection(object):
-    def __init__(self, intervals):
-        self.intervals = intervals
-
-    @classmethod
-    def create_generator_from_file(cls, file_name):
-        f = open(file_name)
-        intervals = (Interval.from_file_line(line) for line in f.readlines())
-        f.close()
-        return cls(intervals)
-
-    def __iter__(self):
-        return self.intervals.__iter__()
-
-    def to_text_file(self, file_name):
-        f = open(file_name, "w")
-        for interval in self.intervals:
-            f.writelines(["%s\n" % interval.to_file_line()])
-        f.close()
-        return file_name
-
-    def copy(self):
-        return IntervalCollection.from_file(self.to_file("copy.tmp"))
-
-    def to_file(self, file_name, text_file=False):
-        if text_file:
-            return self.to_text_file(file_name)
-        else:
-            return self.to_gzip(file_name)
-
-    @classmethod
-    def from_file(cls, file_name, text_file=False):
-        if text_file:
-            return cls.create_generator_from_file(file_name)
-        else:
-           return cls.from_gzip(file_name)
-
-    def to_gzip(self, file_name):
-        f = gzip.open(file_name, "wb")
-        try:
-            for interval in self.intervals:
-                line = "%s\n" % interval.to_file_line()
-                f.write(line.encode())
-        finally:
-            f.close()
-
-        return file_name
-
-    @classmethod
-    def from_gzip(cls, file_name):
-        import gzip
-        import io
-        gz = gzip.open(file_name, 'r')
-        f = io.BufferedReader(gz)
-        intervals = (Interval.from_file_line(line.decode("utf-8")) for line in f.readlines())
-        f.close()
-        return cls(intervals)
 
 
 class Position(object):
@@ -77,6 +17,7 @@ class Position(object):
         """
         self.region_path_id = region_path_id
         self.offset = offset
+        #assert isinstance(offset, int), "Position offset %s is not int, %s" % (offset, type(offset))
 
     def __eq__(self, other):
         return self.region_path_id == other.region_path_id \
@@ -144,7 +85,11 @@ class BaseInterval(object):
 
         """
         eq = self.start_position == other.start_position
+        if not eq:
+            return False
         eq &= self.end_position == other.end_position
+        if not eq:
+            return False
         eq &= self.region_paths == other.region_paths
         return eq
 
@@ -187,7 +132,7 @@ class Interval(BaseInterval):
         assert region_paths is None or isinstance(region_paths, list),\
             "Region paths must be None or list"
 
-        if isinstance(start_position, int) or isinstance(start_position, np.int64):
+        if isinstance(start_position, int) or np.issubdtype(start_position, np.integer):
             self._offset_init(start_position, end_position, region_paths)
         else:
             self._position_init(start_position, end_position, region_paths)
@@ -200,6 +145,7 @@ class Interval(BaseInterval):
 
         self.length_cache = None
         self.direction = direction
+        self._hash_cashe = None
 
     def contains_rp(self, region_path):
         """Check if interval uses region_path
@@ -233,16 +179,42 @@ class Interval(BaseInterval):
         :rtype: bool
 
         """
-        if not all(rp in self.region_paths for rp in other.region_paths):
-            return False
         if other.region_paths[0] == self.region_paths[0]:
             if other.start_position.offset < self.start_position.offset-tolerance:
                 return False
+
         if other.region_paths[-1] == self.region_paths[-1]:
             if other.end_position.offset > self.end_position.offset + tolerance:
                 return False
 
+        if other.region_paths[-1] == self.region_paths[-1] and other.region_paths[0] == self.region_paths[0] \
+                and (self.start_position.offset > other.end_position.offset or self.end_position.offset < other.start_position.offset):
+            return False
+
+        if not all(rp in self.region_paths for rp in other.region_paths):
+            return False
+
         return True
+
+    def contains_in_order_any_direction(self, other):
+        if self.contains_in_correct_order(other):
+            return True
+
+        if self.contains_in_correct_order(other.get_reverse()):
+            return True
+
+        return False
+
+    def contains_in_correct_order(self, other):
+        if not self.contains(other):
+            return False
+
+        # Check order
+        rps = self.region_paths
+        other_rps = other.region_paths
+        n = len(other_rps)
+
+        return any((other_rps == rps[i:i+n]) for i in range(len(rps)-n+1))
 
     def intersects(self, other):
         common_rps = [rp for rp in self.region_paths
@@ -347,32 +319,219 @@ class Interval(BaseInterval):
         self.region_paths = region_paths
 
     def to_file_line(self):
-        object = {"start": self.start_position.offset,
-                  "end": self.end_position.offset,
+        object = {"start": int(self.start_position.offset),
+                  "end": int(self.end_position.offset),
                   "region_paths": self.region_paths,
                   "direction": self.direction
                  }
         return json.dumps(object)
 
+    def get_reverse(self):
+        assert self.graph is not None, "Graph cannot be None when reversing interval"
+        start_node_size = self.graph.node_size(self.start_position.region_path_id)
+        end_node_size = self.graph.node_size(self.end_position.region_path_id)
+        start_offset = end_node_size - self.end_position.offset
+        end_offset = start_node_size - self.start_position.offset
+        reversed_rps = list(-np.array(self.region_paths))
+        return Interval(start_offset, end_offset, reversed_rps)
+
     @classmethod
-    def from_file_line(cls, line):
+    def from_file_line(cls, line, graph=None):
         object = json.loads(line)
-        return cls(object["start"], object["end"], object["region_paths"], direction=object["direction"])
+        return cls(object["start"], object["end"], object["region_paths"], direction=object["direction"], graph=graph)
 
     def __deepcopy__(self, memo):
         return Interval(self.start_position, self.end_position,
                         self.region_paths, self.graph)
 
-    def hash(self):
+    def hash(self, ignore_direction=False):
         """
         :return: Returns a unique hash as int of the path of the interval
         """
-        string = "%s-%s-%s-%d"  % (str(self.start_position),
+        if self._hash_cashe is not None:
+            return self._hash_cashe
+        if ignore_direction:
+            string = "%s-%s-%s"  % (str(self.start_position),
+                                    str(self.end_position),
+                                    str(self.region_paths))
+        else:
+            string = "%s-%s-%s-%d"  % (str(self.start_position),
                                 str(self.end_position),
                                 str(self.region_paths),
                                 self.direction)
         hex_hash = hashlib.md5(string.encode('utf-8')).hexdigest()[0:15]
-        return int(hex_hash, 16)
+        h = int(hex_hash, 16)
+        self._hash_cashe = h
+        return h
+
+    def position_at_offset(self, offset):
+        assert offset >= 0, "Offset %d is negative" % offset
+        assert offset <= self.length(), "Offset %d > interval length %d" % (offset, self.length())
+        assert self.graph is not None
+
+        current_offset = 0
+        i = 0
+        for rp in self.region_paths:
+            node_size = self.graph.node_size(rp)
+            length_to_end = node_size
+            if i == 0:
+                length_to_end -= self.start_position.offset
+            i += 1
+
+            if current_offset + length_to_end > offset:
+                return Position(rp, (node_size - length_to_end - current_offset) + offset)
+
+            current_offset += length_to_end
+
+    def _nodes_between_offets(self, start, end):
+        nodes = []
+        current_offset = 0
+        i = 0
+        for rp in self.region_paths:
+            node_size = self.graph.node_size(rp)
+            length_to_end = node_size
+            if i == 0:
+                length_to_end -= self.start_position.offset
+                #current_offset += self.start_position.offset
+            i += 1
+            if start < current_offset + length_to_end and end > current_offset:
+                #print("    Rp %d, start: %d, end: %d, current offset: %d" % (rp, start, end, current_offset))
+                #print("   adding %d" % rp)
+                nodes.append(rp)
+
+            if end < current_offset:
+                break
+            current_offset += length_to_end
+
+        return nodes
+
+    def get_subinterval(self, start_offset, end_offset):
+        start_pos = self.position_at_offset(start_offset)
+        end_pos = self.position_at_offset(end_offset)
+        #print("Start pos: %s" % start_pos)
+        #print("End pos: %s" % end_pos)
+
+        # Hack when end is on end of RP
+        if end_pos.offset == 0:
+            end_pos = self.position_at_offset(end_offset - 1)
+            end_pos.offset += 1
+
+        nodes = self._nodes_between_offets(start_offset, end_offset)
+        #print("Nodes: %s" % nodes)
+        return Interval(start_pos, end_pos, nodes)
+
+    def to_areas(self):
+        areas = {}
+        for rp in self.region_paths:
+            areas[rp] = np.zeros(self.graph.node_size(rp))
+
+        if len(self.region_paths) == 1:
+            areas[self.start_position.region_path_id][self.start_position.offset:self.end_position.offset] = 1
+        else:
+            for rp in self.region_paths:
+                rp_size = self.graph.node_size(rp)
+                if rp == self.region_paths[0]:
+                    areas[rp][self.start_position.offset:rp_size] = 1
+
+                if rp == self.region_paths[-1]:
+                    areas[rp][0:self.end_position.offset] = 1
+
+                if rp in self.region_paths[1:-1]:
+                    areas[rp][0:rp_size] = 1
+
+        return areas
+
+    def overlap(self, other):
+        assert self.graph is not None
+        assert other.graph is not None
+        areas = self.to_areas()
+        other_areas = other.to_areas()
+        #print(areas)
+        #print(other_areas)
+        overlap = 0
+        for rp in areas:
+            if rp in other_areas:
+                overlap += np.sum(areas[rp][np.where(areas[rp] == other_areas[rp])])
+
+        return overlap
+
+    def approx_contains(self, other, allowed_mismatches=1):
+        overlap = other.overlap(self)
+        if  overlap > 0 and overlap >= other.length() - allowed_mismatches:
+            return True
+        return False
+
+    def is_approx_equal(self, other, allowed_mismatches=1):
+        overlap = self.overlap(other)
+        if  overlap > 0 and overlap >= self.length() - allowed_mismatches:
+            return True
+        return False
 
 
+class IntervalCollection(object):
+    interval_class = Interval
 
+    def __init__(self, intervals):
+        self.intervals = intervals
+
+    @classmethod
+    def create_generator_from_file(cls, file_name, graph=None):
+        f = open(file_name)
+        intervals = (cls.interval_class.from_file_line(line, graph=graph) for line in f.readlines())
+        f.close()
+        return cls(intervals)
+
+    @classmethod
+    def create_list_from_file(cls, file_name, graph=None):
+        f = open(file_name)
+        intervals = [cls.interval_class.from_file_line(line, graph=graph) for line in f.readlines()]
+        f.close()
+        return cls(intervals)
+
+    def __iter__(self):
+        return self.intervals.__iter__()
+
+    def to_text_file(self, file_name):
+        f = open(file_name, "w")
+        for interval in self.intervals:
+            f.writelines(["%s\n" % interval.to_file_line()])
+        f.close()
+        return file_name
+
+    def copy(self):
+        return IntervalCollection.from_file(self.to_file("copy.tmp"))
+
+    def to_file(self, file_name, text_file=False):
+        if text_file:
+            return self.to_text_file(file_name)
+        else:
+            return self.to_gzip(file_name)
+
+    @classmethod
+    def from_file(cls, file_name, text_file=False, graph=None):
+        if text_file:
+            return cls.create_generator_from_file(file_name, graph=graph)
+        else:
+            return cls.from_gzip(file_name, graph=graph)
+
+    def to_gzip(self, file_name):
+        f = gzip.open(file_name, "wb")
+        try:
+            for interval in self.intervals:
+                line = "%s\n" % interval.to_file_line()
+                f.write(line.encode())
+        finally:
+            f.close()
+
+        return file_name
+
+    @classmethod
+    def from_gzip(cls, file_name, graph=None):
+        import gzip
+        import io
+        gz = gzip.open(file_name, 'r')
+        f = io.BufferedReader(gz)
+        intervals = (cls.interval_class.from_file_line(line.decode("utf-8"), graph=graph)
+                     for line in f.readlines())
+        f.close()
+        return cls(intervals)
