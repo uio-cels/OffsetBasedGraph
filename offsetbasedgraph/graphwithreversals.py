@@ -9,7 +9,12 @@ class GraphWithReversals(Graph):
                  rev_adj_list=None):
 
         blocks = BlockCollection(blocks)
-        m = max(blocks.keys())+1
+
+        if len(blocks) > 0:
+            m = max(blocks.keys())+1
+        else:
+            m = 1
+
         self._node_sizes = np.zeros(m, dtype="int32")
         for block_id, block in blocks.items():
             if block_id > 0:
