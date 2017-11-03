@@ -665,6 +665,9 @@ class Graph(object):
         subgraph2 = Graph(new_blocks, new_edges)
         return subgraph2
 
+    def max_block_id(self):
+        return max([id for id in self.blocks.keys()])
+
     def create_subgraph_from_intervals(self, intervals, padding=10000,
                                        alt_locus=None, base_trans=None):
         """
