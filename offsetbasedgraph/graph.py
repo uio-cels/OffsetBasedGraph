@@ -100,6 +100,10 @@ class Graph(object):
         new_graph = Graph(new_blocks, new_adjs, True)
         return new_graph
 
+    def to_graph_with_reversals(self):
+        from .graphwithreversals import GraphWithReversals
+        return GraphWithReversals(self.blocks, self.adj_list)
+
     @classmethod
     def from_file(cls, file_name):
         """
