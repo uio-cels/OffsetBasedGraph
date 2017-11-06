@@ -132,6 +132,7 @@ class Interval(BaseInterval):
         assert region_paths is None or isinstance(region_paths, list),\
             "Region paths must be None or list"
 
+
         if isinstance(start_position, np.int64):
             start_position = int(start_position)
             end_position = int(end_position)
@@ -142,6 +143,7 @@ class Interval(BaseInterval):
             self._position_init(start_position, end_position, region_paths)
         else:
             raise Exception("Start/end position must be int or of type Position. Now: %s" % type(start_position))
+
 
         self.graph = graph
         self.rp_lens_tmp = None

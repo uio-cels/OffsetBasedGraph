@@ -91,13 +91,13 @@ class Graph(object):
 
         """
         new_blocks = {}
-        new_adjs = {}
+        new_adjs = defaultdict(list)
         for b in self.blocks:
             new_blocks[b] = Block(self.blocks[b].length())
         for b in self.adj_list:
             new_adjs[b] = list(self.adj_list[b])
 
-        new_graph = Graph(new_blocks, new_adjs, True)
+        new_graph = self.__class__(new_blocks, new_adjs, True)
         return new_graph
 
     def to_graph_with_reversals(self):
@@ -139,7 +139,7 @@ class Graph(object):
         :rtype: list(Graph)
         """
         return [b for b in self.blocks if
-                len(self.reverse_adj_list[-b]) == 0]
+                len(self.reverse_adj_list[b]) == 0]
 
     def get_last_blocks(self):
         """
