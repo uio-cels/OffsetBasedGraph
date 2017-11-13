@@ -1,6 +1,6 @@
 import unittest
 import dummygraph
-from offsetbasedgraph import Interval, Position, IntervalCollection, Graph, Block
+from offsetbasedgraph import Interval, Position, IntervalCollection, Graph, Block, IndexedInterval
 
 
 class TestInterval(unittest.TestCase):
@@ -93,7 +93,7 @@ class TestInterval(unittest.TestCase):
                 2: [3]
             }
         )
-        interval = Interval(4, 6, [1, 2, 3], graph)
+        interval = IndexedInterval(4, 6, [1, 2, 3], graph)
 
         self.assertEqual(interval.position_at_offset(0), Position(1, 4))
         self.assertEqual(interval.position_at_offset(1), Position(1, 5))

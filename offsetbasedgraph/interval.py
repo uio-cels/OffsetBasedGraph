@@ -463,6 +463,12 @@ class Interval(BaseInterval):
 
         return overlap
 
+    def overlaps(self, other, minimum_overlap=1):
+        overlap = self.overlap(other)
+        if overlap >= minimum_overlap:
+            return True
+        return False
+
     def approx_contains(self, other, allowed_mismatches=1):
         overlap = other.overlap(self)
         if  overlap > 0 and overlap >= other.length() - allowed_mismatches:
@@ -474,6 +480,7 @@ class Interval(BaseInterval):
         if  overlap > 0 and overlap >= self.length() - allowed_mismatches:
             return True
         return False
+
 
 
 class IntervalCollection(object):

@@ -120,7 +120,7 @@ class GraphTravserserBetweenNodes(BaseGraphTraverser):
 
             stack.extend([(next_id, n_nodes_to_here + 1, node_id, new_path) for next_id in nexts])
 
-        assert did_find_end_node, "Did not find end node between %d and %d" % (start, end)
+        assert did_find_end_node, "Did not find end node between %d and %d. Graph: %s\n" % (start, end, self.graph)
 
         return list(set(blocks))
 
