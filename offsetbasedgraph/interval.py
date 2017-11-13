@@ -481,6 +481,13 @@ class Interval(BaseInterval):
             return True
         return False
 
+    def to_indexed_interval(self):
+        from .indexedinterval import IndexedInterval
+        return IndexedInterval(self.start_position,
+                             self.end_position,
+                             self.region_paths,
+                             graph=self.graph)
+
 
 
 class IntervalCollection(object):

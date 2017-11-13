@@ -116,7 +116,7 @@ class TestInterval(unittest.TestCase):
                 2: [3]
             }
         )
-        interval = Interval(4, 6, [1, 2, 3], graph)
+        interval = IndexedInterval(4, 6, [1, 2, 3], graph)
         self.assertEqual(interval.get_subinterval(0, 1), Interval(4, 5, [1]))
         self.assertEqual(interval.get_subinterval(0, 10), Interval(4, 4, [1, 2]))
         self.assertEqual(interval.get_subinterval(0, 11), Interval(4, 5, [1, 2]))

@@ -17,10 +17,10 @@ class IndexedInterval(Interval):
         self.distance_to_node = {}
 
         self._create_index()
-        print("Distance index")
-        print(self.distance_index)
-        print("Distance to node")
-        print(self.distance_to_node)
+        #print("Distance index")
+        #print(self.distance_index)
+        #print("Distance to node")
+        #print(self.distance_to_node)
 
     def _create_index(self):
         nodes = []
@@ -59,8 +59,8 @@ class IndexedInterval(Interval):
 
         # Find i using index
         index_pos = math.floor(offset / 4) * 4
-        print("Index pos for offset %d: %d" % (offset, index_pos))
-        print("Index: %d" % index_pos)
+        #print("Index pos for offset %d: %d" % (offset, index_pos))
+        #print("Index: %d" % index_pos)
         node_start = self.distance_index[index_pos][-1]  # Safe to choose last node
         i = node_start
 
