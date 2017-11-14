@@ -9,6 +9,8 @@ class IndexedInterval(Interval):
 
     def __init__(self, start_position, end_position,
                  region_paths=None, graph=None, direction=1):
+        assert graph is not None, "Index interval requires graph"
+
         super(IndexedInterval, self).__init__(
             start_position, end_position, region_paths, graph, direction
         )
