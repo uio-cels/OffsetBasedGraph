@@ -964,7 +964,7 @@ class Graph(object):
         reverse_edges = defaultdict(list)
         for block, edges in adj_list.items():
             for edge in edges:
-                reverse_edges[-edge].append(-block)
+                reverse_edges[edge].append(-block)
 
         return reverse_edges
 
