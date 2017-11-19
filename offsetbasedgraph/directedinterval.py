@@ -71,7 +71,21 @@ class DirectedInterval(Interval):
 
         return False
 
+    def get_subinterval(self, start_offset, end_offset):
+        subinterval = super(DirectedInterval, self).get_subinterval(start_offset, end_offset)
+        return DirectedInterval(subinterval.start_position,
+                                subinterval.end_position,
+                                subinterval.region_paths,
+                                self.graph,
+                                self.direction)
 
+    def get_reverse(self):
+        reverse = super(DirectedInterval, self).get_reverse()
+        return DirectedInterval(reverse.start_position,
+                                reverse.end_position,
+                                reverse.region_paths,
+                                self.graph,
+                                reverse.direction)
 
     def intersects(self, other):
         raise NotImplementedError()
