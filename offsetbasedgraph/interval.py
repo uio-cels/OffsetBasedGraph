@@ -280,7 +280,8 @@ class Interval(BaseInterval):
 
     def copy(self):
         c = Interval(self.start_position.copy(), self.end_position.copy(),
-                     list(self.region_paths), self.graph)
+                     list(self.region_paths), self.graph,
+                     direction=self.direction)
         if self.length_cache is not None:
             c.set_length_cache(self.length_cache)
         return c
@@ -340,8 +341,8 @@ class Interval(BaseInterval):
         end_node_size = self.graph.node_size(self.end_position.region_path_id)
         start_offset = end_node_size - self.end_position.offset
         end_offset = start_node_size - self.start_position.offset
-        reversed_rps = list(-np.array(self.region_paths))
-        return Interval(start_offset, end_offset, reversed_rps)
+        reversed_rps = list(-np.array(self.region_paths[::-1]))
+        return Interval(start_offset, end_offset, reversed_rps, self.graph)
 
     @classmethod
     def from_file_line(cls, line, graph=None):
@@ -426,7 +427,7 @@ class Interval(BaseInterval):
 
         nodes = self._nodes_between_offets(start_offset, end_offset)
         #print("Nodes: %s" % nodes)
-        return Interval(start_pos, end_pos, nodes)
+        return Interval(start_pos, end_pos, nodes, self.graph)
 
     def to_areas(self):
         areas = {}
