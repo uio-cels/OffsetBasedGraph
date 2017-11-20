@@ -388,9 +388,13 @@ class Interval(BaseInterval):
             i += 1
 
             if current_offset + length_to_end > offset:
-                return Position(rp, (node_size - length_to_end - current_offset) + offset)
+                pos = Position(rp, (node_size - length_to_end - current_offset) + offset)   
+                return pos
 
             current_offset += length_to_end
+
+        assert False, "Did not find offset %d for interval %s" % (offset, self)
+
 
     def _nodes_between_offets(self, start, end):
         nodes = []
@@ -416,14 +420,15 @@ class Interval(BaseInterval):
 
     def get_subinterval(self, start_offset, end_offset):
         start_pos = self.position_at_offset(start_offset)
-        end_pos = self.position_at_offset(end_offset)
+        end_pos = self.position_at_offset(end_offset -1)
         #print("Start pos: %s" % start_pos)
         #print("End pos: %s" % end_pos)
 
         # Hack when end is on end of RP
-        if end_pos.offset == 0:
-            end_pos = self.position_at_offset(end_offset - 1)
-            end_pos.offset += 1
+        #if end_pos.offset == 0:
+        #    end_pos = self.position_at_offset(end_offset - 1)
+        #    end_pos.offset += 1
+        end_pos.offset += 1
 
         nodes = self._nodes_between_offets(start_offset, end_offset)
         #print("Nodes: %s" % nodes)
