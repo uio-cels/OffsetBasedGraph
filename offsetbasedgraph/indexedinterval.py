@@ -109,4 +109,11 @@ class IndexedInterval(Interval):
 
         return nodes
 
+    def get_offset_at_position(self, position):
+        # Return number of basepairs to this position
+        assert position.region_path_id in self.region_paths
+        return self.distance_to_node[position.region_path_id] + position.offset
+
+
+
 

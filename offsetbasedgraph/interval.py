@@ -388,13 +388,12 @@ class Interval(BaseInterval):
             i += 1
 
             if current_offset + length_to_end > offset:
-                pos = Position(rp, (node_size - length_to_end - current_offset) + offset)   
+                pos = Position(rp, (node_size - length_to_end - current_offset) + offset)
                 return pos
 
             current_offset += length_to_end
 
         assert False, "Did not find offset %d for interval %s" % (offset, self)
-
 
     def _nodes_between_offets(self, start, end):
         nodes = []
