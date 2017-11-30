@@ -23,6 +23,8 @@ class GraphWithReversals(Graph):
                                                  create_reverse_adj_list=create_reverse_adj_list,
                                                  rev_adj_list=rev_adj_list)
 
+        self.assert_correct_edge_dicts()
+
     def _possible_node_ids(self):
         node_ids = list(self.blocks.keys())
         possible_ids = node_ids + [-n for n in node_ids]
@@ -82,3 +84,10 @@ class GraphWithReversals(Graph):
                 reverse_edges[-edge].append(-block)
 
         return reverse_edges
+
+    def assert_correct_edge_dicts(self):
+        for adjs, other_adjs in [(self.adj_list, self.reverse_adj_list),
+                                 (self.reverse_adj_list, self.adj_list)]:
+            for node in adjs:
+                for edge in adjs[node]:
+                    assert -node in other_adjs[-edge]

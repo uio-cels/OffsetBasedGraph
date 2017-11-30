@@ -118,7 +118,7 @@ class Graph(object):
                 assert isinstance(obj, cls)
                 return obj
         else:
-            print("Warning: Graph not found" % file_name)
+            print("Warning: Graph file %s not found" % file_name)
             return None
 
     def to_file(self, file_name):
