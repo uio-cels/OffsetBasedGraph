@@ -1,6 +1,7 @@
 from .graph import Graph, BlockCollection, Block
 import numpy as np
 from collections import defaultdict
+import logging
 
 
 class GraphWithReversals(Graph):
@@ -16,9 +17,12 @@ class GraphWithReversals(Graph):
             m = 1
 
         self._node_sizes = np.zeros(m, dtype="int32")
+
+        logging.info("Setting node sizes")
         for block_id, block in blocks.items():
             if block_id > 0:
                 self._node_sizes[block_id] = block.length()
+        logging.info("Creating reverse adj list")
         super(GraphWithReversals, self).__init__(blocks, adj_list,
                                                  create_reverse_adj_list=create_reverse_adj_list,
                                                  rev_adj_list=rev_adj_list)
@@ -86,6 +90,7 @@ class GraphWithReversals(Graph):
         return reverse_edges
 
     def assert_correct_edge_dicts(self):
+        logging.info("Asserting edges are correct")
         for adjs, other_adjs in [(self.adj_list, self.reverse_adj_list),
                                  (self.reverse_adj_list, self.adj_list)]:
             for node in adjs:

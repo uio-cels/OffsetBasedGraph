@@ -4,6 +4,7 @@ from .translation import Translation
 import pickle
 import os
 import numpy as np
+import logging
 
 
 class Block(object):
@@ -961,8 +962,13 @@ class Graph(object):
 
     @staticmethod
     def _get_reverse_edges(adj_list):
+        logging.info("Creating reverse adjency list")
         reverse_edges = defaultdict(list)
+        i = 0
         for block, edges in adj_list.items():
+            if i % 100000 == 0:
+                print("Creating reverse for node %d" % i)
+            i += 1
             for edge in edges:
                 reverse_edges[edge].append(-block)
 
