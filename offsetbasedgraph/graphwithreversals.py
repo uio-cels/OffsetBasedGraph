@@ -3,6 +3,28 @@ import numpy as np
 from collections import defaultdict
 
 
+class BlockArray:
+    def __init__(self, array):
+        self._array = array
+
+    def __contains__(self, node_id):
+        return self._array > 0
+
+    def keys(self):
+        return (i for i, v in enumerate(self._array) if v > 0)
+
+    def values(self):
+        return (v for v in self._array if v > 0)
+
+    def items(self):
+        return ((i, v) for i, v in enumerate(self._array) if v > 0)
+
+    def __getitem__(self, node_id):
+        v = self._array[node_id]
+        assert v > 0
+        return v
+
+
 class GraphWithReversals(Graph):
 
     def __init__(self, blocks, adj_list, create_reverse_adj_list=True,
