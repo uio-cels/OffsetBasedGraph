@@ -10,7 +10,7 @@ class GraphWithReversals(Graph):
                  rev_adj_list=None):
 
         blocks = BlockCollection(blocks)
-
+        #logging.info("Finding max block id")
         if len(blocks) > 0:
             m = max(blocks.keys())+1
         else:
@@ -18,17 +18,17 @@ class GraphWithReversals(Graph):
 
         self._node_sizes = np.zeros(m, dtype="int32")
 
-        logging.info("Setting node sizes")
+        #logging.info("Setting node sizes")
         for block_id, block in blocks.items():
             if block_id > 0:
                 self._node_sizes[block_id] = block.length()
-        logging.info("Creating reverse adj list")
+        #logging.info("Creating reverse adj list")
         super(GraphWithReversals, self).__init__(blocks, adj_list,
                                                  create_reverse_adj_list=create_reverse_adj_list,
                                                  rev_adj_list=rev_adj_list)
 
-        self.assert_correct_edge_dicts()
-        logging.info("Init graph done.")
+        #self.assert_correct_edge_dicts()
+        #logging.info("Init graph done.")
 
     def _possible_node_ids(self):
         node_ids = list(self.blocks.keys())

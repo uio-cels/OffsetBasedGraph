@@ -1057,5 +1057,12 @@ class Graph(object):
 
         return True
 
+    def to_msgpack(self, file_name):
+        import msgpack
+        from io import BytesIO
+        # Write msgpack file
+        with open(file_name, 'w') as outfile:
+            msgpack.pack(data, outfile)
+
     def number_of_basepairs(self):
         return sum([b.length() for b in self.blocks.values()])
