@@ -342,6 +342,7 @@ class Interval(BaseInterval):
         except TypeError:
             print("Json error for interval %s" % self)
             raise
+
     def get_reverse(self):
         assert self.graph is not None, "Graph cannot be None when reversing interval"
         start_node_size = self.graph.node_size(self.start_position.region_path_id)

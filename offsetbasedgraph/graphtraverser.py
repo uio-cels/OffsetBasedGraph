@@ -32,7 +32,6 @@ def update_areas(areas, new_areas):
 class BaseGraphTraverser(object):
     def __init__(self, graph, direction=+1):
         self.graph = graph
-        self.node_sizes = graph._node_sizes
         self.adj_list = graph.adj_list
         if direction < 0:
             self.adj_list = graph.reverse_adj_list
@@ -232,7 +231,6 @@ class GraphTraverserUsingSequence(BaseGraphTraverser):
 class GraphTraverser(object):
     def __init__(self, graph, direction=+1):
         self.graph = graph
-        self.node_sizes = graph._node_sizes
         self.adj_list = graph.adj_list
         if direction < 0:
             self.adj_list = graph.reverse_adj_list
@@ -244,7 +242,7 @@ class GraphTraverser(object):
             if visited[node_id] >= length:
                 continue
             visited[node_id] = length
-            remaining = length-self.node_sizes[abs(node_id)]
+            remaining = length-self.graph.node_size(node_id)
             # ]graph.node_size(node_id)
             stack.extend([(next_id, remaining) for
                           next_id in self.adj_list[node_id]])
