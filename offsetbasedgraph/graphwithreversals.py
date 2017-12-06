@@ -59,6 +59,8 @@ class GraphWithReversals(Graph):
 
         if isinstance(blocks, np.ndarray):
             blocks = BlockArray(blocks)
+        elif isinstance(blocks, BlockArray):
+            pass
         else:
             blocks = BlockCollection(blocks)
         super(GraphWithReversals, self).__init__(
@@ -121,7 +123,7 @@ class GraphWithReversals(Graph):
             f.write(json.dumps(self.adj_list))
         logging.info("Writing reverse edges to file")
         with open(base_file_name + "rev_edges.json", "w") as f:
-            f.write(json.dumps(self.rev_adj_list))
+            f.write(json.dumps(self.reverse_adj_list))
 
     @classmethod
     def from_numpy_files(cls, base_file_name):
