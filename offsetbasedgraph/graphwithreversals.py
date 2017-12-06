@@ -28,6 +28,7 @@ class GraphWithReversals(Graph):
                                                  rev_adj_list=rev_adj_list)
 
         self.assert_correct_edge_dicts()
+        logging.info("Init graph done.")
 
     def _possible_node_ids(self):
         node_ids = list(self.blocks.keys())
