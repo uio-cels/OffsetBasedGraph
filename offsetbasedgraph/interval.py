@@ -328,20 +328,27 @@ class Interval(BaseInterval):
         self.region_paths = region_paths
 
     def to_file_line(self):
+        assert isinstance(self.region_paths, list)
+        assert isinstance(self.region_paths[0], int)
+        assert isinstance(self.direction, int)
+
         object = {"start": int(self.start_position.offset),
                   "end": int(self.end_position.offset),
                   "region_paths": self.region_paths,
                   "direction": self.direction
                  }
-        return json.dumps(object)
-
+        try:
+            return json.dumps(object)
+        except TypeError:
+            print("Json error for interval %s" % self)
+            raise
     def get_reverse(self):
         assert self.graph is not None, "Graph cannot be None when reversing interval"
         start_node_size = self.graph.node_size(self.start_position.region_path_id)
         end_node_size = self.graph.node_size(self.end_position.region_path_id)
         start_offset = end_node_size - self.end_position.offset
         end_offset = start_node_size - self.start_position.offset
-        reversed_rps = list(-np.array(self.region_paths[::-1]))
+        reversed_rps = list([-rp for rp in self.region_paths[::-1]])
         return Interval(start_offset, end_offset, reversed_rps, self.graph)
 
     @classmethod
