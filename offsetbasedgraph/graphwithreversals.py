@@ -1,5 +1,6 @@
 from .graph import Graph, BlockCollection, Block
 import numpy as np
+import json
 from collections import defaultdict
 import logging
 
@@ -10,6 +11,13 @@ class BlockArray:
             array = self.from_dict(array)
         assert isinstance(array, np.ndarray), type(array)
         self._array = array
+
+    def save(self, file_name):
+        np.save(file_name, self._array)
+
+    @classmethod
+    def load(cls, filename):
+        return cls(np.load(filename))
 
     @staticmethod
     def from_dict(node_dict):
@@ -104,6 +112,23 @@ class GraphWithReversals(Graph):
 
     def node_size(self, node_id):
         return self.blocks.node_size(node_id)
+
+    def to_numpy_files(self, base_file_name):
+        self.blocks.save(base_file_name + ".npy")
+        with open(base_file_name + "edges.json", "w") as f:
+            f.write(json.dumps(self.adj_list))
+        with open(base_file_name + "rev_edges.json", "w") as f:
+            f.write(json.dumps(self.rev_adj_list))
+
+    @classmethod
+    def from_numpy_files(cls, base_file_name):
+        blocks = BlockArray.load(base_file_name + ".npy")
+        with open(base_file_name + "edges.json") as f:
+            adj_list = json.loads(f.read())
+        with open(base_file_name + "rev_edges.json") as f:
+            rev_adj_list = json.loads(f.read())
+        return cls(blocks, adj_list, rev_adj_list=rev_adj_list,
+                   create_reverse_adj_list=False)
 
     def block_in_graph(self, block_id):
         if block_id in self.blocks:
