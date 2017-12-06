@@ -3,6 +3,7 @@ import numpy as np
 import json
 from collections import defaultdict
 import logging
+import pickle
 
 
 class BlockArray:
@@ -119,19 +120,32 @@ class GraphWithReversals(Graph):
         logging.info("Writing blocks to file")
         self.blocks.save(base_file_name + ".npy")
         logging.info("Writing edges to file")
+        with open(base_file_name + "edges.pickle", "wb") as f:
+            pickle.dump(self.adj_list, f)
+        with open(base_file_name + "rev_edges.pickle", "wb") as f:
+            pickle.dump(self.reverse_adj_list, f)
+        """
         with open(base_file_name + "edges.json", "w") as f:
             f.write(json.dumps(self.adj_list))
         logging.info("Writing reverse edges to file")
         with open(base_file_name + "rev_edges.json", "w") as f:
             f.write(json.dumps(self.reverse_adj_list))
-
+        """
     @classmethod
     def from_numpy_files(cls, base_file_name):
         blocks = BlockArray.load(base_file_name + ".npy")
-        with open(base_file_name + "edges.json") as f:
-            adj_list = json.loads(f.read())
-        with open(base_file_name + "rev_edges.json") as f:
-            rev_adj_list = json.loads(f.read())
+
+        with open(base_file_name + "edges.pickle", "rb") as f:
+            adj_list = pickle.loads(f.read())
+
+        #with open(base_file_name + "edges.json") as f:
+        #    adj_list = json.loads(f.read())
+
+        with open(base_file_name + "rev_edges.pickle", "rb") as f:
+            rev_adj_list = pickle.loads(f.read())
+
+        #with open(base_file_name + "rev_edges.json") as f:
+        #    rev_adj_list = json.loads(f.read())
         return cls(blocks, adj_list, rev_adj_list=rev_adj_list,
                    create_reverse_adj_list=False)
 
@@ -150,6 +164,7 @@ class GraphWithReversals(Graph):
 
     def assert_correct_edge_dicts(self):
         logging.info("Asserting edges are correct")
+        return
         for adjs, other_adjs in [(self.adj_list, self.reverse_adj_list),
                                  (self.reverse_adj_list, self.adj_list)]:
             for node in adjs:
