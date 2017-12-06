@@ -91,6 +91,7 @@ class Graph(object):
         :rtype: Graph
 
         """
+        logging.info("Copying graph")
         new_blocks = {}
         new_adjs = defaultdict(list)
         for b in self.blocks:
@@ -99,6 +100,7 @@ class Graph(object):
             new_adjs[b] = list(self.adj_list[b])
 
         new_graph = self.__class__(new_blocks, new_adjs, True)
+        logging.info("Done copying graph")
         return new_graph
 
     def to_graph_with_reversals(self):
@@ -962,11 +964,11 @@ class Graph(object):
 
     @staticmethod
     def _get_reverse_edges(adj_list):
-        logging.info("Creating reverse adjency list")
+        #logging.info("Creating reverse adjency list")
         reverse_edges = defaultdict(list)
         i = 0
         for block, edges in adj_list.items():
-            if i % 100000 == 0:
+            if i % 100000 == 1000:
                 print("Creating reverse for node %d" % i)
             i += 1
             for edge in edges:
