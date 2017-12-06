@@ -37,6 +37,9 @@ class BlockCollection(dict):
     def __getitem__(self, key):
         return super().__getitem__(abs(key))
 
+    def node_size(self, node_id):
+        return self[node_id].length()
+
 
 class Graph(object):
     """
@@ -60,7 +63,9 @@ class Graph(object):
         :param blocks: dict{block_id: block_length}
         :param adj_list: dict{block_id: [neighbour_ids...]}
         """
-        self.blocks = BlockCollection(blocks)
+        if isinstance(blocks, dict):
+            blocks = BlockCollection(blocks)
+        self.blocks = blocks
         self.adj_list = defaultdict(list, adj_list)
         if rev_adj_list is not None:
             self.reverse_adj_list = rev_adj_list

@@ -5,45 +5,57 @@ from collections import defaultdict
 
 class BlockArray:
     def __init__(self, array):
+        if isinstance(array, dict):
+            array = self.from_dict(array)
+        assert isinstance(array, np.ndarray), type(array)
         self._array = array
+
+    @staticmethod
+    def from_dict(node_dict):
+        max_key = max(node_dict.keys())
+        array = np.zeros(max_key+1, dtype="uint8")
+        for key, val in node_dict.items():
+            array[key] = val.length()
+        return array
+
+    def node_size(self, node_id):
+        return self._array[abs(node_id)]
 
     def __contains__(self, node_id):
         return self._array > 0
+
+    def __iter__(self):
+        return self.keys()
 
     def keys(self):
         return (i for i, v in enumerate(self._array) if v > 0)
 
     def values(self):
-        return (v for v in self._array if v > 0)
+        return (Block(v) for v in self._array if v > 0)
 
     def items(self):
-        return ((i, v) for i, v in enumerate(self._array) if v > 0)
+        return ((i, Block(v)) for i, v in enumerate(self._array) if v > 0)
 
     def __getitem__(self, node_id):
-        v = self._array[node_id]
+        v = self._array[abs(node_id)]
         assert v > 0
-        return v
+        return Block(v)
 
 
 class GraphWithReversals(Graph):
 
-    def __init__(self, blocks, adj_list, create_reverse_adj_list=True,
+    def __init__(self, blocks, adj_list,
+                 create_reverse_adj_list=True,
                  rev_adj_list=None):
 
-        blocks = BlockCollection(blocks)
-
-        if len(blocks) > 0:
-            m = max(blocks.keys())+1
+        if isinstance(blocks, np.ndarray):
+            blocks = BlockArray(blocks)
         else:
-            m = 1
-
-        self._node_sizes = np.zeros(m, dtype="int32")
-        for block_id, block in blocks.items():
-            if block_id > 0:
-                self._node_sizes[block_id] = block.length()
-        super(GraphWithReversals, self).__init__(blocks, adj_list,
-                                                 create_reverse_adj_list=create_reverse_adj_list,
-                                                 rev_adj_list=rev_adj_list)
+            blocks = BlockCollection(blocks)
+        super(GraphWithReversals, self).__init__(
+            blocks, adj_list,
+            create_reverse_adj_list=create_reverse_adj_list,
+            rev_adj_list=rev_adj_list)
 
     def _possible_node_ids(self):
         node_ids = list(self.blocks.keys())
@@ -90,7 +102,7 @@ class GraphWithReversals(Graph):
         self.reverse_adj_list[-block_b].append(-block_a)
 
     def node_size(self, node_id):
-        return self._node_sizes[abs(node_id)]
+        return self.blocks.node_size(node_id)
 
     def block_in_graph(self, block_id):
         if block_id in self.blocks:
