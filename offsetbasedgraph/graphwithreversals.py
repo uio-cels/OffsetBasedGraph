@@ -114,9 +114,12 @@ class GraphWithReversals(Graph):
         return self.blocks.node_size(node_id)
 
     def to_numpy_files(self, base_file_name):
+        logging.info("Writing blocks to file")
         self.blocks.save(base_file_name + ".npy")
+        logging.info("Writing edges to file")
         with open(base_file_name + "edges.json", "w") as f:
             f.write(json.dumps(self.adj_list))
+        logging.info("Writing reverse edges to file")
         with open(base_file_name + "rev_edges.json", "w") as f:
             f.write(json.dumps(self.rev_adj_list))
 
