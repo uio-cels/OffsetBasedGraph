@@ -32,7 +32,7 @@ class BlockArray:
         return self._array[abs(node_id)]
 
     def __contains__(self, node_id):
-        return self._array > 0
+        return node_id > 0 and node_id < len(self._array)
 
     def __iter__(self):
         return self.keys()
@@ -50,6 +50,7 @@ class BlockArray:
         v = self._array[abs(node_id)]
         assert v > 0
         return Block(v)
+
 
 
 class GraphWithReversals(Graph):
