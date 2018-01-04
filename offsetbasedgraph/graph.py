@@ -5,7 +5,8 @@ import pickle
 import os
 import numpy as np
 import logging
-
+from scipy.sparse import dok_matrix, csr_matrix, lil_matrix
+import scipy.io
 
 class Block(object):
     def __init__(self, length):
@@ -42,6 +43,60 @@ class BlockCollection(dict):
         return self[node_id].length()
 
 
+class AdjListAsNumpyArrays:
+    def __init__(self, indices, values, n_edges, node_id_offset=0):
+        self._indices = indices  # Mapping from node id to position in values where edge list starts
+        self._values = values  # to-edges
+        self._n_edges = n_edges  # Number of edges for each node
+        self.node_id_offset = node_id_offset
+
+    def __setitem__(self, key, value):
+        raise NotImplementedError()
+
+    def __getitem__(self, item):
+        # Returns all edges for a nod
+        index = item - self.node_id_offset
+        if index < 0:
+            return []
+        if index >= len(self._indices):
+            return []
+
+        start = self._indices[index]
+        end = self._indices[index] + self._n_edges[index]
+        return self._values[start:end]
+
+    @classmethod
+    def create_from_edge_dict(cls, edge_dict):
+        nodes = edge_dict.keys()
+        n_edges = sum([len(edges) for edges in edge_dict.values()])
+
+        i = 0
+        sorted_nodes = sorted(nodes)
+        min_node_id = sorted_nodes[0]
+        max_node_id = sorted_nodes[-1]
+        node_span = max_node_id - min_node_id
+
+        indices = np.zeros(node_span+1, dtype=np.int32)
+        values = np.zeros(n_edges, dtype=np.int32)
+        lengths = np.zeros(node_span+1, dtype=np.int32)
+
+        for node in sorted_nodes:
+            index = node - min_node_id
+            n_edges_out = len(edge_dict[node])
+            lengths[index] = n_edges_out
+            indices[index] = i
+            #print("Range %d:%d" % (i, i+n_edges_out))
+            #print(len(values))
+            #print("%s" % edge_dict[node])
+            values[i:i+n_edges_out] = edge_dict[node]
+
+            i += n_edges_out
+
+        return cls(indices, values, lengths, min_node_id)
+
+
+
+
 class Graph(object):
     """
     Class for holding an Offset-Based Graph
@@ -67,7 +122,12 @@ class Graph(object):
         if isinstance(blocks, dict):
             blocks = BlockCollection(blocks)
         self.blocks = blocks
-        self.adj_list = defaultdict(list, adj_list)
+
+        if not isinstance(adj_list, AdjListAsNumpyArrays):
+            self.adj_list = defaultdict(list, adj_list)
+        else:
+            self.adj_list = adj_list
+
         if rev_adj_list is not None:
             self.reverse_adj_list = rev_adj_list
         elif create_reverse_adj_list:

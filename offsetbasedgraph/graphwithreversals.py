@@ -13,6 +13,8 @@ class BlockArray:
         assert isinstance(array, np.ndarray), type(array)
         self._array = array
 
+        self.node_id_offset = 0  # Subtracted when indexing
+
     def save(self, file_name):
         np.save(file_name, self._array)
 
@@ -29,27 +31,29 @@ class BlockArray:
         return array
 
     def node_size(self, node_id):
-        return self._array[abs(node_id)]
+        return self._array[abs(node_id) - self.node_id_offset]
 
     def __contains__(self, node_id):
+        node_id = abs(node_id) - self.node_id_offset
         return node_id > 0 and node_id < len(self._array)
 
     def __iter__(self):
         return self.keys()
 
     def keys(self):
-        return (i for i, v in enumerate(self._array) if v > 0)
+        return (i + self.node_id_offset for i, v in enumerate(self._array) if v > 0)
 
     def values(self):
         return (Block(v) for v in self._array if v > 0)
 
     def items(self):
-        return ((i, Block(v)) for i, v in enumerate(self._array) if v > 0)
+        return ((i + self.node_id_offset, Block(v)) for i, v in enumerate(self._array) if v > 0)
 
     def __getitem__(self, node_id):
-        v = self._array[abs(node_id)]
+        v = self._array[abs(node_id) - self.node_id_offset]
         assert v > 0
         return Block(v)
+
 
 
 
@@ -121,10 +125,19 @@ class GraphWithReversals(Graph):
         logging.info("Writing blocks to file")
         self.blocks.save(base_file_name + ".npy")
         logging.info("Writing edges to file")
-        with open(base_file_name + "edges.pickle", "wb") as f:
-            pickle.dump(self.adj_list, f)
+
+        if False and isinstance(self.adj_list, AdjListAsMatrix):
+            self.adj_list.to_file(base_file_name)
+        else:
+            with open(base_file_name + "edges.pickle", "wb") as f:
+                pickle.dump(self.adj_list, f)
+
         with open(base_file_name + "rev_edges.pickle", "wb") as f:
             pickle.dump(self.reverse_adj_list, f)
+        with open(base_file_name + ".node_id_offset", "w") as f:
+            f.write(str(self.blocks.node_id_offset))
+            print("Wrote node id offset: %d" % self.blocks.node_id_offset)
+
         """
         with open(base_file_name + "edges.json", "w") as f:
             f.write(json.dumps(self.adj_list))
@@ -136,6 +149,7 @@ class GraphWithReversals(Graph):
     def from_numpy_files(cls, base_file_name):
         blocks = BlockArray.load(base_file_name + ".npy")
 
+        #adj_list = AdjListAsMatrix.from_file(base_file_name)
         with open(base_file_name + "edges.pickle", "rb") as f:
             adj_list = pickle.loads(f.read())
 
@@ -144,11 +158,16 @@ class GraphWithReversals(Graph):
 
         with open(base_file_name + "rev_edges.pickle", "rb") as f:
             rev_adj_list = pickle.loads(f.read())
+        with  open(base_file_name + ".node_id_offset") as f:
+            node_id_offset = int(f.read())
 
         #with open(base_file_name + "rev_edges.json") as f:
         #    rev_adj_list = json.loads(f.read())
-        return cls(blocks, adj_list, rev_adj_list=rev_adj_list,
+        graph = cls(blocks, adj_list, rev_adj_list=rev_adj_list,
                    create_reverse_adj_list=False)
+        graph.blocks.node_id_offset = node_id_offset
+        logging.info("Node id offset: %d" % node_id_offset)
+        return graph
 
     def block_in_graph(self, block_id):
         if block_id in self.blocks:

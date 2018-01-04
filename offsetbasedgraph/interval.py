@@ -329,12 +329,12 @@ class Interval(BaseInterval):
 
     def to_file_line(self):
         assert isinstance(self.region_paths, list)
-        assert isinstance(self.region_paths[0], int)
+        #assert isinstance(self.region_paths[0], int)
         assert isinstance(self.direction, int)
 
         object = {"start": int(self.start_position.offset),
                   "end": int(self.end_position.offset),
-                  "region_paths": self.region_paths,
+                  "region_paths": [int(rp) for rp in self.region_paths],
                   "direction": self.direction
                  }
         try:
