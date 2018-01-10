@@ -132,8 +132,7 @@ class Interval(BaseInterval):
         assert region_paths is None or isinstance(region_paths, list),\
             "Region paths must be None or list"
 
-
-        if isinstance(start_position, np.int64):
+        if np.issubdtype(type(start_position), np.integer):
             start_position = int(start_position)
             end_position = int(end_position)
 
