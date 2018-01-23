@@ -172,10 +172,12 @@ class GraphWithReversals(Graph):
     @classmethod
     def from_unknown_file_format(cls, base_file_name):
         try:
-            graph = cls.from_file(base_file_name)
-        except:
             graph = cls.from_numpy_files(base_file_name)
+            return graph
+        except:
+            print("Found no numpy graph. Trying pickle.")
 
+        graph = cls.from_file(base_file_name)
         assert graph is not None, "Graph %s not found" % base_file_name
         return graph
 
