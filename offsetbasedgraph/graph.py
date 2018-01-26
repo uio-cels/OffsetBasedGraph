@@ -95,8 +95,6 @@ class AdjListAsNumpyArrays:
         return cls(indices, values, lengths, min_node_id)
 
 
-
-
 class Graph(object):
     """
     Class for holding an Offset-Based Graph

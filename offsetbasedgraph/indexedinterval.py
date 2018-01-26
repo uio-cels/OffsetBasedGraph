@@ -2,9 +2,11 @@ from .interval import Interval, Position
 from collections import defaultdict
 import math
 
+
 class IndexedInterval(Interval):
     """
-    Subclass of interval that indexes distance to nodes, making it faster to find subinterval
+    Subclass of interval that indexes distance to nodes,
+    making it faster to find subinterval
     """
 
     def __init__(self, start_position, end_position,
@@ -15,17 +17,14 @@ class IndexedInterval(Interval):
             start_position, end_position, region_paths, graph, direction
         )
 
-        self.distance_index = defaultdict(list)  # List of rp number (pos in rp list) where end is at that distance or after (making it safe to start traversing at one of those nodes if finnding subinnterval at bigger thann that offset)
+        self.distance_index = defaultdict(list)
+        # List of rp number (pos in rp list) where end is at that distance
+        # or after (making it safe to start traversing at one of those nodes
+        # if finnding subinnterval at bigger thann that offset)
         self.distance_to_node = {}
-
         self._create_index()
-        #print("Distance index")
-        #print(self.distance_index)
-        #print("Distance to node")
-        #print(self.distance_to_node)
 
     def _create_index(self):
-        nodes = []
         current_offset = 0
         i = 0
         prev_index_created = 0
@@ -35,7 +34,6 @@ class IndexedInterval(Interval):
             length_to_end = node_size
             if i == 0:
                 length_to_end -= self.start_position.offset
-                #current_offset += self.start_position.offset
 
             index = math.floor((current_offset + length_to_end) / 4) * 4
 
@@ -47,9 +45,6 @@ class IndexedInterval(Interval):
             self.distance_to_node[rp] = current_offset
             i += 1
             current_offset += length_to_end
-
-
-
 
     def position_at_offset(self, offset):
         assert offset >= 0, "Offset %d is negative" % offset
@@ -109,11 +104,16 @@ class IndexedInterval(Interval):
 
         return nodes
 
-    def get_offset_at_position(self, position):
+    def get_offset_at_position(self, position, direction="+"):
         # Return number of basepairs to this position
+        if direction == "-":
+            return self.get_reverse_offset_at_position(position)
         assert position.region_path_id in self.region_paths
         return self.distance_to_node[position.region_path_id] + position.offset
 
-
+    def get_reverse_offset_at_position(self, position):
+        rp = -position.region_path_id
+        offset = self._graph.node_size(rp)-position.offset
+        return self.distance_to_node[rp] + offset
 
 

@@ -55,8 +55,6 @@ class BlockArray:
         return Block(v)
 
 
-
-
 class GraphWithReversals(Graph):
 
     def __init__(self, blocks, adj_list,
