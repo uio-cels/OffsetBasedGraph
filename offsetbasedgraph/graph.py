@@ -1039,7 +1039,11 @@ class Graph(object):
 
         return reverse_edges
 
-    def get_arbitrary_linear_graph(self):
+    def get_indexed_interval_through_graph(self):
+        interval = self.get_arbitrary_linear_graph(return_as_interval=True)
+        return interval.to_indexed_interval()
+
+    def get_arbitrary_linear_graph(self, return_as_interval=False):
         """
         Returns a linear graph consisiting of an arbitrary path through the original graph,
         and a translation to this graph.
@@ -1052,6 +1056,7 @@ class Graph(object):
         visited = {}
 
         i = 0
+
         for start_block in self.get_first_blocks():
             chrom_name = "chr_artificial_%d" % i
             linear_chromosome_size = 0
@@ -1092,9 +1097,14 @@ class Graph(object):
             # Forward trans
             trans_back[chrom_name] = [Interval(0, last_block_length, linear_blocks, self)]
 
+            if return_as_interval:
+                return Interval(0, last_block_length, linear_blocks, self)
+
             i += 1
 
         graph = Graph(new_blocks, new_adj_list)
+
+
         for intervals in trans_forward.values():
             for interval in intervals:
                 interval.graph = graph
