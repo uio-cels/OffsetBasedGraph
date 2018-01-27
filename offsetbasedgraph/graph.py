@@ -26,6 +26,55 @@ class Block(object):
         return self.__str__()
 
 
+class BlockArray:
+    def __init__(self, array):
+        if isinstance(array, dict):
+            array = self.from_dict(array)
+        assert isinstance(array, np.ndarray), type(array)
+        self._array = array
+
+        self.node_id_offset = 0  # Subtracted when indexing
+
+    def save(self, file_name):
+        np.save(file_name, self._array)
+
+    @classmethod
+    def load(cls, filename):
+        return cls(np.load(filename))
+
+    @staticmethod
+    def from_dict(node_dict):
+        max_key = max(node_dict.keys())
+        array = np.zeros(max_key+1, dtype="uint8")
+        for key, val in node_dict.items():
+            array[key] = val.length()
+        return array
+
+    def node_size(self, node_id):
+        return self._array[abs(node_id) - self.node_id_offset]
+
+    def __contains__(self, node_id):
+        node_id = abs(node_id) - self.node_id_offset
+        return node_id > 0 and node_id < len(self._array)
+
+    def __iter__(self):
+        return self.keys()
+
+    def keys(self):
+        return (i + self.node_id_offset for i, v in enumerate(self._array) if v > 0)
+
+    def values(self):
+        return (Block(v) for v in self._array if v > 0)
+
+    def items(self):
+        return ((i + self.node_id_offset, Block(v)) for i, v in enumerate(self._array) if v > 0)
+
+    def __getitem__(self, node_id):
+        v = self._array[abs(node_id) - self.node_id_offset]
+        assert v > 0
+        return Block(v)
+
+
 class BlockCollection(dict):
     def __init__(self, *args, **kwargs):
         super(BlockCollection, self).__init__(*args, **kwargs)
@@ -1140,4 +1189,7 @@ class Graph(object):
             msgpack.pack(data, outfile)
 
     def number_of_basepairs(self):
-        return sum([b.length() for b in self.blocks.values()])
+        if isinstance(self.blocks, BlockArray):
+            return int(np.sum(self.blocks._array))
+        else:
+            return sum([b.length() for b in self.blocks.values()])

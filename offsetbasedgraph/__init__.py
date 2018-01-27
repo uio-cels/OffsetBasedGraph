@@ -1,5 +1,5 @@
 from .regionpath import RegionPath
-from .graph import Graph, Block, BlockCollection
+from .graph import Graph, Block, BlockCollection, BlockArray
 from .graphwithreversals import GraphWithReversals
 from .interval import Interval
 from .indexedinterval import IndexedInterval
