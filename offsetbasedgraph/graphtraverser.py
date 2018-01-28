@@ -256,3 +256,35 @@ class GraphTraverser(object):
         remaining = length-self.graph.node_size(node_id)
         for next_id in self.adj_list[node_id]:
             self.extend_from_block(next_id, remaining, visited)
+
+
+class LengthGraphTraverser(object):
+    """
+    Finds shortest distance to all nodes within given distance away
+    """
+    def __init__(self, graph, distance, direction=+1):
+        self.graph = graph
+        self.adj_list = graph.adj_list
+        self.distance = distance
+        if direction < 0:
+            self.adj_list = graph.reverse_adj_list
+
+    def extend_from_block(self, node_id):
+        visited = {}
+        stack = [(node_id, 0)]
+        while stack:
+            node_id, distance_to_node = stack.pop(0)
+            #print("  Extending from %d (distance so far: %d)" % (node_id, distance_to_node))
+            dist_to_next = distance_to_node + self.graph.node_size(node_id)
+            if dist_to_next > self.distance:
+                continue
+
+
+            for next_node in self.adj_list[node_id]:
+                if next_node in visited:
+                    if visited[next_node] <= dist_to_next:
+                        continue
+                stack.append((next_node, dist_to_next))
+                visited[next_node] = dist_to_next
+
+        return visited
