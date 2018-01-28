@@ -1193,3 +1193,9 @@ class Graph(object):
             return int(np.sum(self.blocks._array))
         else:
             return sum([b.length() for b in self.blocks.values()])
+
+    def max_node_size(self):
+        if isinstance(self.blocks, BlockArray):
+            return np.max(self.blocks._array)
+        else:
+            return max([b.length() for b in self.blocks.values()])
