@@ -52,7 +52,6 @@ class GraphWithReversals(Graph):
         :return: Return a list of all blocks having no incoming edges
         :rtype: list(Graph)
         """
-        print("#######################################")
         return [b for b in self._possible_node_ids()
                 if self._is_start_block(b)]
 

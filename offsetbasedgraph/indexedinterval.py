@@ -1,6 +1,7 @@
 from .interval import Interval, Position
 from collections import defaultdict
 import math
+import logging
 
 
 class IndexedInterval(Interval):
@@ -25,6 +26,7 @@ class IndexedInterval(Interval):
         self._create_index()
 
     def _create_index(self):
+        logging.info("Creating indexes for indexed interval")
         current_offset = 0
         i = 0
         prev_index_created = 0
@@ -108,12 +110,12 @@ class IndexedInterval(Interval):
         # Return number of basepairs to this position
         if direction == "-":
             return self.get_reverse_offset_at_position(position)
-        assert position.region_path_id in self.region_paths
+        #assert position.region_path_id in self.region_paths
         return self.distance_to_node[position.region_path_id] + position.offset
 
     def get_reverse_offset_at_position(self, position):
         rp = -position.region_path_id
-        offset = self._graph.node_size(rp)-position.offset
+        offset = self.graph.node_size(rp)-position.offset
         return self.distance_to_node[rp] + offset
 
 

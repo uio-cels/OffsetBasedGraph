@@ -279,7 +279,6 @@ class LengthGraphTraverser(object):
             if dist_to_next > self.distance:
                 continue
 
-
             for next_node in self.adj_list[node_id]:
                 if next_node in visited:
                     if visited[next_node] <= dist_to_next:
