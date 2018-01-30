@@ -26,6 +26,58 @@ class Block(object):
         return self.__str__()
 
 
+class BlockArray:
+    def __init__(self, array):
+        if isinstance(array, dict):
+            array = self.from_dict(array)
+        assert isinstance(array, np.ndarray), type(array)
+        self._array = array
+
+        self.node_id_offset = 0  # Subtracted when indexing
+
+    def save(self, file_name):
+        np.save(file_name, self._array)
+
+    def max_node_id(self):
+        return len(self._array) - 1 + self.node_id_offset
+
+    @classmethod
+    def load(cls, filename):
+        return cls(np.load(filename))
+
+    @staticmethod
+    def from_dict(node_dict):
+        max_key = max(node_dict.keys())
+        array = np.zeros(max_key+1, dtype="uint8")
+        for key, val in node_dict.items():
+            array[key] = val.length()
+        return array
+
+    def node_size(self, node_id):
+        return self._array[abs(node_id) - self.node_id_offset]
+
+    def __contains__(self, node_id):
+        node_id = abs(node_id) - self.node_id_offset
+        return node_id > 0 and node_id < len(self._array)
+
+    def __iter__(self):
+        return self.keys()
+
+    def keys(self):
+        return (i + self.node_id_offset for i, v in enumerate(self._array) if v > 0)
+
+    def values(self):
+        return (Block(v) for v in self._array if v > 0)
+
+    def items(self):
+        return ((i + self.node_id_offset, Block(v)) for i, v in enumerate(self._array) if v > 0)
+
+    def __getitem__(self, node_id):
+        v = self._array[abs(node_id) - self.node_id_offset]
+        assert v > 0
+        return Block(v)
+
+
 class BlockCollection(dict):
     def __init__(self, *args, **kwargs):
         super(BlockCollection, self).__init__(*args, **kwargs)
@@ -131,7 +183,13 @@ class Graph(object):
         elif create_reverse_adj_list:
             self.reverse_adj_list = self._get_reverse_edges(adj_list)
 
+        logging.info("Setting max node id")
+        if isinstance(self.blocks, BlockArray):
+            self._id = self.blocks.max_node_id()
+            logging.info("  Found max id using fast way using Blockarray")
+
         self._id = max([b for b in blocks if isinstance(b, int)] + [-1])
+        logging.info("Max id set")
 
     def node_size(self, node_id):
         return self.blocks[node_id].length()
@@ -204,6 +262,7 @@ class Graph(object):
         :return: Return a list of all blocks having no incoming edges
         :rtype: list(Graph)
         """
+
         return [b for b in self.blocks if
                 len(self.reverse_adj_list[b]) == 0]
 
@@ -1040,8 +1099,31 @@ class Graph(object):
         return reverse_edges
 
     def get_indexed_interval_through_graph(self):
-        interval = self.get_arbitrary_linear_graph(return_as_interval=True)
-        return interval.to_indexed_interval()
+        interval = self.get_arbitrary_interval_through_graph()
+        return interval.to_indexed_interval(True)
+
+    def get_arbitrary_interval_through_graph(self):
+        logging.info("Getting first blocks")
+        start = self.get_first_blocks()
+        logging.info("First blocks found")
+        assert len(start) == 1, "Only works when graph has one start node"
+        nodes = []
+        current_block = start[0]
+        i = 0
+        while True:
+            if i % 500000 == 0:
+                logging.info("Processing node %d" % i)
+            i += 1
+            nodes.append(current_block)
+            next_blocks = self.adj_list[current_block]
+
+            if len(next_blocks) < 1:
+                break
+
+            next_block = next_blocks[0]
+            current_block = next_block
+
+        return Interval(0, self.node_size(nodes[-1]), nodes, self)
 
     def get_arbitrary_linear_graph(self, return_as_interval=False):
         """
@@ -1140,4 +1222,13 @@ class Graph(object):
             msgpack.pack(data, outfile)
 
     def number_of_basepairs(self):
-        return sum([b.length() for b in self.blocks.values()])
+        if isinstance(self.blocks, BlockArray):
+            return int(np.sum(self.blocks._array))
+        else:
+            return sum([b.length() for b in self.blocks.values()])
+
+    def max_node_size(self):
+        if isinstance(self.blocks, BlockArray):
+            return np.max(self.blocks._array)
+        else:
+            return max([b.length() for b in self.blocks.values()])

@@ -1,59 +1,9 @@
-from .graph import Graph, BlockCollection, Block
+from .graph import Graph, BlockCollection, Block, BlockArray
 import numpy as np
 import json
 from collections import defaultdict
 import logging
 import pickle
-
-
-class BlockArray:
-    def __init__(self, array):
-        if isinstance(array, dict):
-            array = self.from_dict(array)
-        assert isinstance(array, np.ndarray), type(array)
-        self._array = array
-
-        self.node_id_offset = 0  # Subtracted when indexing
-
-    def save(self, file_name):
-        np.save(file_name, self._array)
-
-    @classmethod
-    def load(cls, filename):
-        return cls(np.load(filename))
-
-    @staticmethod
-    def from_dict(node_dict):
-        max_key = max(node_dict.keys())
-        array = np.zeros(max_key+1, dtype="uint8")
-        for key, val in node_dict.items():
-            array[key] = val.length()
-        return array
-
-
-    def node_size(self, node_id):
-        return self._array[abs(node_id) - self.node_id_offset]
-
-    def __contains__(self, node_id):
-        node_id = abs(node_id) - self.node_id_offset
-        return node_id > 0 and node_id < len(self._array)
-
-    def __iter__(self):
-        return self.keys()
-
-    def keys(self):
-        return (i + self.node_id_offset for i, v in enumerate(self._array) if v > 0)
-
-    def values(self):
-        return (Block(v) for v in self._array if v > 0)
-
-    def items(self):
-        return ((i + self.node_id_offset, Block(v)) for i, v in enumerate(self._array) if v > 0)
-
-    def __getitem__(self, node_id):
-        v = self._array[abs(node_id) - self.node_id_offset]
-        assert v > 0
-        return Block(v)
 
 
 class GraphWithReversals(Graph):
@@ -105,7 +55,14 @@ class GraphWithReversals(Graph):
         :return: Return a list of all blocks having no incoming edges
         :rtype: list(Graph)
         """
-        print("#######################################")
+        if isinstance(self.blocks, BlockArray):
+            logging.info("Using fast way to get first block")
+            min_block_id = self.blocks.node_id_offset + 1
+            assert min_block_id in self.blocks
+            if len(self.reverse_adj_list[min_block_id]) == 0:
+                logging.info("Fast way used")
+                return [min_block_id]
+
         return [b for b in self._possible_node_ids()
                 if self._is_start_block(b)]
 
@@ -149,8 +106,9 @@ class GraphWithReversals(Graph):
         """
     @classmethod
     def from_numpy_files(cls, base_file_name):
+        logging.info("Reading nodes")
         blocks = BlockArray.load(base_file_name + ".npy")
-
+        logging.info("Reading edges")
         #adj_list = AdjListAsMatrix.from_file(base_file_name)
         with open(base_file_name + "edges.pickle", "rb") as f:
             adj_list = pickle.loads(f.read())
@@ -165,6 +123,7 @@ class GraphWithReversals(Graph):
 
         #with open(base_file_name + "rev_edges.json") as f:
         #    rev_adj_list = json.loads(f.read())
+        logging.info("Initing graph")
         graph = cls(blocks, adj_list, rev_adj_list=rev_adj_list,
                    create_reverse_adj_list=False)
         graph.blocks.node_id_offset = node_id_offset
