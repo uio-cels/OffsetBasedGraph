@@ -30,6 +30,7 @@ class BlockArray:
             array[key] = val.length()
         return array
 
+
     def node_size(self, node_id):
         return self._array[abs(node_id) - self.node_id_offset]
 
@@ -76,6 +77,9 @@ class GraphWithReversals(Graph):
         node_ids = list(self.blocks.keys())
         possible_ids = node_ids + [-n for n in node_ids]
         return possible_ids
+
+    def get_sorted_node_ids(self):
+        return sorted(self.blocks.keys())
 
     def get_last_blocks(self):
         """

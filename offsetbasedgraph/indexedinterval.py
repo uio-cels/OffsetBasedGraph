@@ -58,7 +58,8 @@ class IndexedInterval(Interval):
         index_pos = math.floor(offset / 4) * 4
         #print("Index pos for offset %d: %d" % (offset, index_pos))
         #print("Index: %d" % index_pos)
-        node_start = self.distance_index[index_pos][-1]  # Safe to choose last node
+        node_start = self.distance_index[index_pos][-1]
+        # Safe to choose last node
         i = node_start
 
         for rp in self.region_paths[i:]:
