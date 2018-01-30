@@ -11,7 +11,8 @@ class IndexedInterval(Interval):
     """
 
     def __init__(self, start_position, end_position,
-                 region_paths=None, graph=None, direction=1):
+                 region_paths=None, graph=None, direction=1,
+                 only_create_distance_to_nodes_index=False):
         assert graph is not None, "Index interval requires graph"
 
         super(IndexedInterval, self).__init__(
@@ -23,9 +24,9 @@ class IndexedInterval(Interval):
         # or after (making it safe to start traversing at one of those nodes
         # if finnding subinnterval at bigger thann that offset)
         self.distance_to_node = {}
-        self._create_index()
+        self._create_index(only_create_distance_to_nodes_index)
 
-    def _create_index(self):
+    def _create_index(self, only_create_distance_to_nodes=False):
         logging.info("Creating indexes for indexed interval")
         current_offset = 0
         i = 0
@@ -37,12 +38,13 @@ class IndexedInterval(Interval):
             if i == 0:
                 length_to_end -= self.start_position.offset
 
-            index = math.floor((current_offset + length_to_end) / 4) * 4
+            if not only_create_distance_to_nodes:
+                index = math.floor((current_offset + length_to_end) / 4) * 4
 
-            for set_index in range(prev_index_created, index + 4, 4):
-                self.distance_index[set_index].append(i)
+                for set_index in range(prev_index_created, index + 4, 4):
+                    self.distance_index[set_index].append(i)
 
-            prev_index_created = index + 4
+                prev_index_created = index + 4
 
             self.distance_to_node[rp] = current_offset
             i += 1

@@ -253,6 +253,7 @@ class Graph(object):
         :return: Return a list of all blocks having no incoming edges
         :rtype: list(Graph)
         """
+
         return [b for b in self.blocks if
                 len(self.reverse_adj_list[b]) == 0]
 
@@ -1090,10 +1091,12 @@ class Graph(object):
 
     def get_indexed_interval_through_graph(self):
         interval = self.get_arbitrary_interval_through_graph()
-        return interval.to_indexed_interval()
+        return interval.to_indexed_interval(True)
 
     def get_arbitrary_interval_through_graph(self):
+        logging.info("Getting first blocks")
         start = self.get_first_blocks()
+        logging.info("First blocks found")
         assert len(start) == 1, "Only works when graph has one start node"
         nodes = []
         current_block = start[0]

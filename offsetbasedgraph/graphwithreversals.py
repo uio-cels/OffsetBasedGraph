@@ -52,6 +52,14 @@ class GraphWithReversals(Graph):
         :return: Return a list of all blocks having no incoming edges
         :rtype: list(Graph)
         """
+        if isinstance(self.blocks, BlockArray):
+            logging.info("Using fast way to get first block")
+            min_block_id = self.blocks.node_id_offset + 1
+            assert min_block_id in self.blocks
+            if len(self.reverse_adj_list[min_block_id]) == 0:
+                logging.info("Fast way used")
+                return [min_block_id]
+
         return [b for b in self._possible_node_ids()
                 if self._is_start_block(b)]
 

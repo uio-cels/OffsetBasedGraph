@@ -493,12 +493,13 @@ class Interval(BaseInterval):
             return True
         return False
 
-    def to_indexed_interval(self):
+    def to_indexed_interval(self, only_create_distance_index=False):
         from .indexedinterval import IndexedInterval
         return IndexedInterval(self.start_position,
                              self.end_position,
                              self.region_paths,
-                             graph=self.graph)
+                             graph=self.graph,
+                             only_create_distance_to_nodes_index=only_create_distance_index)
 
 
 
