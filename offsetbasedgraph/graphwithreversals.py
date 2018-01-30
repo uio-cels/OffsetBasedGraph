@@ -28,6 +28,9 @@ class GraphWithReversals(Graph):
         possible_ids = node_ids + [-n for n in node_ids]
         return possible_ids
 
+    def get_sorted_node_ids(self):
+        return sorted(self.blocks.keys())
+
     def get_last_blocks(self):
         """
         :param graph: Graph
