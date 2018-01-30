@@ -187,8 +187,8 @@ class Graph(object):
         if isinstance(self.blocks, BlockArray):
             self._id = self.blocks.max_node_id()
             logging.info("  Found max id using fast way using Blockarray")
-
-        self._id = max([b for b in blocks if isinstance(b, int)] + [-1])
+        else:
+            self._id = max([b for b in blocks if isinstance(b, int)] + [-1])
         logging.info("Max id set")
 
     def node_size(self, node_id):
