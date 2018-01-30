@@ -104,7 +104,7 @@ class GraphWithReversals(Graph):
     @classmethod
     def from_numpy_files(cls, base_file_name):
         blocks = BlockArray.load(base_file_name + ".npy")
-
+        logging.info("Reading edges")
         #adj_list = AdjListAsMatrix.from_file(base_file_name)
         with open(base_file_name + "edges.pickle", "rb") as f:
             adj_list = pickle.loads(f.read())
@@ -119,6 +119,7 @@ class GraphWithReversals(Graph):
 
         #with open(base_file_name + "rev_edges.json") as f:
         #    rev_adj_list = json.loads(f.read())
+        logging.info("Reading nodes")
         graph = cls(blocks, adj_list, rev_adj_list=rev_adj_list,
                    create_reverse_adj_list=False)
         graph.blocks.node_id_offset = node_id_offset
