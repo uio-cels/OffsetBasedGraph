@@ -1088,9 +1088,30 @@ class Graph(object):
 
         return reverse_edges
 
-    def get_indexed_interval_through_graph(self):
-        interval = self.get_arbitrary_linear_graph(return_as_interval=True)
+    def sget_indexed_interval_through_graph(self):
+        interval = self.get_arbitrary_interval_through_graph()
         return interval.to_indexed_interval()
+
+    def get_arbitrary_interval_through_graph(self):
+        start = self.get_first_blocks()
+        assert len(start) == 1, "Only works when graph has one start node"
+        nodes = []
+        current_block = start[0]
+        i = 0
+        while True:
+            if i % 500000 == 0:
+                logging.info("Processing node %d" % i)
+            i += 1
+            nodes.append(current_block)
+            next_blocks = self.adj_list[current_block]
+
+            if len(next_blocks) < 1:
+                break
+
+            next_block = next_blocks[0]
+            current_block = next_block
+
+        return Interval(0, self.node_size(nodes[-1]), nodes, self)
 
     def get_arbitrary_linear_graph(self, return_as_interval=False):
         """
