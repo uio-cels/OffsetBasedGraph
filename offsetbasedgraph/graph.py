@@ -1088,7 +1088,7 @@ class Graph(object):
 
         return reverse_edges
 
-    def sget_indexed_interval_through_graph(self):
+    def get_indexed_interval_through_graph(self):
         interval = self.get_arbitrary_interval_through_graph()
         return interval.to_indexed_interval()
 
