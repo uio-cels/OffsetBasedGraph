@@ -38,6 +38,9 @@ class BlockArray:
     def save(self, file_name):
         np.save(file_name, self._array)
 
+    def max_node_id(self):
+        return len(self._array) - 1 + self.node_id_offset
+
     @classmethod
     def load(cls, filename):
         return cls(np.load(filename))
@@ -180,7 +183,13 @@ class Graph(object):
         elif create_reverse_adj_list:
             self.reverse_adj_list = self._get_reverse_edges(adj_list)
 
+        logging.info("Setting max node id")
+        if isinstance(self.blocks, BlockArray):
+            self._id = self.blocks.max_node_id()
+            logging.info("  Found max id using fast way using Blockarray")
+
         self._id = max([b for b in blocks if isinstance(b, int)] + [-1])
+        logging.info("Max id set")
 
     def node_size(self, node_id):
         return self.blocks[node_id].length()
