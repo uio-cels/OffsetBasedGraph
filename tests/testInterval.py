@@ -81,48 +81,6 @@ class TestInterval(unittest.TestCase):
         self.assertTrue(interval1.hash() != interval_different3.hash())
         self.assertTrue(interval1.hash() != interval1_minus.hash())
 
-    def test_position_at_offset(self):
-        graph = Graph(
-            {
-                1: Block(10),
-                2: Block(10),
-                3: Block(10)
-            },
-            {
-                1: [2],
-                2: [3]
-            }
-        )
-        interval = IndexedInterval(4, 6, [1, 2, 3], graph)
-
-        self.assertEqual(interval.position_at_offset(0), Position(1, 4))
-        self.assertEqual(interval.position_at_offset(1), Position(1, 5))
-        self.assertEqual(interval.position_at_offset(2), Position(1, 6))
-        self.assertEqual(interval.position_at_offset(5), Position(1, 9))
-        self.assertEqual(interval.position_at_offset(6), Position(2, 0))
-        self.assertEqual(interval.position_at_offset(7), Position(2, 1))
-        self.assertEqual(interval.position_at_offset(16), Position(3, 0))
-        self.assertEqual(interval.position_at_offset(21), Position(3, 5))
-
-    def test_get_subinterval(self):
-        graph = Graph(
-            {
-                1: Block(10),
-                2: Block(10),
-                3: Block(10)
-            },
-            {
-                1: [2],
-                2: [3]
-            }
-        )
-        interval = IndexedInterval(4, 6, [1, 2, 3], graph)
-        self.assertEqual(interval.get_subinterval(0, 1), Interval(4, 5, [1]))
-        self.assertEqual(interval.get_subinterval(0, 10), Interval(4, 4, [1, 2]))
-        self.assertEqual(interval.get_subinterval(0, 11), Interval(4, 5, [1, 2]))
-        self.assertEqual(interval.get_subinterval(1, 20), Interval(5, 4, [1, 2, 3]))
-        self.assertEqual(interval.get_subinterval(10, 20), Interval(4, 4, [2, 3]))
-        self.assertEqual(interval.get_subinterval(10, 16), Interval(4, 10, [2]))
 
     def test_overlap(self):
         graph = Graph(
@@ -177,6 +135,77 @@ class TestInterval(unittest.TestCase):
 
         other = Interval(0, 10, [4, 5, 6])
         self.assertTrue(interval.contains_in_correct_order(other))
+
+
+class TestIndexedInterval(unittest.TestCase):
+    def test_position_at_offset(self):
+        graph = Graph(
+            {
+                1: Block(10),
+                2: Block(10),
+                3: Block(10)
+            },
+            {
+                1: [2],
+                2: [3]
+            }
+        )
+        interval = IndexedInterval(4, 6, [1, 2, 3], graph)
+
+        self.assertEqual(interval.position_at_offset(0), Position(1, 4))
+        self.assertEqual(interval.position_at_offset(1), Position(1, 5))
+        self.assertEqual(interval.position_at_offset(2), Position(1, 6))
+        self.assertEqual(interval.position_at_offset(5), Position(1, 9))
+        self.assertEqual(interval.position_at_offset(6), Position(2, 0))
+        self.assertEqual(interval.position_at_offset(7), Position(2, 1))
+        self.assertEqual(interval.position_at_offset(16), Position(3, 0))
+        self.assertEqual(interval.position_at_offset(21), Position(3, 5))
+
+    def test_get_offset_at_position(self):
+        graph = Graph(
+            {
+                1: Block(10),
+                2: Block(10),
+                3: Block(10)
+            },
+            {
+                1: [2],
+                2: [3]
+            }
+        )
+        interval = IndexedInterval(4, 6, [1, 2, 3], graph)
+        self.assertEqual(interval.get_offset_at_position(Position(1, 4)), 0)
+        self.assertEqual(interval.get_offset_at_position(Position(2, 0)), 6)
+        self.assertEqual(interval.get_offset_at_position(Position(2, 1)), 7)
+        self.assertEqual(interval.get_offset_at_position(Position(2, 9)), 15)
+        self.assertEqual(interval.get_offset_at_position(Position(3, 0)), 16)
+
+        self.assertEqual(interval.get_reverse_offset_at_position(Position(-1, 6)), 0)
+        self.assertEqual(interval.get_reverse_offset_at_position(Position(-1, 5), is_end_pos=False), 0)
+        self.assertEqual(interval.get_reverse_offset_at_position(Position(-1, 5)), 1)
+        self.assertEqual(interval.get_reverse_offset_at_position(Position(-3, 5)), 21)
+        self.assertEqual(interval.get_reverse_offset_at_position(Position(-2, 0)), 16)
+
+    def test_get_subinterval(self):
+        graph = Graph(
+            {
+                1: Block(10),
+                2: Block(10),
+                3: Block(10)
+            },
+            {
+                1: [2],
+                2: [3]
+            }
+        )
+        interval = IndexedInterval(4, 6, [1, 2, 3], graph)
+        self.assertEqual(interval.get_subinterval(0, 1), Interval(4, 5, [1]))
+        self.assertEqual(interval.get_subinterval(0, 10), Interval(4, 4, [1, 2]))
+        self.assertEqual(interval.get_subinterval(0, 11), Interval(4, 5, [1, 2]))
+        self.assertEqual(interval.get_subinterval(1, 20), Interval(5, 4, [1, 2, 3]))
+        self.assertEqual(interval.get_subinterval(10, 20), Interval(4, 4, [2, 3]))
+        self.assertEqual(interval.get_subinterval(10, 16), Interval(4, 10, [2]))
+
 
 
 class TestIntervalCollection(unittest.TestCase):
