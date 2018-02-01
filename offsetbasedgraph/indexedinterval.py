@@ -113,12 +113,22 @@ class IndexedInterval(Interval):
         # Return number of basepairs to this position
         if direction == "-":
             return self.get_reverse_offset_at_position(position)
-        #assert position.region_path_id in self.region_paths
-        return self.distance_to_node[position.region_path_id] + position.offset
 
-    def get_reverse_offset_at_position(self, position):
+        distance = self.distance_to_node[position.region_path_id] + position.offset
+        if position.region_path_id == self.region_paths[0]:
+            distance -= self.start_position.offset
+        return distance
+
+    def get_reverse_offset_at_position(self, position, is_end_pos=True):
         rp = -position.region_path_id
         offset = self.graph.node_size(rp)-position.offset
-        return self.distance_to_node[rp] + offset
+        distance = self.distance_to_node[rp] + offset
+        if rp == self.region_paths[0]:
+            distance -= self.start_position.offset
+
+        if not is_end_pos:
+            distance -= 1
+
+        return distance
 
 
