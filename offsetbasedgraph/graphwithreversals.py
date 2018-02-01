@@ -28,8 +28,8 @@ class GraphWithReversals(Graph):
         possible_ids = node_ids + [-n for n in node_ids]
         return possible_ids
 
-    def get_sorted_node_ids(self):
-        return sorted(self.blocks.keys())
+    def get_sorted_node_ids(self, reverse=False):
+        return sorted(self.blocks.keys(), reverse=reverse)
 
     def get_last_blocks(self):
         """
@@ -84,7 +84,6 @@ class GraphWithReversals(Graph):
         logging.info("Writing blocks to file")
         self.blocks.save(base_file_name + ".npy")
         logging.info("Writing edges to file")
-
         if False and isinstance(self.adj_list, AdjListAsMatrix):
             self.adj_list.to_file(base_file_name)
         else:
