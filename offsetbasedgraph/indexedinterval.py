@@ -117,7 +117,7 @@ class IndexedInterval(Interval):
         distance = self.distance_to_node[position.region_path_id] + position.offset
         if position.region_path_id == self.region_paths[0]:
             distance -= self.start_position.offset
-        return distance
+        return int(distance)
 
     def get_reverse_offset_at_position(self, position, is_end_pos=True):
         rp = -position.region_path_id
@@ -129,6 +129,6 @@ class IndexedInterval(Interval):
         if not is_end_pos:
             distance -= 1
 
-        return distance
+        return int(distance)
 
 

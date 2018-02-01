@@ -183,13 +183,13 @@ class Graph(object):
         elif create_reverse_adj_list:
             self.reverse_adj_list = self._get_reverse_edges(adj_list)
 
-        logging.info("Setting max node id")
+        #logging.info("Setting max node id")
         if isinstance(self.blocks, BlockArray):
             self._id = self.blocks.max_node_id()
-            logging.info("  Found max id using fast way using Blockarray")
+            #logging.info("  Found max id using fast way using Blockarray")
         else:
             self._id = max([b for b in blocks if isinstance(b, int)] + [-1])
-        logging.info("Max id set")
+        #logging.info("Max id set")
 
     def node_size(self, node_id):
         return self.blocks[node_id].length()
