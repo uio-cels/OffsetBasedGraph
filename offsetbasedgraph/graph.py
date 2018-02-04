@@ -48,17 +48,25 @@ class BlockArray:
     @staticmethod
     def from_dict(node_dict):
         max_key = max(node_dict.keys())
-        array = np.zeros(max_key+1, dtype="uint8")
+        min_key = min(node_dict.keys())
+        node_id_offset = min_key
+
+        array = np.zeros((max_key-min_key)+1, dtype="uint8")
         for key, val in node_dict.items():
-            array[key] = val.length()
-        return array
+            array[key-node_id_offset] = val.length()
+
+        block_array = BlockArray(array)
+        print("Node id offset: %d" % node_id_offset)
+        block_array.node_id_offset = node_id_offset
+
+        return block_array
 
     def node_size(self, node_id):
         return self._array[abs(node_id) - self.node_id_offset]
 
     def __contains__(self, node_id):
         node_id = abs(node_id) - self.node_id_offset
-        return node_id > 0 and node_id < len(self._array)
+        return node_id >= 0 and node_id < len(self._array)
 
     def __iter__(self):
         return self.keys()
@@ -76,6 +84,13 @@ class BlockArray:
         v = self._array[abs(node_id) - self.node_id_offset]
         assert v > 0
         return Block(v)
+
+    def __str__(self):
+        return str(list(self.items()))
+
+    def __repr__(self):
+        return self.__str__()
+
 
 
 class BlockCollection(dict):
@@ -534,8 +549,14 @@ class Graph(object):
         return final_graph, final_trans
 
     def __str__(self):
+        if isinstance(self.adj_list, AdjListAsNumpyArrays):
+            edges = str({node: list(self.adj_list[node]) for node in self.blocks
+                         if len(self.adj_list[node]) > 0})
+        else:
+            edges = str(self.adj_list)
+
         return "Graph: \n Blocks: %s\n Edges: %s" % \
-            (self.blocks, self.adj_list)
+            (self.blocks, edges)
 
     __repr__ = __str__
 
@@ -546,6 +567,8 @@ class Graph(object):
         :rtype: bool
 
         """
+
+
         if(len(self.blocks) != len(other.blocks)):
             return False
 

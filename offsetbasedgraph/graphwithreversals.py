@@ -1,4 +1,4 @@
-from .graph import Graph, BlockCollection, Block, BlockArray
+from .graph import Graph, BlockCollection, Block, BlockArray, AdjListAsNumpyArrays
 import numpy as np
 import json
 from collections import defaultdict
@@ -30,6 +30,20 @@ class GraphWithReversals(Graph):
 
     def get_sorted_node_ids(self, reverse=False):
         return sorted(self.blocks.keys(), reverse=reverse)
+
+    def __eq__(self, other):
+        for node, block in self.blocks.items():
+            if node not in other.blocks:
+                return False
+            if other.blocks[node] != block:
+                return False
+        for node, block in other.blocks.items():
+            if node not in self.blocks:
+                return False
+            if self.blocks[node] != block:
+                return False
+
+        return True
 
     def get_last_blocks(self):
         """
@@ -79,6 +93,95 @@ class GraphWithReversals(Graph):
 
     def node_size(self, node_id):
         return self.blocks.node_size(node_id)
+
+    def uses_numpy_backend(self):
+        if isinstance(self.blocks, BlockArray):
+            assert isinstance(self.adj_list, AdjListAsNumpyArrays), \
+                "If blocks is numpy, edges should also be"
+            return True
+        return False
+
+    def convert_to_numpy_backend(self):
+        if self.uses_numpy_backend():
+            logging.warning("Trying to convert to numpy backend, but is already on numpy backend")
+            return
+
+        logging.info("Converting to numpy backend...")
+        self.blocks = BlockArray.from_dict(self.blocks)
+        self.adj_list = AdjListAsNumpyArrays.create_from_edge_dict(self.adj_list)
+        self.reverse_adj_list = AdjListAsNumpyArrays.create_from_edge_dict(self.reverse_adj_list)
+        logging.info("Conversion finished")
+
+    def convert_to_dict_backend(self):
+        new_blocks = {}
+        new_adj_list = {}
+        new_reverse_adj_list = {}
+
+        for node_id, block in self.blocks:
+            new_blocks[node_id] = block
+            edges = self.adj_list[node_id]
+            if len(edges) > 0:
+                new_adj_list[node_id] = list(edges)
+
+            edges = self.reverse_adj_list[node_id]
+            if len(edges) > 0:
+                new_reverse_adj_list[node_id] = list(edges)
+
+        self.blocks = new_blocks
+        self.adj_list = new_adj_list
+        self.reverse_adj_list = new_reverse_adj_list
+
+    def to_numpy_file(self, file_name):
+        assert isinstance(self.blocks, BlockArray), "Blocks must be represented as BlockArray"
+        assert isinstance(self.adj_list, AdjListAsNumpyArrays), "Edges must be on numpy format"
+        assert isinstance(self.reverse_adj_list, AdjListAsNumpyArrays), "Reverse edges must be on numpy format"
+
+        logging.info("Saving to numpy format")
+        file = open(file_name, "wb")
+        np.savez(file,
+                 blocks=self.blocks._array,
+                 node_id_offset = self.blocks.node_id_offset,
+                 adj_list_indices=self.adj_list._indices,
+                 adj_list_values=self.adj_list._values,
+                 adj_list_n_edges=self.adj_list._n_edges,
+                 reverse_adj_list_indices=self.reverse_adj_list._indices,
+                 reverse_adj_list_values=self.reverse_adj_list._values,
+                 reverse_adj_list_n_edges=self.reverse_adj_list._n_edges
+                 )
+        file.close()
+        logging.info("Graph saved to %s" % file_name)
+
+    @classmethod
+    def from_numpy_file(cls, file_name):
+        logging.info("Reading from numpy file %s" % file_name)
+        file = open(file_name, "rb")
+        data = np.load(file)
+
+        node_id_offset = data["node_id_offset"]
+        print("Node id offset: %d" % node_id_offset)
+
+        adj_list = AdjListAsNumpyArrays(
+            data["adj_list_indices"],
+            data["adj_list_values"],
+            data["adj_list_n_edges"],
+            node_id_offset+1  # Always one more for edges than for blockarray
+        )
+        rev_adj_list = AdjListAsNumpyArrays(
+            data["reverse_adj_list_indices"],
+            data["reverse_adj_list_values"],
+            data["reverse_adj_list_n_edges"],
+            node_id_offset+1  # Always one more for edges than for blockarray
+        )
+
+        blocks = BlockArray(data["blocks"])
+        blocks.node_id_offset = node_id_offset
+
+        graph = cls(blocks,
+                    adj_list=adj_list,
+                    rev_adj_list=rev_adj_list)
+        file.close()
+        return graph
+
 
     def to_numpy_files(self, base_file_name):
         logging.info("Writing blocks to file")
