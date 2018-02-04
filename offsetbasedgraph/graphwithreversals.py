@@ -114,18 +114,23 @@ class GraphWithReversals(Graph):
 
     def convert_to_dict_backend(self):
         new_blocks = {}
-        new_adj_list = {}
-        new_reverse_adj_list = {}
+        new_adj_list = defaultdict(list)
+        new_reverse_adj_list = defaultdict(list)
 
         for node_id, block in self.blocks.items():
             new_blocks[node_id] = block
             edges = self.adj_list[node_id]
             if len(edges) > 0:
-                new_adj_list[node_id] = list(edges)
+                new_adj_list[node_id].extend(list(edges))
+
+            edges = self.reverse_adj_list[-node_id]
+            if len(edges) > 0:
+                new_reverse_adj_list[-node_id].extend(list(edges))
 
             edges = self.reverse_adj_list[node_id]
             if len(edges) > 0:
-                new_reverse_adj_list[node_id] = list(edges)
+                print(" Adding %s to %d" % (list(edges), node_id))
+                new_reverse_adj_list[node_id].extend(list(edges))
 
         self.blocks = new_blocks
         self.adj_list = new_adj_list
@@ -146,7 +151,8 @@ class GraphWithReversals(Graph):
                  adj_list_n_edges=self.adj_list._n_edges,
                  reverse_adj_list_indices=self.reverse_adj_list._indices,
                  reverse_adj_list_values=self.reverse_adj_list._values,
-                 reverse_adj_list_n_edges=self.reverse_adj_list._n_edges
+                 reverse_adj_list_n_edges=self.reverse_adj_list._n_edges,
+                 reverse_adj_list_node_id_offset=self.reverse_adj_list.node_id_offset
                  )
         file.close()
         logging.info("Graph saved to %s" % file_name)
@@ -169,7 +175,7 @@ class GraphWithReversals(Graph):
             data["reverse_adj_list_indices"],
             data["reverse_adj_list_values"],
             data["reverse_adj_list_n_edges"],
-            node_id_offset+1  # Always one more for edges than for blockarray
+            data["reverse_adj_list_node_id_offset"]  # Always one more for edges than for blockarray
         )
 
         blocks = BlockArray(data["blocks"])
