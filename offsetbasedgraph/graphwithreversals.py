@@ -117,7 +117,7 @@ class GraphWithReversals(Graph):
         new_adj_list = {}
         new_reverse_adj_list = {}
 
-        for node_id, block in self.blocks:
+        for node_id, block in self.blocks.items():
             new_blocks[node_id] = block
             edges = self.adj_list[node_id]
             if len(edges) > 0:
@@ -158,7 +158,6 @@ class GraphWithReversals(Graph):
         data = np.load(file)
 
         node_id_offset = data["node_id_offset"]
-        print("Node id offset: %d" % node_id_offset)
 
         adj_list = AdjListAsNumpyArrays(
             data["adj_list_indices"],
@@ -229,7 +228,6 @@ class GraphWithReversals(Graph):
         graph = cls(blocks, adj_list, rev_adj_list=rev_adj_list,
                    create_reverse_adj_list=False)
         graph.blocks.node_id_offset = node_id_offset
-        logging.info("Node id offset: %d" % node_id_offset)
         return graph
 
     @classmethod

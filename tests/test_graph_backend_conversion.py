@@ -24,6 +24,9 @@ class TestBackendConversion(unittest.TestCase):
         self.assertTrue(isinstance(graph2.adj_list, AdjListAsNumpyArrays))
         self.assertEqual(graph2, graph)
 
+        graph2.convert_to_dict_backend()
+        self.assertEqual(graph, graph2)
+
 class TestToFromSingleNumpyFile(unittest.TestCase):
 
     def test_simple(self):

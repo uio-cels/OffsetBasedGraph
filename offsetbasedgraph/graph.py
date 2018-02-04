@@ -56,7 +56,6 @@ class BlockArray:
             array[key-node_id_offset] = val.length()
 
         block_array = BlockArray(array)
-        print("Node id offset: %d" % node_id_offset)
         block_array.node_id_offset = node_id_offset
 
         return block_array
