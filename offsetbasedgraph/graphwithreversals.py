@@ -117,7 +117,12 @@ class GraphWithReversals(Graph):
         new_adj_list = defaultdict(list)
         new_reverse_adj_list = defaultdict(list)
 
+        i = 0
         for node_id, block in self.blocks.items():
+            if i % 100000 == 0:
+                logging.info("%d nodes converted" % i)
+            i += 1
+
             new_blocks[node_id] = block
             edges = self.adj_list[node_id]
             if len(edges) > 0:

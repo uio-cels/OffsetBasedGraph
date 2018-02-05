@@ -216,9 +216,9 @@ class TestIntervalCollection(unittest.TestCase):
                     )
         collection = IntervalCollection(intervals)
         print(collection.intervals)
-        collection.to_file("test_intervalcollection.tmp")
+        collection.to_file("test_intervalcollection.tmp", text_file=True)
 
-        collection2 = IntervalCollection.create_generator_from_file("test_intervalcollection.tmp")
+        collection2 = IntervalCollection.from_file("test_intervalcollection.tmp", text_file=True)
 
         #self.assertTrue(collection.intervals == collection2.intervals)
         for i, interval in enumerate(collection2):
