@@ -148,7 +148,7 @@ class GraphWithReversals(Graph):
 
         logging.info("Saving to numpy format")
         file = open(file_name, "wb")
-        np.savez(file,
+        np.savez_compressed(file,
                  blocks=self.blocks._array,
                  node_id_offset = self.blocks.node_id_offset,
                  adj_list_indices=self.adj_list._indices,
