@@ -426,7 +426,7 @@ class Interval(BaseInterval):
 
     def get_subinterval(self, start_offset, end_offset):
         start_pos = self.position_at_offset(start_offset)
-        end_pos = self.position_at_offset(end_offset -1)
+        end_pos = self.position_at_offset(end_offset - 1)
         #print("Start pos: %s" % start_pos)
         #print("End pos: %s" % end_pos)
 

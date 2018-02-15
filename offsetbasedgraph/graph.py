@@ -8,6 +8,7 @@ import logging
 from scipy.sparse import dok_matrix, csr_matrix, lil_matrix
 import scipy.io
 
+
 class Block(object):
     def __init__(self, length):
         assert length > 0
@@ -34,6 +35,9 @@ class BlockArray:
         self._array = array
 
         self.node_id_offset = 0  # Subtracted when indexing
+
+    def __len__(self):
+        return len(self._array)
 
     def save(self, file_name):
         np.save(file_name, self._array)
@@ -89,7 +93,6 @@ class BlockArray:
 
     def __repr__(self):
         return self.__str__()
-
 
 
 class BlockCollection(dict):
