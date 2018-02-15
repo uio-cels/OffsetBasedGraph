@@ -2,6 +2,7 @@ from .interval import Interval, Position
 from collections import defaultdict
 import math
 import logging
+import pickle
 
 
 class IndexedInterval(Interval):
@@ -25,6 +26,17 @@ class IndexedInterval(Interval):
         # if finnding subinnterval at bigger thann that offset)
         self.distance_to_node = {}
         self._create_index(only_create_distance_to_nodes_index)
+
+    def to_file(self, file_name):
+        with open(file_name, "wb") as f:
+            pickle.dump(self, f)
+
+    @classmethod
+    def from_file(cls, file_name):
+        f = open(file_name, "rb")
+        interval = pickle.load(f)
+        f.close()
+        return interval
 
     def _create_index(self, only_create_distance_to_nodes=False):
         logging.info("Creating indexes for indexed interval")
