@@ -165,7 +165,16 @@ class GraphWithReversals(Graph):
     @classmethod
     def from_numpy_file(cls, file_name):
         logging.info("Reading from numpy file %s" % file_name)
-        file = open(file_name, "rb")
+
+        try:
+            file = open(file_name, "rb")
+        except FileNotFoundError:
+            try:
+                file = open(file_name + ".obg", "rb")
+            except FileNotFoundError:
+                file = open(file_name + ".nobg", "rb")
+        
+
         data = np.load(file)
 
         node_id_offset = data["node_id_offset"]
