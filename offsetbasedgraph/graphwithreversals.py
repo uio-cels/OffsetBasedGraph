@@ -253,8 +253,12 @@ class GraphWithReversals(Graph):
     @classmethod
     def from_unknown_file_format(cls, base_file_name):
         try:
-            graph = cls.from_numpy_files(base_file_name)
-            return graph
+            try:
+                graph = cls.from_numpy_file(base_file_name + ".nobg")
+                return graph
+            except:
+                graph = cls.from_numpy_files(base_file_name)
+                return graph
         except:
             print("Found no numpy graph. Trying pickle.")
 
