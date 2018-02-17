@@ -150,15 +150,19 @@ class NodeInterval(Interval):
     Simple interval where start and end position is non-important.
     """
     def __init__(self, region_paths):
-        self.region_paths = region_paths
+        self.region_paths = list(region_paths)
+        self.start_position = Position(region_paths[0], 0)
+        self.end_position= Position(region_paths[-1], 1)
+        self.direction = 1
+    #@property
+    #def graph(self):
+    #    raise Exception("NodeInterval is not connected to a graph. Cannot get graph attribute.")
 
-    @property
-    def graph(self):
-        raise Exception("NodeInterval is not connected to a graph. Cannot get graph attribute.")
-
+    """
     @property
     def start_position(self):
         raise Exception("Start position of a NodeInterval is undefined.")
+    """
 
     def length(self):
         raise Exception("Length of NodeInterval not supported as start/end is arbitrary with node")
@@ -176,11 +180,17 @@ class NumpyIndexedInterval(IndexedInterval):
         """
         Distance to node index is numpy array where element i gives node at offset i
         """
-        self.length = length
+        self._length = length
         self._distance_to_node = distance_to_node_index
 
     def length(self):
-        return self.length
+        return self._length
+
+    def __str__(self):
+        return "Numpy indexed Interval"
+
+    def __repr__(self):
+        return self.__str__()
 
     @classmethod
     def from_interval(cls, interval):
@@ -204,7 +214,7 @@ class NumpyIndexedInterval(IndexedInterval):
     def to_file(self, file_name):
         file = open(file_name, "wb")
         np.savez_compressed(file,
-                 length=self.length,
+                 length=self._length,
                  distance_to_node=self._distance_to_node)
 
     @classmethod
