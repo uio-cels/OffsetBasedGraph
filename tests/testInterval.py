@@ -1,7 +1,8 @@
 import unittest
 import dummygraph
-from offsetbasedgraph import Interval, Position, IntervalCollection, Graph, Block, IndexedInterval
-
+from offsetbasedgraph import Interval, Position, IntervalCollection, \
+    Graph, Block, IndexedInterval, GraphWithReversals, NumpyIndexedInterval
+import numpy as np
 
 class TestInterval(unittest.TestCase):
 
@@ -205,6 +206,51 @@ class TestIndexedInterval(unittest.TestCase):
         self.assertEqual(interval.get_subinterval(1, 20), Interval(5, 4, [1, 2, 3]))
         self.assertEqual(interval.get_subinterval(10, 20), Interval(4, 4, [2, 3]))
         self.assertEqual(interval.get_subinterval(10, 16), Interval(4, 10, [2]))
+
+
+class TestNumpyIndexedInterval(unittest.TestCase):
+    def setUp(self):
+        self.graph = GraphWithReversals(
+            {1: Block(4),
+             2: Block(2),
+             3: Block(10)},
+            {
+                1: [2], 2: [3]
+            }
+        )
+        self.graph.convert_to_numpy_backend()
+
+        self.interval = NumpyIndexedInterval.from_interval(
+            Interval(0, 10, [1, 2, 3], graph=self.graph))
+
+    def test_get_node_at_offset(self):
+        self.assertEqual(1, self.interval.get_node_at_offset(0))
+        self.assertEqual(1, self.interval.get_node_at_offset(1))
+        self.assertEqual(2, self.interval.get_node_at_offset(4))
+        self.assertEqual(2, self.interval.get_node_at_offset(5))
+        self.assertEqual(3, self.interval.get_node_at_offset(6))
+        self.assertEqual(3, self.interval.get_node_at_offset(15))
+
+    def test_get_offset_at_node(self):
+        #self.assertEqual(0, self.interval.get_offset_at_node(1))
+        #self.assertEqual(0, self.interval.get_offset_at_node(2))
+        pass
+
+    def test_get_nodes_between_offsets(self):
+        self.assertTrue(np.all(np.array([1]) == self.interval.get_nodes_between_offset(0, 1)))
+        self.assertTrue(np.all(np.array([1]) == self.interval.get_nodes_between_offset(0, 4)))
+        self.assertTrue(np.all(np.array([1, 2]) == self.interval.get_nodes_between_offset(0, 5)))
+        self.assertTrue(np.all(np.array([2]) == self.interval.get_nodes_between_offset(4, 5)))
+        self.assertTrue(np.all(np.array([1, 2, 3]) == self.interval.get_nodes_between_offset(0, 12)))
+
+    def test_get_subinterval(self):
+        pass
+
+    def test_to_from_file(self):
+        self.interval.to_file("test.interval")
+        new = NumpyIndexedInterval.from_file("test.interval")
+
+        self.assertTrue(np.all(new._distance_to_node == self.interval._distance_to_node))
 
 
 

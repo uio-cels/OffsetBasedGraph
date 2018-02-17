@@ -3,7 +3,8 @@ from collections import defaultdict
 import math
 import logging
 import pickle
-
+from .graph import BlockArray
+import numpy as np
 
 class IndexedInterval(Interval):
     """
@@ -142,5 +143,94 @@ class IndexedInterval(Interval):
             distance -= 1
 
         return int(distance)
+
+
+class NodeInterval(Interval):
+    """
+    Simple interval where start and end position is non-important.
+    """
+    def __init__(self, region_paths):
+        self.region_paths = region_paths
+
+    @property
+    def graph(self):
+        raise Exception("NodeInterval is not connected to a graph. Cannot get graph attribute.")
+
+    @property
+    def start_position(self):
+        raise Exception("Start position of a NodeInterval is undefined.")
+
+    def length(self):
+        raise Exception("Length of NodeInterval not supported as start/end is arbitrary with node")
+
+
+
+class NumpyIndexedInterval(IndexedInterval):
+    """
+    Simple index interval which is not an interval, just an index.
+    Used for fast method of finding nodes touched of a subinterval between to offsets.
+    Fast writing to and from file.
+    """
+
+    def __init__(self, distance_to_node_index, length):
+        """
+        Distance to node index is numpy array where element i gives node at offset i
+        """
+        self.length = length
+        self._distance_to_node = distance_to_node_index
+
+    def length(self):
+        return self.length
+
+    @classmethod
+    def from_interval(cls, interval):
+        assert interval.start_position.offset == 0, "Currently only simple implementation supporting start offset=0"
+        logging.info("Creating indexes for indexed interval")
+        assert interval.graph is not None, "graph attribute cannot be None when indexing interval"
+
+        assert isinstance(interval.graph.blocks, BlockArray), "Graph must have numpy backend"
+        rps = np.array(interval.region_paths)
+        node_sizes = interval.graph.blocks._array[rps - interval.graph.blocks.node_id_offset]
+        #node_to_distance = np.cumsum(node_sizes) - node_sizes[0]
+        length = interval.length()
+        distance_to_node = np.zeros(length)
+        index_positions = np.cumsum(node_sizes)[:-1]
+        distance_to_node[index_positions] = np.diff(rps)
+        distance_to_node[0] = rps[0]
+        distance_to_node = np.cumsum(distance_to_node, dtype=np.uint32)
+
+        return cls(distance_to_node, length)
+
+    def to_file(self, file_name):
+        file = open(file_name, "wb")
+        np.savez_compressed(file,
+                 length=self.length,
+                 distance_to_node=self._distance_to_node)
+
+    @classmethod
+    def from_file(cls, file_name):
+        data = np.load(file_name)
+        return cls(data["distance_to_node"], data["length"])
+
+
+    def get_node_at_offset(self, offset):
+        return self._distance_to_node[offset]
+
+    def get_nodes_between_offset(self, start, end):
+        return np.unique(self._distance_to_node[start:end])
+
+    def get_subinterval(self, start, end):
+        return NodeInterval(self.get_nodes_between_offset(start, end))
+
+    def get_offset_at_node(self, node):
+        raise NotImplementedError()
+        #return self._node_to_distance[node]
+
+    def get_offset_at_position(self, position, direction="+"):
+        raise NotImplementedError("Not implemented")
+
+
+
+
 
 
