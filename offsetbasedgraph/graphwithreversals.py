@@ -199,6 +199,7 @@ class GraphWithReversals(Graph):
                     adj_list=adj_list,
                     rev_adj_list=rev_adj_list)
         file.close()
+        logging.info("Done reading from numpy file")
         return graph
 
 
