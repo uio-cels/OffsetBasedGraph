@@ -263,7 +263,7 @@ class GraphWithReversals(Graph):
         except:
             print("Found no numpy graph. Trying pickle.")
 
-        graph = cls.from_file(base_file_name)
+        graph = cls.from_file(base_file_name  + ".obg")
         assert graph is not None, "Graph %s not found" % base_file_name
         return graph
 
