@@ -40,8 +40,8 @@ def get_disjoint_graph():
 
 
 def get_realistic_graph():
-    blocks = {i: Block(10) for i in range(9)}
-    edges = {i: [i+1] for i in range(6)}
+    blocks = {i: Block(10) for i in range(1, 9)}
+    edges = {i: [i+1] for i in range(1,6)}
     edges[1].append(7)
     edges[2].append(8)
     edges[7] = [4]
