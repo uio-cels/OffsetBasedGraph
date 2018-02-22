@@ -105,7 +105,7 @@ class BlockCollection(dict):
         return super().__contains__(abs(name))
 
     def __getitem__(self, key):
-        return super().__getitem__(abs(key))
+        return super(BlockCollection, self).__getitem__(abs(key))
 
     def node_size(self, node_id):
         return self[node_id].length()

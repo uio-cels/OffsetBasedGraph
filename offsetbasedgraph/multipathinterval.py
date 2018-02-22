@@ -226,8 +226,9 @@ class GeneralMultiPathInterval(MultiPathInterval):
             if rp in self.region_paths)
 
         for rp in next_level:
-            yield from self._find_end_region_path(
-                start_position, region_paths + [rp])
+            for end in self._find_end_region_path(
+                    start_position, region_paths + [rp]):
+                yield end
 
     def _get_single_path_intervals(self, start_position):
         """Generate all valid intervals starting from start position
@@ -237,8 +238,9 @@ class GeneralMultiPathInterval(MultiPathInterval):
         :rtype: generator
 
         """
-        yield from self._find_end_region_path(start_position,
-                                              [start_position.region_path_id])
+        for end in self._find_end_region_path(start_position,
+                                              [start_position.region_path_id]):
+            yield end
 
     def get_single_path_intervals(self):
         """

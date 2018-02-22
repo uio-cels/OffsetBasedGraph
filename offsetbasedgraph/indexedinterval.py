@@ -55,7 +55,7 @@ class IndexedInterval(Interval):
             if not only_create_distance_to_nodes:
                 index = math.floor((current_offset + length_to_end) / 4) * 4
 
-                for set_index in range(prev_index_created, index + 4, 4):
+                for set_index in range(int(prev_index_created), int(index + 4), 4):
                     self.distance_index[set_index].append(i)
 
                 prev_index_created = index + 4
