@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/uio-cels/OffsetBasedGraph.svg?branch=v2.0)](https://travis-ci.org/uio-cels/OffsetBasedGraph)
+
 **Note**: This is Offsetbasedgraph version 2.0, made to work with [Graph Peak Caller](https://github.com/uio-bmi/graph_peak_caller). For the version compatible with the analysis done in the paper *Coordinates and Intervals in Graph-based Reference Genomes*, go to [version *1.0.7*](https://github.com/uio-cels/OffsetBasedGraph/tree/release2).
 
 # Offsetbasedgraph 
