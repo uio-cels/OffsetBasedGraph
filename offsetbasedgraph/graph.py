@@ -757,7 +757,6 @@ class Graph(BaseGraph):
         :param block_a: from block
         :param block_b: to block
         """
-        print("!!!!!", block_a, block_b)
         self.adj_list[block_a].append(block_b)
         self.reverse_adj_list[-block_b].append(-block_a)
 
