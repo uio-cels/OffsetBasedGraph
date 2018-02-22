@@ -1,36 +1,21 @@
-**Note**: This is Offsetbasedgraph version 2.0, made to work with [Graph Peak Caller](https://github.com/uio-bmi/graph_peak_caller). For the version compatible with the analysis done in the paper *Coordinates and Intervals in Graph-based Reference Genomes*, go to [version *1.0.7*](https://github.com/uio-cels/OffsetBasedGraph/tree/release2).
+**Note**: This is Offsetbasedgraph version 1.0.7, released with the paper *Coordinates and Intervals in Graph-based Reference Genomes* and supports the analysis done in the paper. There is now a newer stripped-down version of Offsetbasedgraph, [version *2.0.0*](https://github.com/uio-cels/OffsetBasedGraph/tree/v2.0) that is *not* compatible with the analysis performed in this paper, but instead created to be compatible with [Graph Peak Caller](https://github.com/uio-bmi/graph_peak_caller). 
+`pip install offsetbasedgraph` will install the newest version. `pip install offsetbasedgraph==1.0.7` will install the paper-version and is also available in the v2.0 branch.
 
-# Offsetbasedgraph 
-This is a python package for working with and representing genomic graphs without sequence in Python. Together with [pyvg](https://github.com/uio-bmi/pyvg), Offsetbasedgraph can be used to represent graphs created by [vg](https://github.com/vgteam/vg/).
+# Python module for offset based graphs 
+This is a python package for working with and representing offsetbased graphs.
 
 # Installation
-Offsetbasedgraph version 2.0 is compatible with Python 3 only. Install with pip:
+### Using the Python package index:
 ```
-pip3 install offsetbasedgraph
+pip3 install offsetbasedgraph==1.0.7
 ```
-... or by cloning:
+
+### By cloning:
 ```
 git clone https://github.com/uio-cels/OffsetBasedGraph.git
 cd OffsetBasedGraph
 pip3 install -e .
 ```
 
-# Basic usage
-Graphs can be created by sending a dict of Blocks (connected nodes) and dict of edges (one list of edges per key node) to the Graph object. 
-```
-from offsetbasedgraph import Graph, Block
-graph = Graph({1: Block(10), 2: Block(5)}, {1: [2]})
-```
-
-An interval contain a start offset, end offset and a list of blocks it follows:
-```
-from offsetbasedgraph import Interval
-interval = Interval(3, 6, [1, 2], graph)
-```
-
-Offsetbasedgraph can be used together with [pyvg](https://github.com/uio-bmi/pyvg) to represent huge graphs created by vg (requires vg json graph format):
-```
-from pyvg.conversion import json_file_to_obg_numpy_graph
-offset_based_graph = json_file_to_obg_numpy_graph("vggraph.json")
-```
-
+# Examples and documentation
+Examples for using the package can be found along with documentation at https://pythonhosted.org/offsetbasedgraph/.
