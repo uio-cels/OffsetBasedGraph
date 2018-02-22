@@ -8,4 +8,4 @@ class DirectedInterval(Interval):
                  region_paths=None, graph=None, direction=None):
         super(DirectedInterval, self).__init__(start_position, end_position,
                                                region_paths, graph)
-        
+
