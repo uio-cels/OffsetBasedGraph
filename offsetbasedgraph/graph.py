@@ -361,103 +361,6 @@ class BaseGraph(object):
             return True
         return False
 
-    @staticmethod
-    def block_origin(name):
-        """
-        Checks if block is merged, alt or main based on the name
-
-        :param name: block name
-        :return: merged, alt or main
-        """
-        name = str(name)
-        if name.count("chr") == 1 and "alt" not in name:
-            return "main"
-        elif name.count("chr") == 2:
-            return "merged"
-        elif "alt" in name:
-            return "alt"
-        return "main"
-
-    def find_critical_blocks(self, start_block):
-        """Find all critical_blocks starting from
-        start block
-
-        :param start_block: block id of start_block
-        :returns: List of critical block ids
-        :rtype: list(str)
-
-        """
-        raise NotImplementedError("Not implemented for graph with reversals")
-        cur_block = start_block
-        counter = 0
-        critical_blocks = []
-        visited = []
-
-        while(self.adj_list[cur_block]):
-            visited.append((cur_block, counter))
-            if counter == 0:
-                critical_blocks.append(cur_block)
-            nexts = self.adj_list[cur_block]
-            counter += (len(nexts) - 1)
-            cur_block = nexts[0]
-            counter -= (len(self.reverse_adj_list[-cur_block])-1)
-
-        if (counter == 0):
-            critical_blocks.append(cur_block)
-
-        return critical_blocks
-
-    def find_parallell_blocks(self, blocks, filter_func):
-        """Find all parallell_blocks to block
-        that satisfies filter_func
-
-        :param block: region path id
-        :param filter_func: predicate function
-        :returns: all parallell_blocks
-        :rtype: list(str)
-
-        """
-        if isinstance(blocks, str):
-            blocks = [blocks]
-        prev_blocks = [b for b in self.reverse_adj_list[blocks[0]]
-                       if filter_func(b)]
-        assert len(prev_blocks) == 1, blocks
-        start_block = prev_blocks[0]
-        next_blocks = [b for b in self.adj_list[blocks[-1]]
-                       if filter_func(b)]
-        assert len(next_blocks) == 1, blocks
-        end_block = next_blocks[0]
-        cur_block = start_block
-        parallell_blocks = []
-        while True:
-            next_blocks = [b for b in self.adj_list[cur_block]
-                           if filter_func(b)]
-            assert len(next_blocks) == 1, str(self.adj_list[cur_block]) + cur_block
-            cur_block = next_blocks[0]
-            if cur_block == end_block:
-                break
-            parallell_blocks.append(cur_block)
-        return parallell_blocks
-
-    def find_all_critical_blocks(self):
-        """Find critical blocks in the graph.
-        I.e.  blocks that are traversed by all paths
-
-        :returns: list of critical_blocks ids
-        :rtype: list(str)
-
-        """
-
-        start_blocks = [block for block in self.blocks if
-                        not self.reverse_adj_list[block]]
-
-        critical_blocks = []
-        for start_block in start_blocks:
-            critical_blocks.extend(
-                self.find_critical_blocks(start_block))
-
-        return critical_blocks
-
     def n_edges_in(self, block):
         """
         Finds and returns the number of edges going in to a block
@@ -504,81 +407,6 @@ class BaseGraph(object):
                 return False
 
         return True
-
-    def create_subgraph_from_blocks(self, blocks, alt_locus=None):
-        """
-        Creates a subgraph using existing edges and only the blocks
-        send as argument
-
-        :param blocks: list of block ids
-        :param alt_locus: If not None, alt loci blocks not from
-            this alt locus will not be added to graph.
-            This will typically be parallell alt loci that
-            potentially can be added
-        :return: Returns a new graph
-        """
-        blocks = set(blocks)
-        # add prev and next critical
-
-        new_edges = defaultdict(list)
-        new_blocks = {}
-        for b in blocks:
-            new_blocks[b] = Block(self.blocks[b].length())
-
-        for b in blocks:
-            for e in self.adj_list[b]:
-                if alt_locus is not None and\
-                   Graph.block_origin(e) == "alt" and alt_locus not in e:
-                    continue
-
-                new_edges[b].append(e)
-                if e not in new_blocks:
-                    new_blocks[e] = Block(self.blocks[e].length())
-
-        # Go through all added blocks, add edges into other added blocks
-        for b in new_blocks:
-            for edge in self.adj_list[b]:
-                if edge in new_blocks and edge not in new_edges[b]:
-                    new_edges[b].append(edge)
-
-        subgraph = Graph(new_blocks, new_edges)
-
-        # Add all blocks going into first blocks in graph
-        firsts = subgraph.get_first_blocks()
-        for f in firsts:
-            for before in self.reverse_adj_list[f]:
-
-                if alt_locus is not None \
-                   and Graph.block_origin(before) == "alt" \
-                   and alt_locus not in before:
-                    continue
-
-                new_blocks[before] = Block(self.blocks[before].length())
-                new_edges[before].append(f)
-
-        subgraph = Graph(new_blocks, new_edges)
-
-        # If two last rps, they should be going to the same next
-        lasts = subgraph.get_last_blocks()
-        assert len(lasts) == 1 or len(lasts) == 2, "%s is lasts" % lasts
-
-        if len(lasts) == 2:
-            # Connect the two last to next
-            if len(self.adj_list[lasts[0]]) > 0 \
-               and len(self.adj_list[lasts[1]]) > 0:
-                assert self.adj_list[lasts[0]][0] == self.adj_list[lasts[1]][0], \
-                    "Not identical next: %s != %s" % (self.adj_list[lasts[0]][0], self.adj_list[lasts[1]][0])
-
-                next = self.adj_list[lasts[0]]
-                assert len(next) == 1
-                next = next[0]
-                last = self.adj_list[lasts[0]][0]
-                new_blocks[last] = Block(self.blocks[last].length())
-                new_edges[lasts[0]].append(next)
-                new_edges[lasts[1]].append(next)
-
-        subgraph2 = Graph(new_blocks, new_edges)
-        return subgraph2
 
     def max_block_id(self):
         return max([id for id in self.blocks.keys()])
@@ -654,13 +482,6 @@ class BaseGraph(object):
             return False
 
         return True
-
-    def to_msgpack(self, file_name):
-        import msgpack
-        from io import BytesIO
-        # Write msgpack file
-        with open(file_name, 'w') as outfile:
-            msgpack.pack(data, outfile)
 
     def number_of_basepairs(self):
         if isinstance(self.blocks, BlockArray):
