@@ -201,9 +201,32 @@ class BaseGraph(object):
 
         if isinstance(self.blocks, BlockArray):
             self._id = self.blocks.max_node_id()
+            self.node_indexes = self._get_node_indexes()
         else:
             self._id = max([b for b in blocks if isinstance(b, int)] + [-1])
 
+    def _get_node_indexes(self):
+        if isinstance(self.blocks, BlockArray):
+            # Quicker way to make node_indexes array
+            logging.info("(using cumsum on np block array)")
+            node_indexes = np.cumsum(self.blocks._array, dtype=np.uint32)
+            logging.info("Node indexes created...")
+            self.min_node = (self.blocks.node_id_offset+1)
+            return node_indexes
+        logging.info("(using sorted nodes on blocks)")
+        sorted_nodes = sorted(self.blocks.keys())
+        min_node = sorted_nodes[0]
+        self.min_node = min_node
+        max_node = sorted_nodes[-1]
+        span = max_node-min_node+1
+        node_indexes = np.zeros(span+1, dtype=np.uint32)
+        offset = 0
+        for i, node in enumerate(sorted_nodes):
+            index = node - min_node
+            node_indexes[index] = offset
+            offset += self.node_size(node)
+            node_indexes[-1] = offset
+        return node_indexes
 
     def summary(self):
         """Return summary text
