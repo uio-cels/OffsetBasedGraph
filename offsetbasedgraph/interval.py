@@ -2,7 +2,7 @@ import json
 import hashlib
 import gzip
 import numpy as np
-
+import logging
 
 class Position(object):
     """ Represents a position  in the graph
@@ -527,9 +527,13 @@ class IntervalCollection(object):
         return self.intervals.__iter__()
 
     def to_text_file(self, file_name):
+        logging.info("Writing to text file %s" % file_name)
         f = open(file_name, "w")
+        i = 0
         for interval in self.intervals:
             f.writelines(["%s\n" % interval.to_file_line()])
+            i += 1
+        logging.info("Wrote %d lines" % i)
         f.close()
         return file_name
 
