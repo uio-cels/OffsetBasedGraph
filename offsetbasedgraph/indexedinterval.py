@@ -233,7 +233,7 @@ class NumpyIndexedInterval(IndexedInterval):
     def from_file(cls, file_name):
         file = open(file_name, "rb")
         data = np.load(file)
-        interval = cls(data["distance_to_node"], data["node_to_distance"],
+        interval = cls(data["distance_to_node"], None,
                    data["min_node"], data["length"])
         file.close()
         return interval
