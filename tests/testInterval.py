@@ -1,7 +1,7 @@
 import unittest
 import dummygraph
 from offsetbasedgraph import Interval, Position, IntervalCollection, \
-    Graph, Block, IndexedInterval, GraphWithReversals, NumpyIndexedInterval
+    Graph, Block, IndexedInterval, GraphWithReversals, NumpyIndexedInterval, DirectedInterval
 import numpy as np
 
 class TestInterval(unittest.TestCase):
@@ -232,9 +232,10 @@ class TestNumpyIndexedInterval(unittest.TestCase):
         self.assertEqual(3, self.interval.get_node_at_offset(15))
 
     def test_get_offset_at_node(self):
-        #self.assertEqual(0, self.interval.get_offset_at_node(1))
-        #self.assertEqual(0, self.interval.get_offset_at_node(2))
-        pass
+        self.assertEqual(0, self.interval.get_offset_at_node(1))
+        self.assertEqual(4, self.interval.get_offset_at_node(2))
+        self.assertEqual(6, self.interval.get_offset_at_node(3))
+
 
     def test_get_nodes_between_offsets(self):
         self.assertTrue(np.all(np.array([1]) == self.interval.get_nodes_between_offset(0, 1)))
@@ -246,11 +247,22 @@ class TestNumpyIndexedInterval(unittest.TestCase):
     def test_get_subinterval(self):
         pass
 
+    def test_get_exact_subinterval(self):
+        self.assertEqual(self.interval.get_exact_subinterval(0, 4), DirectedInterval(0, 4, [1]))
+        self.assertEqual(self.interval.get_exact_subinterval(1, 4), DirectedInterval(1, 4, [1]))
+        self.assertEqual(self.interval.get_exact_subinterval(1, 3), DirectedInterval(1, 3, [1]))
+        self.assertEqual(self.interval.get_exact_subinterval(1, 6), DirectedInterval(1, 2, [1, 2]))
+        self.assertEqual(self.interval.get_exact_subinterval(4, 5), DirectedInterval(0, 1, [2]))
+        self.assertEqual(self.interval.get_exact_subinterval(5, 10), DirectedInterval(1, 4, [2, 3]))
+
     def test_to_from_file(self):
         self.interval.to_file("test.interval")
         new = NumpyIndexedInterval.from_file("test.interval")
 
         self.assertTrue(np.all(new._distance_to_node == self.interval._distance_to_node))
+        self.assertTrue(np.all(new._node_to_distance == self.interval._node_to_distance))
+        self.assertTrue(np.all(new.min_node == self.interval.min_node))
+        self.assertTrue(np.all(new._length == self.interval._length))
 
 
 

@@ -5,6 +5,7 @@ import logging
 import pickle
 from .graph import BlockArray
 import numpy as np
+from .directedinterval import DirectedInterval
 
 class IndexedInterval(Interval):
     """
@@ -176,12 +177,14 @@ class NumpyIndexedInterval(IndexedInterval):
     Fast writing to and from file.
     """
 
-    def __init__(self, distance_to_node_index, length):
+    def __init__(self, distance_to_node_index, node_to_distance_index, min_node, length):
         """
         Distance to node index is numpy array where element i gives node at offset i
         """
         self._length = length
         self._distance_to_node = distance_to_node_index
+        self.min_node = min_node
+        self._node_to_distance = node_to_distance_index
 
     def length(self):
         return self._length
@@ -200,31 +203,55 @@ class NumpyIndexedInterval(IndexedInterval):
 
         assert isinstance(interval.graph.blocks, BlockArray), "Graph must have numpy backend"
         rps = np.array(interval.region_paths)
+        min_node = rps[0]
+        max_node = rps[-1]
         node_sizes = interval.graph.blocks._array[rps - interval.graph.blocks.node_id_offset]
-        #node_to_distance = np.cumsum(node_sizes) - node_sizes[0]
+        node_to_distance = np.zeros(max_node - min_node + 1)
         length = interval.length()
+        index_positions = rps - min_node
+        node_to_distance[index_positions[1:]] = np.cumsum(node_sizes)[:-1]
+        print(node_to_distance)
+
         distance_to_node = np.zeros(length)
         index_positions = np.cumsum(node_sizes)[:-1]
         distance_to_node[index_positions] = np.diff(rps)
         distance_to_node[0] = rps[0]
         distance_to_node = np.cumsum(distance_to_node, dtype=np.uint32)
 
-        return cls(distance_to_node, length)
+        return cls(distance_to_node, node_to_distance, min_node, length)
 
     def to_file(self, file_name):
         file = open(file_name, "wb")
         np.savez_compressed(file,
                  length=self._length,
+                 min_node=self.min_node,
+                 node_to_distance=self._node_to_distance,
                  distance_to_node=self._distance_to_node)
+        file.close()
 
     @classmethod
     def from_file(cls, file_name):
-        data = np.load(file_name)
-        return cls(data["distance_to_node"], data["length"])
+        file = open(file_name, "rb")
+        data = np.load(file)
+        interval = cls(data["distance_to_node"], data["node_to_distance"],
+                   data["min_node"], data["length"])
+        file.close()
+        return interval
 
+    def get_exact_subinterval(self, start, end):
+        rps = self.get_nodes_between_offset(start, end)
+        start_offset = self.get_node_offset_at_offset(start)
+        end_offset = self.get_node_offset_at_offset(end-1)
+        return DirectedInterval(int(start_offset), int(end_offset)+1, list(rps))
 
     def get_node_at_offset(self, offset):
         return self._distance_to_node[offset]
+
+    def get_node_offset_at_offset(self, offset):
+        print("Get offset at node, offset: %d" % offset)
+        node = self._distance_to_node[offset]
+        print(self.get_offset_at_node(node))
+        return offset - self.get_offset_at_node(node)
 
     def get_nodes_between_offset(self, start, end):
         return np.unique(self._distance_to_node[start:end])
@@ -233,8 +260,7 @@ class NumpyIndexedInterval(IndexedInterval):
         return NodeInterval(self.get_nodes_between_offset(start, end))
 
     def get_offset_at_node(self, node):
-        raise NotImplementedError()
-        #return self._node_to_distance[node]
+        return self._node_to_distance[node - self.min_node]
 
     def get_offset_at_position(self, position, direction="+"):
         raise NotImplementedError("Not implemented")

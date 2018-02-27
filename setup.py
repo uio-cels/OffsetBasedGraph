@@ -9,7 +9,7 @@ setup(name='offsetbasedgraph',
       license='MIT',
       packages=['offsetbasedgraph'],
       zip_safe=False,
-      install_requires=['pymysql', 'numpy', 'future'],
+      install_requires=['pymysql', 'numpy', 'future', 'scipy'],
       classifiers=[
             'Programming Language :: Python :: 3'
       ]
