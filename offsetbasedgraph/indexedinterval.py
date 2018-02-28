@@ -250,7 +250,6 @@ class NumpyIndexedInterval(IndexedInterval):
     def get_node_offset_at_offset(self, offset):
         print("Get offset at node, offset: %d" % offset)
         node = self._distance_to_node[offset]
-        print(self.get_offset_at_node(node))
         return offset - self.get_offset_at_node(node)
 
     def get_nodes_between_offset(self, start, end):
