@@ -185,8 +185,14 @@ class BaseGraph(object):
         :param blocks: dict{block_id: block_length}
         :param adj_list: dict{block_id: [neighbour_ids...]}
         """
-        if isinstance(blocks, dict):
+        if isinstance(blocks, np.ndarray):
+            blocks = BlockArray(blocks)
+        elif isinstance(blocks, dict):
             blocks = BlockCollection(blocks)
+        elif not isinstance(blocks, BlockArray):
+            raise ValueError("Blocks must be either a dict, BlockArray or a "
+                             "numpy array. Type is %s" % type(blocks))
+
         self.blocks = blocks
 
         if not isinstance(adj_list, AdjListAsNumpyArrays):
@@ -531,12 +537,6 @@ class Graph(BaseGraph):
                  create_reverse_adj_list=True,
                  rev_adj_list=None):
 
-        if isinstance(blocks, np.ndarray):
-            blocks = BlockArray(blocks)
-        elif isinstance(blocks, BlockArray):
-            pass
-        else:
-            blocks = BlockCollection(blocks)
         super(Graph, self).__init__(
             blocks, adj_list,
             create_reverse_adj_list=create_reverse_adj_list,
