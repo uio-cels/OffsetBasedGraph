@@ -7,7 +7,7 @@ DEBUG = False
 
 
 def simple_graph():
-    blocks = {_id: block for _id, block in
+    blocks = {_id: Block(size) for _id, size in
               enumerate([10, 20, 30, 40])}
     adj_list = {0: [1], 1: [2], 2: [3], 0: [4], 4: [3]}
     return blocks, adj_list
@@ -60,7 +60,7 @@ class TestGraph(unittest.TestCase):
         graph2 = Graph({1: Block(10), 2: Block(1)}, {1: [2]})
         self.assertEqual(graph1, graph2)
 
-    def test_init(self):
+    def test_init2(self):
         blocks, adj_list = simple_graph()
         graph = Graph(blocks, adj_list)
         self.assert_graph_equals(graph, blocks, adj_list)
