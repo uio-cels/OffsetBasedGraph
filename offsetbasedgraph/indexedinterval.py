@@ -233,8 +233,8 @@ class NumpyIndexedInterval(IndexedInterval):
     def from_file(cls, file_name):
         file = open(file_name, "rb")
         data = np.load(file)
-        interval = cls(data["distance_to_node"], None,
-                   None, data["length"])
+        interval = cls(data["distance_to_node"], data["node_to_distance"],
+                   data["min_node"], data["length"])
         file.close()
         return interval
 
@@ -250,7 +250,6 @@ class NumpyIndexedInterval(IndexedInterval):
     def get_node_offset_at_offset(self, offset):
         print("Get offset at node, offset: %d" % offset)
         node = self._distance_to_node[offset]
-        print(self.get_offset_at_node(node))
         return offset - self.get_offset_at_node(node)
 
     def get_nodes_between_offset(self, start, end):
