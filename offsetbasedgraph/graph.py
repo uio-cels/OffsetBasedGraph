@@ -201,9 +201,10 @@ class BaseGraph(object):
 
         if isinstance(self.blocks, BlockArray):
             self._id = self.blocks.max_node_id()
-            self.node_indexes = self._get_node_indexes()
         else:
             self._id = max([b for b in blocks if isinstance(b, int)] + [-1])
+
+        self.node_indexes = self._get_node_indexes()
 
     def _get_node_indexes(self):
         if isinstance(self.blocks, BlockArray):
@@ -215,7 +216,11 @@ class BaseGraph(object):
             return node_indexes
         logging.info("(using sorted nodes on blocks)")
         sorted_nodes = sorted(self.blocks.keys())
-        min_node = sorted_nodes[0]
+        if len(sorted_nodes) == 0:
+            return None
+        else:
+            min_node = sorted_nodes[0]
+
         self.min_node = min_node
         max_node = sorted_nodes[-1]
         span = max_node-min_node+1

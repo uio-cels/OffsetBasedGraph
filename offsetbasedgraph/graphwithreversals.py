@@ -16,6 +16,7 @@ class GraphWithReversals(Graph):
             pass
         else:
             blocks = BlockCollection(blocks)
+
         super(GraphWithReversals, self).__init__(
             blocks, adj_list,
             create_reverse_adj_list=create_reverse_adj_list,
