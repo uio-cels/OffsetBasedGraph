@@ -2,7 +2,7 @@ import json
 import hashlib
 import gzip
 import numpy as np
-
+import logging
 
 class Position(object):
     """ Represents a position  in the graph
@@ -546,6 +546,9 @@ class Interval(BaseInterval):
                              graph=self.graph,
                              only_create_distance_to_nodes_index=only_create_distance_index)
 
+    def to_numpy_indexed_interval(self, only_create_distance_index=False):
+        from .indexedinterval import NumpyIndexedInterval
+        return NumpyIndexedInterval.from_interval(self)
 
 
 class IntervalCollection(object):
@@ -572,9 +575,13 @@ class IntervalCollection(object):
         return self.intervals.__iter__()
 
     def to_text_file(self, file_name):
+        logging.info("Writing to text file %s" % file_name)
         f = open(file_name, "w")
+        i = 0
         for interval in self.intervals:
             f.writelines(["%s\n" % interval.to_file_line()])
+            i += 1
+        logging.info("Wrote %d lines" % i)
         f.close()
         return file_name
 
