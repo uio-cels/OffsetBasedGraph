@@ -220,7 +220,7 @@ class BaseGraph(object):
             logging.info("Node indexes created...")
             self.min_node = (self.blocks.node_id_offset+1)
             return node_indexes
-        logging.info("(using sorted nodes on blocks)")
+
         sorted_nodes = sorted(self.blocks.keys())
         if len(sorted_nodes) == 0:
             return None

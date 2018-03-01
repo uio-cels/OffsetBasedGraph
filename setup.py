@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='offsetbasedgraph',
-      version='2.0.1',
+      version='2.0.2',
       description='Offset based graph',
       url='http://github.com/uio-cels/offsetbasedgraph',
       author='Ivar Grytten and Knut Rand',
@@ -23,5 +23,5 @@ To update package:
 
 sudo python3 setup.py sdist
 sudo python3 setup.py bdist_wheel
-twine upload dist/offsetbasedgraph-2.0.0.tar.gz
+twine upload dist/offsetbasedgraph-2.0.2.tar.gz
 """
