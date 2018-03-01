@@ -185,8 +185,14 @@ class BaseGraph(object):
         :param blocks: dict{block_id: block_length}
         :param adj_list: dict{block_id: [neighbour_ids...]}
         """
-        if isinstance(blocks, dict):
+        if isinstance(blocks, np.ndarray):
+            blocks = BlockArray(blocks)
+        elif isinstance(blocks, dict):
             blocks = BlockCollection(blocks)
+        elif not isinstance(blocks, BlockArray):
+            raise ValueError("Blocks must be either a dict, BlockArray or a "
+                             "numpy array. Type is %s" % type(blocks))
+
         self.blocks = blocks
 
         if not isinstance(adj_list, AdjListAsNumpyArrays):
@@ -201,9 +207,10 @@ class BaseGraph(object):
 
         if isinstance(self.blocks, BlockArray):
             self._id = self.blocks.max_node_id()
-            self.node_indexes = self._get_node_indexes()
         else:
             self._id = max([b for b in blocks if isinstance(b, int)] + [-1])
+
+        self.node_indexes = self._get_node_indexes()
 
     def _get_node_indexes(self):
         if isinstance(self.blocks, BlockArray):
@@ -215,7 +222,11 @@ class BaseGraph(object):
             return node_indexes
         logging.info("(using sorted nodes on blocks)")
         sorted_nodes = sorted(self.blocks.keys())
-        min_node = sorted_nodes[0]
+        if len(sorted_nodes) == 0:
+            return None
+        else:
+            min_node = sorted_nodes[0]
+
         self.min_node = min_node
         max_node = sorted_nodes[-1]
         span = max_node-min_node+1
@@ -526,12 +537,6 @@ class Graph(BaseGraph):
                  create_reverse_adj_list=True,
                  rev_adj_list=None):
 
-        if isinstance(blocks, np.ndarray):
-            blocks = BlockArray(blocks)
-        elif isinstance(blocks, BlockArray):
-            pass
-        else:
-            blocks = BlockCollection(blocks)
         super(Graph, self).__init__(
             blocks, adj_list,
             create_reverse_adj_list=create_reverse_adj_list,
