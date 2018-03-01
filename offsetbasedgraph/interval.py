@@ -401,13 +401,17 @@ class Interval(BaseInterval):
         return Interval(self.start_position, self.end_position,
                         self.region_paths, self.graph)
 
-    def hash(self, ignore_direction=False):
+    def hash(self, ignore_direction=False, ignore_end_pos=False):
         """
         :return: Returns a unique hash as int of the path of the interval
         """
+
         if self._hash_cashe is not None:
             return self._hash_cashe
-        if ignore_direction:
+
+        if ignore_end_pos:
+            string = str(self.start_position)
+        elif ignore_direction:
             string = "%s-%s-%s"  % (str(self.start_position),
                                     str(self.end_position),
                                     str(self.region_paths))
