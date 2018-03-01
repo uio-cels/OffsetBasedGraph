@@ -154,26 +154,67 @@ class Interval(BaseInterval):
         self.direction = direction
         self._hash_cashe = None
 
-    def contains_rp(self, region_path):
-        """Check if interval uses region_path
-
-        :param region_path: region path id
-        :rtype: bool
-        """
-        return (region_path in self.region_paths)
+    def contains_rp(self, region_path_id):
+        return -region_path_id in self.region_paths or \
+               region_path_id in self.region_paths
 
     def contains_position(self, position):
-        if position.region_path_id not in self.region_paths:
+        if not self.contains_rp(position.region_path_id):
             return False
-        if position.region_path_id in self.region_paths[1:-1]:
+
+        if -position.region_path_id in self.region_paths[1:-1] \
+                or position.region_path_id in self.region_paths[1:-1]:
             return True
-        if position.region_path_id == self.region_paths[0]:
-            if position.offset < self.start_position.offset:
+
+        if self.graph is None:
+            raise Exception("Interval's graph is None. Graph is needed to check if position is in start or end rp of intnerval.")
+
+        block_length = self.graph.blocks[position.region_path_id].length()
+        offset = position.offset
+
+        if abs(position.region_path_id) == abs(self.region_paths[0]):
+            if np.sign(position.region_path_id) != np.sign(self.start_position.region_path_id):
+                offset = block_length - position.offset
+
+            if offset < self.start_position.offset:
+                    return False
+
+        if abs(position.region_path_id) == abs(self.region_paths[-1]):
+            if np.sign(position.region_path_id) != np.sign(self.end_position.region_path_id):
+                offset = block_length - position.offset
+
+            if offset >= self.end_position.offset:
                 return False
-        if position.region_path_id == self.region_paths[-1]:
-            if position.offset >= self.end_position.offset:
-                return False
+
         return True
+
+    def can_be_on_negative_strand(self):
+       return self._can_be_on_strand(plus_strand=False)
+
+    def can_be_on_positive_strand(self):
+        return self._can_be_on_strand(plus_strand=True)
+
+    def _can_be_on_strand(self, plus_strand=True):
+        if len(self.region_paths) == 1:
+            return True
+
+        if self.graph is None:
+            raise Exception("Graph cannot be None when ckecinng 'can be on strand'")
+
+        for i in range(len(self.region_paths) - 1):
+            from_rp = self.region_paths[i]
+            to_rp = self.region_paths[i+1]
+            #print("Checking from %d to %d, positive? %d" % (from_rp, to_rp, plus_strand))
+
+            if to_rp in self.graph.adj_list[from_rp]:
+                if plus_strand:
+                    return True
+
+            if to_rp in self.graph.reverse_adj_list[from_rp]:
+                if not plus_strand:
+                    return True
+
+        return False
 
     def contains(self, other, tolerance=0):
         """Check if transcription region and all exons of other
@@ -348,7 +389,7 @@ class Interval(BaseInterval):
         end_node_size = self.graph.node_size(self.end_position.region_path_id)
         start_offset = end_node_size - self.end_position.offset
         end_offset = start_node_size - self.start_position.offset
-        reversed_rps = list([-rp for rp in self.region_paths[::-1]])
+        reversed_rps = list([-int(rp) for rp in self.region_paths[::-1]])
         return Interval(start_offset, end_offset, reversed_rps, self.graph)
 
     @classmethod
@@ -360,13 +401,17 @@ class Interval(BaseInterval):
         return Interval(self.start_position, self.end_position,
                         self.region_paths, self.graph)
 
-    def hash(self, ignore_direction=False):
+    def hash(self, ignore_direction=False, ignore_end_pos=False):
         """
         :return: Returns a unique hash as int of the path of the interval
         """
+
         if self._hash_cashe is not None:
             return self._hash_cashe
-        if ignore_direction:
+
+        if ignore_end_pos:
+            string = str(self.start_position)
+        elif ignore_direction:
             string = "%s-%s-%s"  % (str(self.start_position),
                                     str(self.end_position),
                                     str(self.region_paths))

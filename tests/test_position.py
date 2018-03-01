@@ -1,5 +1,5 @@
 import unittest
-from offsetbasedgraph import Interval, Position, Graph, Translation, Block
+from offsetbasedgraph import Interval, Position, Graph, Block
 
 class testPosition(unittest.TestCase):
 

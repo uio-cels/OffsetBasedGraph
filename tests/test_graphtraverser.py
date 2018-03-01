@@ -227,7 +227,7 @@ class TestGraphTraverserUsingSequence(unittest.TestCase):
         }
         graph = GraphWithReversals(blocks, edges)
 
-        search_sequence = "AAAG"
+        search_sequence = "AATG"
         sequence_retriever = SequenceRetriever(
             {1: "A",
              2: "A",
