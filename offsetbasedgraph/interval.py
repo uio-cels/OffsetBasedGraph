@@ -389,7 +389,7 @@ class Interval(BaseInterval):
         end_node_size = self.graph.node_size(self.end_position.region_path_id)
         start_offset = end_node_size - self.end_position.offset
         end_offset = start_node_size - self.start_position.offset
-        reversed_rps = list([-rp for rp in self.region_paths[::-1]])
+        reversed_rps = list([-int(rp) for rp in self.region_paths[::-1]])
         return Interval(start_offset, end_offset, reversed_rps, self.graph)
 
     @classmethod
