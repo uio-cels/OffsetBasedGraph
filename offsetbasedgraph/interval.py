@@ -546,6 +546,9 @@ class Interval(BaseInterval):
                              graph=self.graph,
                              only_create_distance_to_nodes_index=only_create_distance_index)
 
+    def to_numpy_indexed_interval(self, only_create_distance_index=False):
+        from .indexedinterval import NumpyIndexedInterval
+        return NumpyIndexedInterval.from_interval(self)
 
 
 class IntervalCollection(object):
