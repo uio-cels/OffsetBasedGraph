@@ -68,7 +68,7 @@ class GraphTravserserBetweenNodes(BaseGraphTraverser):
                     edges[block].append(edge)
 
 
-        return Graph(block_dict, edges)
+        return Graph(block_dict, edges, do_not_create_node_indices=True)
 
     def _get_blocks_in_snarl_subgraph(self, start, end, include_start_and_end=True, print_debug=False):
         # Subgraph is connnected to graph by only two other nodes (start and end). Start can have other edges out,
