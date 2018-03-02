@@ -179,7 +179,7 @@ class BaseGraph(object):
 
     # Graph alterations
     def __init__(self, blocks, adj_list, create_reverse_adj_list=True,
-                 rev_adj_list=None):
+                 rev_adj_list=None, do_not_create_node_indices=False):
         """
         Inits the graph with a list of blocks and an adjency list
         :param blocks: dict{block_id: block_length}
@@ -210,7 +210,8 @@ class BaseGraph(object):
         else:
             self._id = max([b for b in blocks if isinstance(b, int)] + [-1])
 
-        self.node_indexes = self._get_node_indexes()
+        if not do_not_create_node_indices:
+            self.node_indexes = self._get_node_indexes()
 
     def _get_node_indexes(self):
         if isinstance(self.blocks, BlockArray):
@@ -220,7 +221,7 @@ class BaseGraph(object):
             logging.info("Node indexes created...")
             self.min_node = (self.blocks.node_id_offset+1)
             return node_indexes
-        
+
         sorted_nodes = sorted(self.blocks.keys())
         if len(sorted_nodes) == 0:
             return None
@@ -535,12 +536,13 @@ class Graph(BaseGraph):
 
     def __init__(self, blocks, adj_list,
                  create_reverse_adj_list=True,
-                 rev_adj_list=None):
+                 rev_adj_list=None, do_not_create_node_indices=False):
 
         super(Graph, self).__init__(
             blocks, adj_list,
             create_reverse_adj_list=create_reverse_adj_list,
-            rev_adj_list=rev_adj_list)
+            rev_adj_list=rev_adj_list,
+            do_not_create_node_indices=do_not_create_node_indices)
 
     def _possible_node_ids(self):
         node_ids = list(self.blocks.keys())
