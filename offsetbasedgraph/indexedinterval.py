@@ -186,6 +186,8 @@ class NumpyIndexedInterval(IndexedInterval):
         self.min_node = min_node
         self._node_to_distance = node_to_distance_index
 
+        self._nodes_in_interval_cache = None
+
     def length(self):
         return self._length
 
@@ -194,6 +196,15 @@ class NumpyIndexedInterval(IndexedInterval):
 
     def __repr__(self):
         return self.__str__()
+
+    def nodes_in_interval(self):
+        if self._nodes_in_interval_cache is not None:
+            return self._nodes_in_interval_cache
+
+        # Hacky method to return nodes in interval
+        nodes = set(np.unique(self._distance_to_node))
+        self._nodes_in_interval_cache = nodes
+        return nodes
 
     @classmethod
     def from_interval(cls, interval):
@@ -210,7 +221,6 @@ class NumpyIndexedInterval(IndexedInterval):
         length = interval.length()
         index_positions = rps - min_node
         node_to_distance[index_positions[1:]] = np.cumsum(node_sizes)[:-1]
-        print(node_to_distance)
 
         distance_to_node = np.zeros(length)
         index_positions = np.cumsum(node_sizes)[:-1]
