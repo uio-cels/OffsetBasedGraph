@@ -216,9 +216,7 @@ class BaseGraph(object):
     def _get_node_indexes(self):
         if isinstance(self.blocks, BlockArray):
             # Quicker way to make node_indexes array
-            logging.info("(using cumsum on np block array)")
             node_indexes = np.cumsum(self.blocks._array, dtype=np.uint32)
-            logging.info("Node indexes created...")
             self.min_node = (self.blocks.node_id_offset+1)
             return node_indexes
 
@@ -684,7 +682,7 @@ class Graph(BaseGraph):
 
     @classmethod
     def from_numpy_file(cls, file_name):
-        logging.info("Reading from numpy file %s" % file_name)
+        logging.info("Reading Offset Based Graph from file: %s" % file_name)
 
         try:
             file = open(file_name, "rb")
@@ -719,7 +717,7 @@ class Graph(BaseGraph):
                     adj_list=adj_list,
                     rev_adj_list=rev_adj_list)
         file.close()
-        logging.info("Done reading from numpy file")
+        logging.info("Done reading from file")
         return graph
 
 
