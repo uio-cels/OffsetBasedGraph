@@ -20,3 +20,4 @@ data/tmp/*
 *.org
 *.log
 *.pdf
+*.sequencegraph
