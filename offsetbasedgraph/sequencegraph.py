@@ -52,6 +52,7 @@ class SequenceGraph():
         return cls(ob_graph.blocks.node_id_offset, indices, node_sizes, sequence_array)
 
     def set_sequences_using_vg_json_graph(self, file_name):
+        logging.info("Setting sequences using vg json graph %s" % file_name)
         f = open(file_name)
         i = 1
         for line in f.readlines():
