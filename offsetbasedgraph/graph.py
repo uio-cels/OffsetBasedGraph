@@ -4,8 +4,6 @@ import pickle
 import os
 import numpy as np
 import logging
-from scipy.sparse import dok_matrix, csr_matrix, lil_matrix
-import scipy.io
 
 
 class Block(object):
@@ -529,7 +527,6 @@ class BaseGraph(object):
             return max([b.length() for b in self.blocks.values()])
 
 
-
 class Graph(BaseGraph):
 
     def __init__(self, blocks, adj_list,
@@ -546,6 +543,28 @@ class Graph(BaseGraph):
         node_ids = list(self.blocks.keys())
         possible_ids = node_ids + [-n for n in node_ids]
         return possible_ids
+
+    def get_topological_sorted_node_ids(self):
+        stack = [self.min_node]
+        unfinished = {}
+
+        def add_node(node_id):
+            if node_id not in unfinished:
+                unfinished[node_id] = len(self.reverse_adj_list[-node_id])
+            unfinished[node_id] -= 1
+            if unfinished[node_id] == 0:
+                stack.append(node_id)
+                del unfinished[node_id]
+
+        sorted_nodes = []
+        while stack:
+            node_id = stack.pop()
+            sorted_nodes.append(node_id)
+            for next_node in self.adj_list[node_id]:
+                add_node(next_node)
+
+        assert not unfinished, unfinished
+        return sorted_nodes
 
     def get_sorted_node_ids(self, reverse=False):
         return sorted(self.blocks.keys(), reverse=reverse)
