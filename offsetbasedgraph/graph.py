@@ -557,7 +557,11 @@ class Graph(BaseGraph):
                 del unfinished[node_id]
 
         sorted_nodes = []
+        n_processed = 0
         while stack:
+            if n_processed % 500000 == 0:
+                logging.info("%d nodes processed" % n_processed)
+            n_processed += 1
             node_id = stack.pop()
             sorted_nodes.append(node_id)
             for next_node in self.adj_list[node_id]:
@@ -609,7 +613,7 @@ class Graph(BaseGraph):
         """
         if isinstance(self.blocks, BlockArray):
             logging.info("Using fast way to get first block")
-            min_block_id = self.blocks.node_id_offset + 1
+            min_block_id = self.min_node
             assert min_block_id in self.blocks
             if len(self.reverse_adj_list[min_block_id]) == 0:
                 logging.info("Fast way used")
