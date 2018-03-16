@@ -50,9 +50,9 @@ class BlockArray:
     def from_dict(node_dict):
         max_key = max(node_dict.keys())
         min_key = min(node_dict.keys())
-        node_id_offset = min_key
+        node_id_offset = min_key-1
 
-        array = np.zeros((max_key-min_key)+1, dtype="uint8")
+        array = np.zeros((max_key-min_key)+2, dtype="uint8")
         for key, val in node_dict.items():
             array[key-node_id_offset] = val.length()
 
@@ -151,9 +151,6 @@ class AdjListAsNumpyArrays:
             n_edges_out = len(edge_dict[node])
             lengths[index] = n_edges_out
             indices[index] = i
-            #print("Range %d:%d" % (i, i+n_edges_out))
-            #print(len(values))
-            #print("%s" % edge_dict[node])
             values[i:i+n_edges_out] = edge_dict[node]
 
             i += n_edges_out
@@ -566,7 +563,6 @@ class Graph(BaseGraph):
             sorted_nodes.append(node_id)
             for next_node in self.adj_list[node_id]:
                 add_node(next_node)
-
         assert not unfinished, unfinished
         return sorted_nodes
 
