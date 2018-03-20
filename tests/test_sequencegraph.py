@@ -100,6 +100,9 @@ class TestSequenceGraph(unittest.TestCase):
         self.assertEqual(self.sequencegraph.get_sequence(4), other.get_sequence(4))
         self.assertEqual(self.sequencegraph.get_sequence(5), other.get_sequence(5))
 
+    def test_set_invalid_sequence(self):
+        self.sequencegraph.set_sequence(3, "aryu")
+        self.assertEqual(self.sequencegraph.get_sequence(3, 0, 4), "annn")
 
 if __name__ == "__main__":
     unittest.main()
