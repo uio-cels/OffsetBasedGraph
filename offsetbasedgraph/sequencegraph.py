@@ -13,7 +13,7 @@ class SequenceGraph():
                     "G": "C",
                     "g": "c"}
 
-    _letters = np.array(["n", "a", "c", "t", "g"])
+    _letters = np.array(["n", "a", "c", "t", "g", "m"])
 
     def __init__(self, node_id_offset, indices, node_sizes, sequence_array):
         self._indices = indices
@@ -71,6 +71,7 @@ class SequenceGraph():
         sequence[np.where(sequence == "c")[0]] = 2
         sequence[np.where(sequence == "t")[0]] = 3
         sequence[np.where(sequence == "g")[0]] = 4
+        sequence[np.where(sequence == "m")[0]] = 4
         return sequence
 
     def set_sequence(self, node_id, sequence):
@@ -80,8 +81,13 @@ class SequenceGraph():
         assert node_size == len(sequence), "Invalid sequence. Does not cover whole node"
         sequence = np.array(list(sequence))
         sequence = self._letter_sequence_to_numeric(sequence)
-        pos = self._indices[index]
-        self._sequence_array[pos:pos+node_size] = sequence
+        try:
+            pos = self._indices[index]
+            self._sequence_array[pos:pos+node_size] = sequence
+        except ValueError:
+            raise ValueError("Trying to create sequence graph with "
+                             "invalid sequence (not containing A,C,G,T,N): %s" % sequence)
+
 
     def get_sequence_on_directed_node(self, node_id, start=0, end=False):
         """Handles directed nodes"""
