@@ -37,9 +37,9 @@ class TestToFromSingleNumpyFile(unittest.TestCase):
         }, {1: [2], 2: [3]})
 
         graph.convert_to_numpy_backend()
-        graph.to_numpy_file("test.nobg")
+        graph.to_file("test.nobg")
 
-        graph2 = GraphWithReversals.from_numpy_file("test.nobg")
+        graph2 = GraphWithReversals.from_file("test.nobg")
 
         self.assertEqual(graph, graph2)
 
