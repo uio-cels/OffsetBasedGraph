@@ -2,6 +2,7 @@ from .graph import BlockArray
 import numpy as np
 import json
 import logging
+import re
 
 class SequenceGraph():
     _compliments = {"A": "T",
@@ -76,6 +77,12 @@ class SequenceGraph():
 
     def set_sequence(self, node_id, sequence):
         sequence = sequence.lower()
+        new_sequence = re.sub(r'[^acgtn]', "n", sequence)
+        if new_sequence != sequence:
+            logging.warning("Trying to set invalid sequence to sequence graph: %s."
+                            "Was replaced with n's, resulting in: %s" % (sequence, new_sequence))
+            sequence = new_sequence
+
         index = node_id - self._node_id_offset
         node_size = self._node_sizes[index]
         assert node_size == len(sequence), "Invalid sequence. Does not cover whole node"

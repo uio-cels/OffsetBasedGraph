@@ -4,7 +4,7 @@ import pickle
 import os
 import numpy as np
 import logging
-
+import warnings
 
 class Block(object):
     def __init__(self, length):
@@ -266,34 +266,6 @@ class BaseGraph(object):
     def to_graph_with_reversals(self):
         from .graphwithreversals import GraphWithReversals
         return GraphWithReversals(self.blocks, self.adj_list)
-
-    @classmethod
-    def from_file(cls, file_name):
-        """
-        Load graph from pickle
-
-        :param file_name: File name
-        :rtype: Graph
-        """
-        if os.path.isfile("%s" % file_name):
-            with open("%s" % file_name, "rb") as f:
-                obj = pickle.loads(f.read())
-                assert isinstance(obj, cls)
-                return obj
-        else:
-            print("Warning: Graph file %s not found" % file_name)
-            return None
-
-    def to_file(self, file_name):
-        """
-        Writes the graph to file so that it later can be
-        recreated using the from_file method
-
-        :param file_name: File name
-        :return:
-        """
-        with open("%s" % file_name, "wb") as f:
-            pickle.dump(self, f)
 
     def remove(self, block_id):
         """Remove a block including edges from the graph
@@ -678,10 +650,9 @@ class Graph(BaseGraph):
         self.adj_list = new_adj_list
         self.reverse_adj_list = new_reverse_adj_list
 
-    def to_numpy_file(self, file_name):
-        assert isinstance(self.blocks, BlockArray), "Blocks must be represented as BlockArray"
-        assert isinstance(self.adj_list, AdjListAsNumpyArrays), "Edges must be on numpy format"
-        assert isinstance(self.reverse_adj_list, AdjListAsNumpyArrays), "Reverse edges must be on numpy format"
+    def to_file(self, file_name):
+        assert self.uses_numpy_backend(), "Must be numpy backend before filewriting" \
+            "Convert by calling convert_to_numpy_backend()"
 
         logging.info("Saving to numpy format")
         file = open(file_name, "wb")
@@ -700,18 +671,9 @@ class Graph(BaseGraph):
         logging.info("Graph saved to %s" % file_name)
 
     @classmethod
-    def from_numpy_file(cls, file_name):
+    def from_file(cls, file_name):
         logging.info("Reading Offset Based Graph from file: %s" % file_name)
-
-        try:
-            file = open(file_name, "rb")
-        except FileNotFoundError:
-            try:
-                file = open(file_name + ".obg", "rb")
-            except FileNotFoundError:
-                file = open(file_name + ".nobg", "rb")
-
-
+        file = open(file_name, "rb")
         data = np.load(file)
 
         node_id_offset = data["node_id_offset"]
@@ -739,72 +701,25 @@ class Graph(BaseGraph):
         logging.info("Done reading from file")
         return graph
 
+    def to_numpy_file(self, name):
+        warnings.warn("Will be removed. Use to_file() instead.", DeprecationWarning)
+        self.to_file(name)
+
+    @classmethod
+    def from_numpy_file(cls, name):
+        warnings.warn("Will be removed. Use from_file() instead.", DeprecationWarning)
+        return cls.from_file(name)
 
     def to_numpy_files(self, base_file_name):
-        logging.info("Writing blocks to file")
-        self.blocks.save(base_file_name + ".npy")
-        logging.info("Writing edges to file")
-        if False:
-            self.adj_list.to_file(base_file_name)
-        else:
-            with open(base_file_name + "edges.pickle", "wb") as f:
-                pickle.dump(self.adj_list, f)
+        raise RuntimeError("Writing to multiple numpy files is not supported anymore")
 
-        with open(base_file_name + "rev_edges.pickle", "wb") as f:
-            pickle.dump(self.reverse_adj_list, f)
-        with open(base_file_name + ".node_id_offset", "w") as f:
-            f.write(str(self.blocks.node_id_offset))
-            print("Wrote node id offset: %d" % self.blocks.node_id_offset)
-
-        """
-        with open(base_file_name + "edges.json", "w") as f:
-            f.write(json.dumps(self.adj_list))
-        logging.info("Writing reverse edges to file")
-        with open(base_file_name + "rev_edges.json", "w") as f:
-            f.write(json.dumps(self.reverse_adj_list))
-        """
     @classmethod
     def from_numpy_files(cls, base_file_name):
-        logging.info("Reading nodes")
-        blocks = BlockArray.load(base_file_name + ".npy")
-        logging.info("Reading edges")
-        #adj_list = AdjListAsMatrix.from_file(base_file_name)
-        with open(base_file_name + "edges.pickle", "rb") as f:
-            adj_list = pickle.loads(f.read())
-
-        #with open(base_file_name + "edges.json") as f:
-        #    adj_list = json.loads(f.read())
-
-        with open(base_file_name + "rev_edges.pickle", "rb") as f:
-            rev_adj_list = pickle.loads(f.read())
-        with  open(base_file_name + ".node_id_offset") as f:
-            node_id_offset = int(f.read())
-
-        #with open(base_file_name + "rev_edges.json") as f:
-        #    rev_adj_list = json.loads(f.read())
-        logging.info("Initing graph")
-        graph = cls(blocks, adj_list, rev_adj_list=rev_adj_list,
-                   create_reverse_adj_list=False)
-        graph.blocks.node_id_offset = node_id_offset
-        return graph
+        raise RuntimeError("Reading from multiple numpy files is not supported anymore")
 
     @classmethod
     def from_unknown_file_format(cls, base_file_name):
-        try:
-            try:
-                graph = cls.from_numpy_file(base_file_name + ".nobg")
-                return graph
-            except:
-                graph = cls.from_numpy_files(base_file_name)
-                return graph
-        except:
-            print("Found no numpy graph. Trying pickle.")
-
-        graph = cls.from_file(base_file_name  + ".obg")
-        if graph is None:
-            graph = cls.from_file(base_file_name)
-        assert graph is not None, "Graph %s not found" % base_file_name
-        return graph
+        raise RuntimeError("Reading from unknown format not supported anymore. Use from_file()")
 
     def block_in_graph(self, block_id):
         if block_id in self.blocks:
