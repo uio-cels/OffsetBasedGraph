@@ -216,6 +216,13 @@ class NumpyIndexedInterval(IndexedInterval):
         rps = np.array(interval.region_paths)
         min_node = rps[0]
         max_node = rps[-1]
+        max_alternative = np.max(rps)
+        if max_alternative > max_node:
+            logging.warning("Max node in path is not the last "
+                            "region path (last is %d and max is %d). "
+                            "Path is not sorted." % (max_alternative, max_node))
+            max_node = max_alternative
+
         node_sizes = interval.graph.blocks._array[rps - interval.graph.blocks.node_id_offset]
         node_to_distance = np.zeros(max_node - min_node + 1)
         length = interval.length()
