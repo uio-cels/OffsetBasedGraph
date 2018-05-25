@@ -217,20 +217,34 @@ class NumpyIndexedInterval(IndexedInterval):
         min_node = rps[0]
         max_node = rps[-1]
         max_alternative = np.max(rps)
+        min_alternative = np.min(rps)
         if max_alternative > max_node:
             logging.warning("Max node in path is not the last "
                             "region path (last is %d and max is %d). "
                             "Path is not sorted." % (max_alternative, max_node))
             max_node = max_alternative
 
+        if min_alternative < min_node:
+            logging.warning("Min node is not the first node. "
+                            "First node is %d and min is %d" % (min_node, min_alternative))
+            min_node = min_alternative
+
         node_sizes = interval.graph.blocks._array[rps - interval.graph.blocks.node_id_offset]
-        node_to_distance = np.zeros(max_node - min_node + 1)
+        node_to_distance = np.zeros(max_node - min_node + 2)
         length = interval.length()
         index_positions = rps - min_node
         node_to_distance[index_positions[1:]] = np.cumsum(node_sizes)[:-1]
 
-        distance_to_node = np.zeros(length)
+        distance_to_node = np.zeros(length+1)
         index_positions = np.cumsum(node_sizes)[:-1]
+        logging.info("Interval length: %d" % interval.length())
+        logging.info("Interval end offset: %d" % interval.end_position.offset)
+        logging.info("Interval end nnode size: %d" % interval.graph.blocks[interval.end_position.region_path_id].length())
+        logging.info("Distance to last node end: %d" % index_positions[-1])
+        assert index_positions[-1] < interval.length(), \
+            "Interval is length %d, but distance to last node end is %d" % \
+            (interval.length(), index_positions[-1])
+
         distance_to_node[index_positions] = np.diff(rps)
         distance_to_node[0] = rps[0]
         distance_to_node = np.cumsum(distance_to_node, dtype=np.uint32)
