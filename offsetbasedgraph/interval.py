@@ -550,6 +550,24 @@ class Interval(BaseInterval):
         from .indexedinterval import NumpyIndexedInterval
         return NumpyIndexedInterval.from_interval(self)
 
+    def to_linear_offsets(self, linear_path):
+        intersecting_nodes = set(self.region_paths).intersection(linear_path.nodes_in_interval())
+        intersecting_nodes = sorted(list(intersecting_nodes))
+
+        first_node = intersecting_nodes[0]
+        start_offset = 0
+        if first_node == self.region_paths[0]:
+            start_offset = self.start_position.offset
+
+        last_node = intersecting_nodes[-1]
+        end_offset = 0
+        if last_node == self.region_paths[-1]:
+            end_offset = self.end_position.offset
+
+        linear_start_pos = linear_path.get_offset_at_node(first_node) + start_offset
+        linear_end_pos = linear_path.get_offset_at_node(last_node) + end_offset
+        return linear_start_pos, linear_end_pos
+
 
 class IntervalCollection(object):
     interval_class = Interval
