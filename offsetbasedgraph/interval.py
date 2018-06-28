@@ -4,6 +4,9 @@ import gzip
 import numpy as np
 import logging
 
+class NoLinearProjectionException(Exception):
+    pass
+
 class Position(object):
     """ Represents a position  in the graph
 
@@ -552,7 +555,11 @@ class Interval(BaseInterval):
 
     def to_linear_offsets(self, linear_path):
         intersecting_nodes = set(self.region_paths).intersection(linear_path.nodes_in_interval())
+
         intersecting_nodes = sorted(list(intersecting_nodes))
+
+        if len(intersecting_nodes) == 0:
+            raise NoLinearProjectionException("No linear exception for interval %s" % self)
 
         first_node = intersecting_nodes[0]
         start_offset = 0
