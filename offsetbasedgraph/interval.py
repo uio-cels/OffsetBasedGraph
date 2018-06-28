@@ -582,8 +582,10 @@ class Interval(BaseInterval):
         if first_node in nodes_in_linear:
             start = linear_path.get_offset_at_position(self.start_position)
         else:
-            prev_on_linear = set([-node for node in self.graph.reverse_adj_list(first_node)]).intersect(nodes_in_linear)
-            assert len(prev_on_linear) == 1, "Node %d has either none or multiple previous nodes on lienar path %d" % first_node
+            prev_on_linear = set([-node for node in self.graph.reverse_adj_list[-first_node]]).intersection(nodes_in_linear)
+            if len(prev_on_linear) < 1:
+                raise NoLinearProjectionException()
+            #assert len(prev_on_linear) >= 1, "Node %d has either none or multiple previous nodes on linear path (n=%d)" % (first_node, len(prev_on_linear))
             prev_on_linear = list(prev_on_linear)[0]
             start = linear_path.get_offset_at_node(prev_on_linear) + self.start_position.offset
 
@@ -591,8 +593,10 @@ class Interval(BaseInterval):
         if last_node == first_node or last_node in nodes_in_linear:
             end = start + self.length()
         else:
-            prev_on_linear = set([-node for node in self.graph.reverse_adj_list(first_node)]).intersect(nodes_in_linear)
-            assert len(prev_on_linear) == 1, "Node %d has either none or multiple previous nodes on lienar path %d" % first_node
+            prev_on_linear = set([-node for node in self.graph.reverse_adj_list[-last_node]]).intersection(nodes_in_linear)
+            if len(prev_on_linear) < 1:
+                raise NoLinearProjectionException()
+            #assert len(prev_on_linear) >= 1, "Node %d has either none or multiple previous nodes on linear path (n=%d)" % (last_node, len(prev_on_linear))
             prev_on_linear = list(prev_on_linear)[0]
             end = linear_path.get_offset_at_node(prev_on_linear) + self.end_position.offset
 
