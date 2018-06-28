@@ -292,7 +292,10 @@ class NumpyIndexedInterval(IndexedInterval):
         return self._node_to_distance[node - self.min_node]
 
     def get_offset_at_position(self, position, direction="+"):
-        raise NotImplementedError("Not implemented")
+        if direction != "+":
+            raise NotImplementedError("Not implemented")
+
+        return self.get_offset_at_node(position.region_path_id) + position.offset
 
 
 

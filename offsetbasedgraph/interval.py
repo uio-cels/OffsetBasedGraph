@@ -568,6 +568,29 @@ class Interval(BaseInterval):
         linear_end_pos = linear_path.get_offset_at_node(last_node) + end_offset
         return linear_start_pos, linear_end_pos
 
+    def to_linear_offsets2(self, linear_path):
+        nodes_in_linear = linear_path.nodes_in_interval()
+        first_node = self.region_paths[0]
+
+        if first_node in nodes_in_linear:
+            start = linear_path.get_offset_at_position(self.start_position)
+        else:
+            prev_on_linear = set([-node for node in self.graph.reverse_adj_list(first_node)]).intersect(nodes_in_linear)
+            assert len(prev_on_linear) == 1, "Node %d has either none or multiple previous nodes on lienar path %d" % first_node
+            prev_on_linear = list(prev_on_linear)[0]
+            start = linear_path.get_offset_at_node(prev_on_linear) + self.start_position.offset
+
+        last_node = self.region_paths[-1]
+        if last_node == first_node or last_node in nodes_in_linear:
+            end = start + self.length()
+        else:
+            prev_on_linear = set([-node for node in self.graph.reverse_adj_list(first_node)]).intersect(nodes_in_linear)
+            assert len(prev_on_linear) == 1, "Node %d has either none or multiple previous nodes on lienar path %d" % first_node
+            prev_on_linear = list(prev_on_linear)[0]
+            end = linear_path.get_offset_at_node(prev_on_linear) + self.end_position.offset
+
+        return start, end
+
 
 class IntervalCollection(object):
     interval_class = Interval
