@@ -594,7 +594,6 @@ class Interval(BaseInterval):
             end = start + self.length()
         else:
             prev_on_linear = set([-node for node in self.graph.reverse_adj_list[-last_node]]).intersection(nodes_in_linear)
-            print("Found prev noode %s" % prev_on_linear)
             if len(prev_on_linear) < 1:
                 raise NoLinearProjectionException()
             #assert len(prev_on_linear) >= 1, "Node %d has either none or multiple previous nodes on linear path (n=%d)" % (last_node, len(prev_on_linear))
