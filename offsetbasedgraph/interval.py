@@ -587,20 +587,21 @@ class Interval(BaseInterval):
                 raise NoLinearProjectionException()
             #assert len(prev_on_linear) >= 1, "Node %d has either none or multiple previous nodes on linear path (n=%d)" % (first_node, len(prev_on_linear))
             prev_on_linear = list(prev_on_linear)[0]
-            start = linear_path.get_offset_at_node(prev_on_linear) + self.start_position.offset
+            start = linear_path.get_offset_at_node(prev_on_linear) + self.graph.node_size(prev_on_linear) + self.start_position.offset
 
         last_node = self.region_paths[-1]
         if last_node == first_node or last_node in nodes_in_linear:
             end = start + self.length()
         else:
             prev_on_linear = set([-node for node in self.graph.reverse_adj_list[-last_node]]).intersection(nodes_in_linear)
+            print("Found prev noode %s" % prev_on_linear)
             if len(prev_on_linear) < 1:
                 raise NoLinearProjectionException()
             #assert len(prev_on_linear) >= 1, "Node %d has either none or multiple previous nodes on linear path (n=%d)" % (last_node, len(prev_on_linear))
             prev_on_linear = list(prev_on_linear)[0]
-            end = linear_path.get_offset_at_node(prev_on_linear) + self.end_position.offset
+            end = linear_path.get_offset_at_node(prev_on_linear) + self.graph.node_size(prev_on_linear) + self.end_position.offset
 
-        return start, end
+        return int(start), int(end)
 
 
 class IntervalCollection(object):
