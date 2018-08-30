@@ -4,6 +4,7 @@ import json
 import logging
 import re
 
+
 class SequenceGraph():
     _compliments = {"A": "T",
                     "a": "t",
@@ -95,7 +96,6 @@ class SequenceGraph():
             raise ValueError("Trying to create sequence graph with "
                              "invalid sequence (not containing A,C,G,T,N): %s" % sequence)
 
-
     def get_sequence_on_directed_node(self, node_id, start=0, end=False):
         """Handles directed nodes"""
         if node_id > 0:
@@ -150,3 +150,10 @@ class SequenceGraph():
                 middle_sequence += self.get_sequence_on_directed_node(rp)
 
             return "%s%s%s" % (start_sequence, middle_sequence, end_sequence)
+
+    def count_gc_content(self):
+        alphabet = np.array([[1, 2, 3, 4]])
+        counts = np.count_nonzero(self._sequence_array, alphabet, axis=1)
+        g_c = counts[2]+counts[3]
+        a_t = counts[0]+counts[1]
+        return self._sequence_array.size, g_c, a_t
