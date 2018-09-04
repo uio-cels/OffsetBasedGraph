@@ -186,6 +186,8 @@ class NumpyIndexedInterval(IndexedInterval):
         self.min_node = min_node
         self._node_to_distance = node_to_distance_index
 
+
+
         self._nodes_in_interval_cache = None
 
     def length(self):
@@ -287,6 +289,8 @@ class NumpyIndexedInterval(IndexedInterval):
         return offset - self.get_offset_at_node(node)
 
     def get_nodes_between_offset(self, start, end):
+        assert len <= len(self._distance_to_node)
+        assert start >= 0
         return np.unique(self._distance_to_node[start:end])
 
     def get_subinterval(self, start, end):
