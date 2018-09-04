@@ -117,13 +117,16 @@ class SequenceGraph():
         node_size = self._node_sizes[index]
         sequence = self._sequence_array[pos:pos+node_size]
 
-        if not end:
+        if end is False:
             end = node_size
 
         return ''.join(self._letters[sequence[start:end]])
 
     def _reverse_compliment(self, sequenence):
         return "".join(self._compliments[c] for c in sequenence[::-1])
+
+    def node_size(self, node_id):
+        return self._node_sizes[abs(node_id)-self._node_id_offset]
 
     def get_interval_sequence(self, interval):
 
@@ -132,7 +135,7 @@ class SequenceGraph():
         end_node = rps[-1]
 
         if start_node == end_node and len(rps) == 1:
-            return self.get_sequence_on_directed_node(
+            ret_str =  self.get_sequence_on_directed_node(
                 start_node,
                 interval.start_position.offset,
                 interval.end_position.offset)
@@ -149,11 +152,15 @@ class SequenceGraph():
             for rp in rps[1:-1]:
                 middle_sequence += self.get_sequence_on_directed_node(rp)
 
-            return "%s%s%s" % (start_sequence, middle_sequence, end_sequence)
+            ret_str =  "%s%s%s" % (start_sequence, middle_sequence, end_sequence)
+        if interval.graph is None:
+            interval.graph = self
+        assert len(ret_str) == interval.length(), (ret_str, interval)
+        return ret_str
 
     def count_gc_content(self):
-        alphabet = np.array([[1, 2, 3, 4]])
-        counts = np.count_nonzero(self._sequence_array, alphabet, axis=1)
-        g_c = counts[2]+counts[3]
-        a_t = counts[0]+counts[1]
+        alphabet = np.array([[1], [2], [3], [4]])
+        counts = np.count_nonzero(self._sequence_array == alphabet, axis=1)
+        g_c = counts[1]+counts[3]
+        a_t = counts[0]+counts[2]
         return self._sequence_array.size, g_c, a_t
