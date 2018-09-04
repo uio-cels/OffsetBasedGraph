@@ -117,10 +117,18 @@ class SequenceGraph():
         node_size = self._node_sizes[index]
         sequence = self._sequence_array[pos:pos+node_size]
 
+        assert len(sequence) == node_size
+
         if end is False:
             end = node_size
+        
+        assert end <= node_size, "End is > node size (%d, %d)" % (end, node_size)
 
-        return ''.join(self._letters[sequence[start:end]])
+        assert end >= start, "End in get_sequence is smaller than start (start: %d, end: %d. Node size: %d). Node: %d. Node id offset: %d" % (start, end, node_size, node_id, self._node_id_offset)
+
+        subsequence = ''.join(self._letters[sequence[start:end]])
+        assert len(subsequence) == end - start, "len subsequence: %d, end:%d, start%d, node: %d. Node size: %d" % (len(subsequence), end, start, node_id, node_size)
+        return subsequence
 
     def _reverse_compliment(self, sequenence):
         return "".join(self._compliments[c] for c in sequenence[::-1])
