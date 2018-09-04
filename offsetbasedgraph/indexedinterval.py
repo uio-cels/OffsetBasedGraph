@@ -7,6 +7,7 @@ from .graph import BlockArray
 import numpy as np
 from .directedinterval import DirectedInterval
 
+
 class IndexedInterval(Interval):
     """
     Subclass of interval that indexes distance to nodes,
@@ -169,7 +170,6 @@ class NodeInterval(Interval):
         raise Exception("Length of NodeInterval not supported as start/end is arbitrary with node")
 
 
-
 class NumpyIndexedInterval(IndexedInterval):
     """
     Simple index interval which is not an interval, just an index.
@@ -272,7 +272,12 @@ class NumpyIndexedInterval(IndexedInterval):
     def get_exact_subinterval(self, start, end):
         rps = self.get_nodes_between_offset(start, end)
         start_offset = self.get_node_offset_at_offset(start)
-        end_offset = self.get_node_offset_at_offset(end-1)
+        end_offset = self.get_node_offset_at_offset(end)
+        if end_offset == 0:
+            end_offset = self.get_node_offset_at_offset(end-1)
+            rps = rps[:-1]
+        else:
+            end_offset -= 1
         return DirectedInterval(int(start_offset), int(end_offset)+1, list(rps))
 
     def get_node_at_offset(self, offset):
@@ -296,9 +301,3 @@ class NumpyIndexedInterval(IndexedInterval):
             raise NotImplementedError("Not implemented")
 
         return self.get_offset_at_node(position.region_path_id) + position.offset
-
-
-
-
-
-
