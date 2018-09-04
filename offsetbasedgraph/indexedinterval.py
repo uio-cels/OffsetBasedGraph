@@ -265,26 +265,24 @@ class NumpyIndexedInterval(IndexedInterval):
         file = open(file_name, "rb")
         data = np.load(file)
         interval = cls(data["distance_to_node"], data["node_to_distance"],
-                   data["min_node"], data["length"])
+                       data["min_node"], data["length"])
         file.close()
         return interval
 
     def get_exact_subinterval(self, start, end):
         rps = self.get_nodes_between_offset(start, end)
-        start_offset = self.get_node_offset_at_offset(start)
-        end_offset = self.get_node_offset_at_offset(end)
-        if end_offset == 0:
-            end_offset = self.get_node_offset_at_offset(end-1)
-            rps = rps[:-1]
-        else:
-            end_offset -= 1
-        return DirectedInterval(int(start_offset), int(end_offset)+1, list(rps))
+        start_offset = self.get_node_offset_at_offset(start, rps[0])
+        end_offset = self.get_node_offset_at_offset(end-1, rps[-1])
+        return DirectedInterval(
+            int(start_offset), int(end_offset)+1, list(rps))
 
     def get_node_at_offset(self, offset):
         return self._distance_to_node[offset]
 
-    def get_node_offset_at_offset(self, offset):
+    def get_node_offset_at_offset(self, offset, true_node=None):
         node = self._distance_to_node[offset]
+        if true_node is not None:
+            assert node == true_node, (node, true_node)
         return offset - self.get_offset_at_node(node)
 
     def get_nodes_between_offset(self, start, end):
