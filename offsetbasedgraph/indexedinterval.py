@@ -216,6 +216,9 @@ class NumpyIndexedInterval(IndexedInterval):
 
         assert isinstance(interval.graph.blocks, BlockArray), "Graph must have numpy backend"
         rps = np.array(interval.region_paths)
+
+        assert np.all(np.diff(interval.region_paths) > 0), "Region paths in linear path is not sorted asc"
+
         min_node = rps[0]
         max_node = rps[-1]
         max_alternative = np.max(rps)
