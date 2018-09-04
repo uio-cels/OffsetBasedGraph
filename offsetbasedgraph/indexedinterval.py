@@ -270,6 +270,7 @@ class NumpyIndexedInterval(IndexedInterval):
         return interval
 
     def get_exact_subinterval(self, start, end):
+        assert start < end, "Start must be < than end (%d, %d)" % (start, end)
         rps = self.get_nodes_between_offset(start, end)
         start_offset = self.get_node_offset_at_offset(start, rps[0])
         end_offset = self.get_node_offset_at_offset(end-1, rps[-1])
