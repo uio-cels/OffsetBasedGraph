@@ -600,6 +600,8 @@ class Interval(BaseInterval):
             prev_on_linear = list(prev_on_linear)[0]
             end = linear_path.get_offset_at_node(prev_on_linear) + self.graph.node_size(prev_on_linear) + self.end_position.offset
 
+
+        assert end > start, "End %d is <= start %d for interval %s" % (self)
         return int(start), int(end)
 
 
