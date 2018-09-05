@@ -578,7 +578,7 @@ class Interval(BaseInterval):
     def to_linear_offsets2(self, linear_path):
         nodes_in_linear = linear_path.nodes_in_interval()
         first_node = self.region_paths[0]
-
+        prev_on_linear_start = None
         if first_node in nodes_in_linear:
             start = linear_path.get_offset_at_position(self.start_position)
         else:
@@ -588,7 +588,9 @@ class Interval(BaseInterval):
             #assert len(prev_on_linear) >= 1, "Node %d has either none or multiple previous nodes on linear path (n=%d)" % (first_node, len(prev_on_linear))
             prev_on_linear = list(prev_on_linear)[0]
             start = linear_path.get_offset_at_node(prev_on_linear) + self.graph.node_size(prev_on_linear) + self.start_position.offset
+            prev_on_linear_start = prev_on_linear
 
+        prev_on_linear_end = None
         last_node = self.region_paths[-1]
         if last_node == first_node or last_node in nodes_in_linear:
             end = start + self.length()
@@ -599,9 +601,9 @@ class Interval(BaseInterval):
             #assert len(prev_on_linear) >= 1, "Node %d has either none or multiple previous nodes on linear path (n=%d)" % (last_node, len(prev_on_linear))
             prev_on_linear = list(prev_on_linear)[0]
             end = linear_path.get_offset_at_node(prev_on_linear) + self.graph.node_size(prev_on_linear) + self.end_position.offset
+            prev_on_linear_end = prev_on_linear
 
-
-        assert end > start, "End %d is <= start %d for interval %s" % (self)
+        assert end > start, "End %d is <= start %d for interval %s. Previous nodes on start/end: %s/%s " % (end, start, self, prev_on_linear_start, prev_on_linear_end) 
         return int(start), int(end)
 
 
