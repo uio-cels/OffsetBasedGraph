@@ -13,7 +13,9 @@ class SequenceGraph():
                     "T": "A",
                     "t": "a",
                     "G": "C",
-                    "g": "c"}
+                    "g": "c",
+                    "n": "n",
+                    "N": "N"}
 
     _letters = np.array(["n", "a", "c", "t", "g", "m"])
 

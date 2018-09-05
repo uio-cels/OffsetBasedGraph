@@ -294,7 +294,9 @@ class NumpyIndexedInterval(IndexedInterval):
     def get_nodes_between_offset(self, start, end):
         assert end <= len(self._distance_to_node)
         assert start >= 0
-        return np.unique(self._distance_to_node[start:end])
+        values = self._distance_to_node[start:end]
+        unique = values[:-1][values[1:]!=values[:-1]]
+        return np.concatenate((unique, values[-1:]))
 
     def get_subinterval(self, start, end):
         return NodeInterval(self.get_nodes_between_offset(start, end))
