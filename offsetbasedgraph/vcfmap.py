@@ -201,6 +201,29 @@ def make_var_map(graph, variants):
                 insertion_map[node-graph.min_node] = i
 
 
+def get_interval_nodes_touching_variants(interval, linear_map):
+    if interval.region_paths[0] < 0:
+        assert np.all(interval.region_paths < 0)
+        interval = interval.get_reverse()
+
+    linear_path_nodes = linear_map.nodes_in_interval()
+    variant_nodes = set(interval.region_paths) - linear_path_nodes
+
+    # Find deletions
+    prev_linear_node = None  # Previous node that was on linear
+    nodes = interval.region_paths
+    for i, node in enumerate(nodes):
+        if i > 0:
+            if nodes[i-1] not in linear_path_nodes and node in linear_path_nodes:
+                # Have passed a deletion, add it
+                variant_nodes.add((prev_node_on_linear, node))
+
+        if node in linear_path_nodes:
+            prev_node_on_linear = node
+
+    return variant_nodes
+
+
 def parse_variants(filename):
     parts = (line.split("\t") for line in open(filename))
     return ((int(part[0]), eval(part[1])) for part in parts)
