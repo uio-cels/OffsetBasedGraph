@@ -200,7 +200,7 @@ def write_variants(chromosome, folder):
     seq_graph = obg.SequenceGraph.from_file(base_name + ".nobg.sequences")
     reference = obg.NumpyIndexedInterval.from_file(
         base_name + "_linear_pathv2.interval")
-    vcf_entries = get_vcf_entries(base_name + "_variants_cut.vcf")
+    vcf_entries = get_vcf_entries(base_name + "_variants.vcf")
     outfile = open(base_name + "_variant_map.tsv", "w")
     entry_to_edge = entry_to_edge_func(graph, reference, seq_graph)
     variants = (entry_to_edge(entry) for entry in vcf_entries)
@@ -262,7 +262,7 @@ def get_precences(chromosome, folder="./"):
 
 def write_precences(chromosome, folder="./"):
     base_name = folder + "/" + str(chromosome)
-    precences = get_variant_precences(base_name + "_variants_small.vcf")
+    precences = get_variant_precences(base_name + "_variants.vcf")
     with open(base_name+"_precences.npy", "wb") as out_file:
         for precence in precences:
             np.save(out_file, precence)
