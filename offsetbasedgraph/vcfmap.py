@@ -160,7 +160,7 @@ def entry_to_edge_func(graph, reference, seq_graph):
         ref_seq = seq_graph.get_sequence_on_directed_node(node)
 
         if entry.ref and entry.alt:
-            assert ref_seq == entry.ref, entry
+            assert ref_seq == entry.ref, (entry, ref_seq)0
             return get_SNP_nodes(entry, node)
         if entry.alt:
             return get_insertion_node(entry, node)
@@ -173,12 +173,10 @@ def make_var_map(graph, variants):
     snp_map = np.zeros_like(graph.node_indexes)
     insertion_map = np.zeros_like(graph.node_indexes)
     deletion_map = {}
-    snp_bucket = {}
     for i, var in variants:
         if type(var) == SNP:
-            snp_map[var.nodes[0]-graph.min_node] = i
-            if len(var.nodes) > 1:
-                snp_bucket[i] = var.nodes
+            nodes = [node-graph.min_node for node in var.nodes]
+            snp_map[nodes] = i
 
         elif type(var) == INS:
             for node in var.nodes:
@@ -268,8 +266,15 @@ def nodes_edges_to_variant_ids(nodes, edges, variant_maps):
     snps = variant_maps.snps[nodes]
     insertions = variant_maps.insertions[nodes]
     variants = np.where(insertions > 0, insertions, snps)
-    assert np.all(variants)
-    deletion_ids = [variant_maps.deletions[edge] for edge in edges]
+    if not np.all(variants):
+        logging.warning("Not found node (%s, %s, %s)", nodes, snps, variants)
+    deletion_ids = []
+    for edge in edges:
+        if edge not in variant_maps.deletions:
+            logging.warning("Deletion not found: %s", edge)
+        else:
+            deletion_ids.append(variant_maps.deletions[edge])
+            # deletion_ids = [variant_maps.deletions[edge] for edge in edges]
     return set(chain(variants, deletion_ids))
 
 

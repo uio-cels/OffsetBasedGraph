@@ -34,6 +34,9 @@ def get_variants_from_intervals(reference, graph, intervals):
 def get_haplotypes_func(preceneses):
     def compatible_haplotypes(variants):
         valid_haplotypes = set(range(1137))
+        variants = list(variants)
+        if not variants:
+            return valid_haplotypes
         return set.intersection(
             valid_haplotypes,
             *(set(haplotypes) for haplotypes in preceneses[list(variants)]))
@@ -43,21 +46,28 @@ def get_haplotypes_func(preceneses):
 def _analyze_variants(haplotypes_list):
     haplotypes_list = list(haplotypes_list)
     N = len(haplotypes_list)
+    if N == 0:
+        return AnalysisResults(0, -1, 0, -1, 0)        
     counter = Counter(chain.from_iterable(haplotypes_list))
     A_id, A_count = counter.most_common(1)[0]
+    if A_count == N:
+        return AnalysisResults(A_count, A_id, 0, -1, N)
     remaining = [h for h in haplotypes_list if A_id not in h]
+    assert remaining, (haplotypes_list, A_id, A_count)
     counter2 = Counter(chain.from_iterable(remaining))
-    B_id, B_count = counter2.most_common(1)[0]
+    assert counter2 or min(len(s) for s in remaining) == 0, remaining
+
+    B_id, B_count = counter2.most_common(1)[0] if counter2 else (-1, 0)
     return AnalysisResults(A_count, A_id, B_count, B_id, N)
 
 
 def analyze_interval_set_func(precences, reference, graph, variant_maps):
     variants_to_haplotypes = get_haplotypes_func(precences)
     interval_to_variants = interval_to_variants_func(reference, graph)
-    variant_maps = load_variant_maps(chromosome, folder)
     def analyze_intervals(intervals):
         variant_lists = (interval_to_variants(interval) for interval in intervals)
-        haplotype_sets = [variants_to_haplotypes(variants) for variants in variant_lists]
+        variant_id_sets = get_ids_from_variants(variant_maps, variant_lists)
+        haplotype_sets = [variants_to_haplotypes(variant_ids) for variant_ids in variant_id_sets]
         return _analyze_variants(haplotype_sets)
 
     return analyze_intervals
@@ -73,12 +83,9 @@ def pipeline_func_for_chromosome(chromosome, folder="./"):
     precences = load_precences(chromosome, folder)
     reference = NumpyIndexedInterval.from_file(folder+chromosome+"_linear_pathv2.interval")
     graph = Graph.from_file(folder+chromosome+".nobg")
-    interval_to_variants = interval_to_variants_func(reference, graph)
-    analyze = analyze_interval_set_func(precences, reference, graph)
-
+    analyze = analyze_interval_set_func(precences, reference, graph, variant_maps)
     def pipeline(intervals):
-        variant_lists = (interval_to_variants(interval) for interval in intervals)
-        variant_id_sets = get_ids_from_variants(variant_maps, variant_lists)
-        return analyze(variant_id_sets)
+        print("Analyzing intervals")
+        return analyze(intervals)
 
     return pipeline
