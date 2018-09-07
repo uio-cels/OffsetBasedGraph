@@ -6,10 +6,11 @@ from itertools import chain
 from collections import namedtuple
 
 VCFEntry = namedtuple("VCFEntry", ["pos", "ref", "alt"])
-SNP = namedtuple("SNP", ["nodes"])
+SNP = namedtuple("SNP", ["nodes", "trail"])
+TRAIL = namedtuple("TRAIL", ["nodes"])
 DEL = namedtuple("DEL", ["edge"])
 INS = namedtuple("INS", ["nodes"])
-VariantMap = namedtuple("VariantMap", ["snps", "insertions", "deletions"])
+VariantMap = namedtuple("VariantMap", ["snps", "insertions", "deletions", "trails"])
 
 
 def prune_entry_end(entry):
@@ -81,6 +82,10 @@ def prune_SNP(entry):
     idxs = [i for i, (c1, c2) in enumerate(zip(entry.ref, entry.alt)) if (c1 != c2)]
     assert len(idxs) == 1, entry
     i = idxs[0]
+    if i != 0:
+        logging.debug("%s, %s", i, entry)
+    if len(entry.ref) > 1:
+        logging.debug(entry)
     return VCFEntry(entry.pos+i, entry.ref[i], entry.alt[i])
 
 
@@ -110,12 +115,21 @@ def entry_to_edge_func(graph, reference, seq_graph):
     get_next_node = next_node_func(graph, reference)
     get_prev_node = prev_node_func(graph, reference)
 
-    def get_SNP_nodes(entry, node):
+    def traverse_n(node, n):
+        while n > 0:
+            n -= graph.node_size(node)
+            node = get_next_node(node)
+        if n == 0:
+            return node
+        return None
+
+    def get_SNP_nodes(entry, node, full_entry):
         next_node = get_next_node(node)
         paralell_nodes = [
             par for par in get_paralell_nodes(node)
             if seq_graph.get_sequence_on_directed_node(par)==entry.alt and next_node in list(graph.adj_list[par])]
-        return SNP(paralell_nodes)
+        trails = find_trails(node, paralell_nodes, entry, full_entry)
+        return SNP(paralell_nodes, trails)
 
     def get_insertion_node(entry, node):
         assert len(entry.alt) <= 64, entry  # Current limit
@@ -151,6 +165,21 @@ def entry_to_edge_func(graph, reference, seq_graph):
         assert node in paralell_nodes
         return DEL((prev_node, node))
 
+    def find_trails(ref_node, snp_nodes, entry, full_entry):
+        if entry == full_entry:
+            return []
+        after_trail = traverse_n(ref_node, len(full_entry.ref))
+        if after_trail is None:
+            return []
+        trail_seq = full_entry.ref[len(entry.ref):]
+        trail_nodes = [node for node in chain.from_iterable(graph.adj_list[snp_node] for snp_node in snp_nodes)
+                       if seq_graph.get_sequence(node) == trail_seq and
+                       node not in reference.nodes_in_interval() and after_trail in graph.adj_list[node]]
+        assert all(trail_node in graph.adj_list[ref_node] for trail_node in trail_nodes)
+        if trail_nodes:
+            logging.debug("--->%s, %s", snp_nodes, trail_nodes)
+        return trail_nodes
+
     def entry_to_edge(full_entry):
         entry = prune(full_entry)
         node_offset = int(
@@ -160,8 +189,8 @@ def entry_to_edge_func(graph, reference, seq_graph):
         ref_seq = seq_graph.get_sequence_on_directed_node(node)
 
         if entry.ref and entry.alt:
-            assert ref_seq == entry.ref, (entry, ref_seq)0
-            return get_SNP_nodes(entry, node)
+            assert ref_seq == entry.ref, (entry, ref_seq)
+            return get_SNP_nodes(entry, node, full_entry)
         if entry.alt:
             return get_insertion_node(entry, node)
         return get_deletion_edge(entry, node)
@@ -172,11 +201,14 @@ def entry_to_edge_func(graph, reference, seq_graph):
 def make_var_map(graph, variants):
     snp_map = np.zeros_like(graph.node_indexes)
     insertion_map = np.zeros_like(graph.node_indexes)
+    trail_map = np.zeros_like(graph.node_indexes)
     deletion_map = {}
     for i, var in variants:
         if type(var) == SNP:
             nodes = [node-graph.min_node for node in var.nodes]
             snp_map[nodes] = i
+            trail_nodes = [node-graph.min_node for node in var.trail]
+            trail_map[trail_nodes] = i
 
         elif type(var) == INS:
             for node in var.nodes:
@@ -187,7 +219,7 @@ def make_var_map(graph, variants):
                 insertion_map[node-graph.min_node] = i
         elif type(var) == DEL:
             deletion_map[var.edge] = i
-    return VariantMap(snp_map, insertion_map, deletion_map)
+    return VariantMap(snp_map, insertion_map, deletion_map, trail_map)
 
 
 def parse_variants(filename):
@@ -214,13 +246,15 @@ def load_variant_maps(chromosome, folder="./"):
     base_name = folder+chromosome
     snps = np.load(base_name+"_snp_map.npy")
     insertions = np.load(base_name+"_ins_map.npy")
+    trails = np.load(base_name+"_trail_map.npy")
     deletions = pickle.load(open(base_name+"_del_map.pickle", "rb"))
-    return VariantMap(snps=snps, insertions=insertions, deletions=deletions)
+    return VariantMap(snps=snps, insertions=insertions, deletions=deletions, trails=trails)
 
 
 def write_variant_maps(variant_maps, base_name):
     np.save(base_name+"_snp_map.npy", variant_maps.snps)
     np.save(base_name+"_ins_map.npy", variant_maps.insertions)
+    np.save(base_name+"_trail_map.npy", variant_maps.trails)
     with open(base_name + "_del_map.pickle", "wb") as f:
         pickle.dump(variant_maps.deletions, f)
 
@@ -266,8 +300,9 @@ def nodes_edges_to_variant_ids(nodes, edges, variant_maps):
     snps = variant_maps.snps[nodes]
     insertions = variant_maps.insertions[nodes]
     variants = np.where(insertions > 0, insertions, snps)
-    if not np.all(variants):
-        logging.warning("Not found node (%s, %s, %s)", nodes, snps, variants)
+    trails = variant_maps.trails[nodes]
+    if not np.all((variants > 0) | (trails > 0)):
+        logging.warning("Not found node (%s, %s, %s)", nodes, variants, trails)
     deletion_ids = []
     for edge in edges:
         if edge not in variant_maps.deletions:
