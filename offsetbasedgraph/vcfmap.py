@@ -181,7 +181,10 @@ def make_var_map(graph, variants):
 
         elif type(var) == INS:
             for node in var.nodes:
-                assert insertion_map[node-graph.min_node] == 0
+                if not insertion_map[node-graph.min_node] == 0:
+                    logging.warning(
+                        "Double insertion at node %s: %s+%s",
+                        node-graph.min_node, insertion_map[node-graph.min_node], i)
                 insertion_map[node-graph.min_node] = i
         elif type(var) == DEL:
             deletion_map[var.edge] = i
@@ -210,19 +213,17 @@ def write_variants(chromosome, folder):
 
 def load_variant_maps(chromosome, folder="./"):
     base_name = folder+chromosome
-    snps = np.load(base_name+"_snp_map.npz")
-    insertions = np.load(base_name+"_ins_map.npz")
+    snps = np.load(base_name+"_snp_map.npy")
+    insertions = np.load(base_name+"_ins_map.npy")
     deletions = pickle.load(open(base_name+"_del_map.pickle", "rb"))
     return VariantMap(snps=snps, insertions=insertions, deletions=deletions)
 
 
 def write_variant_maps(variant_maps, base_name):
-    np.save(base_name+"_snp_map.npz", variant_maps.snps)
-    np.save(base_name+"_ins_map.npz", variant_maps.insertions)
+    np.save(base_name+"_snp_map.npy", variant_maps.snps)
+    np.save(base_name+"_ins_map.npy", variant_maps.insertions)
     with open(base_name + "_del_map.pickle", "wb") as f:
         pickle.dump(variant_maps.deletions, f)
-
-    np.save(base_name+"ins_map.npz", variant_maps.insertions)
 
 
 def get_variant_precences(vcf_file_name):
