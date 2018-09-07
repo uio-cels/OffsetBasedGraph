@@ -1,12 +1,14 @@
 import numpy as np
 import offsetbasedgraph as obg
+import pickle
 from itertools import chain
-from collections import namedtuple, defaultdict
+from collections import namedtuple
 
 VCFEntry = namedtuple("VCFEntry", ["pos", "ref", "alt"])
 SNP = namedtuple("SNP", ["nodes"])
 DEL = namedtuple("DEL", ["edge"])
 INS = namedtuple("INS", ["nodes"])
+VariantMap = namedtuple("VariantMap", ["snps", "insertions", "deletions"])
 
 
 def prune_entry_end(entry):
@@ -102,25 +104,6 @@ def prune(entry):
         return prune_insertion(entry)
 
 
-class EdgeMap:
-    def __init__(self, adj_list):
-        self.indices = adj_list.values()
-        self._values = np.zeros_like(adj_list.values)
-        self.node_id_offset = adj_list.node_id_offset
-        
-    def __getitem__(self, edge):
-        from_node = edge[0]
-        # Returns all edges for a nod
-        index = item - self.node_id_offset
-        if index < 0:
-            return []
-        if index >= len(self._indices):
-            return []
-
-        start = self._indices[index]
-        end = self._indices[index] + self._n_edges[index]
-        return self._values[start:end]        
-
 def entry_to_edge_func(graph, reference, seq_graph):
     get_paralell_nodes = paralell_nodes_func(graph, reference)
     get_next_node = next_node_func(graph, reference)
@@ -186,8 +169,10 @@ def entry_to_edge_func(graph, reference, seq_graph):
 
 
 def make_var_map(graph, variants):
+
     snp_map = np.zeros_like(graph.node_indexes)
     insertion_map = np.zeros_like(graph.node_indexes)
+    deletion_map = {}
     snp_bucket = {}
     for i, var in variants:
         if type(var) == SNP:
@@ -199,23 +184,9 @@ def make_var_map(graph, variants):
             for node in var.nodes:
                 assert insertion_map[node-graph.min_node] == 0
                 insertion_map[node-graph.min_node] = i
-
-
-def get_interval_nodes_touching_variants(interval, linear_map):
-    if interval.region_paths[0] < 0:
-        assert np.all(interval.region_paths < 0)
-        interval = interval.get_reverse()
-
-
-    linear_path_nodes = linear_map.nodes_in_interval()
-    # Add all SNPS/Insertions
-    variant_nodes = set(interval.region_paths) - linear_path_nodes
-
-    # Find deletions
-    # ..
-    linear_path_nodes_sorted = linear_map.get_sorted_nodes_in_interval
-    
-    return variant_nodes
+        elif type(var) == DEL:
+            deletion_map[var.edge] = i
+    return VariantMap(snp_map, insertion_map, deletion_map)
 
 
 def parse_variants(filename):
@@ -223,21 +194,108 @@ def parse_variants(filename):
     return ((int(part[0]), eval(part[1])) for part in parts)
 
 
-if __name__ == "__main__":
-    graph = obg.Graph.from_file("1.nobg")
-    snp_files = "variant_map.tsv"
-    make_var_map(graph, parse_variants(snp_files))
-    exit()
-
-    seq_graph = obg.SequenceGraph.from_file("1.nobg.sequences")
-    reference = obg.NumpyIndexedInterval.from_file("1_linear_pathv2.interval")
-    vcf_entries = get_vcf_entries("1_variants_cut.vcf")
-
-    outfile = open("variant_map.tsv", "w")
-    ref_nodes = reference.nodes_in_interval()
+def write_variants(chromosome, folder):
+    base_name = folder + "/" + str(chromosome)
+    graph = obg.Graph.from_file(base_name+".nobg")
+    seq_graph = obg.SequenceGraph.from_file(base_name + ".nobg.sequences")
+    reference = obg.NumpyIndexedInterval.from_file(
+        base_name + "_linear_pathv2.interval")
+    vcf_entries = get_vcf_entries(base_name + "_variants_cut.vcf")
+    outfile = open(base_name + "_variant_map.tsv", "w")
     entry_to_edge = entry_to_edge_func(graph, reference, seq_graph)
-    counter = 0
     variants = (entry_to_edge(entry) for entry in vcf_entries)
     for t in enumerate(variants):
         outfile.write("%s\t%s\n" % t)
     outfile.close()
+
+
+def load_variant_maps(variant_maps, base_name):
+    snps = np.load(base_name+"_snp_map.npz")
+    insertions = np.load(base_name+"_ins_map.npz")
+    deletions = pickle.load(open(base_name+"_del_map.pickle", "rb"))
+    return VariantMap(snps=snps, insertions=insertions, deletions=deletions)
+
+
+def write_variant_maps(variant_maps, base_name):
+    np.save(base_name+"_snp_map.npz", variant_maps.snps)
+    np.save(base_name+"_ins_map.npz", variant_maps.insertions)
+    with open(base_name + "_del_map.pickle", "wb") as f:
+        pickle.dump(variant_maps.deletions, f)
+
+    np.save(base_name+"ins_map.npz", variant_maps.insertions)
+
+
+def get_variant_precences(vcf_file_name):
+    def precence_from_line(haplo_types, variant_number):
+        precence = np.array([variant_number in [int(a), int(b)] for a, b in haplo_types])
+        haplotypes = np.flatnonzero(precence)
+        return haplotypes
+
+    def get_precences_from_line(line):
+        parts = line.split("\t", 9)
+        n_variants = len(parts[4].split(","))
+        precence = parts[-1].replace(".", "0").replace("/", "|").split("\t")
+        haplo_types = [part.split(":", 2)[0].split("|") for part in precence]
+        return (precence_from_line(haplo_types, i+1) for i in range(n_variants))
+
+    return chain.from_iterable(
+        get_precences_from_line(line) for line in open(vcf_file_name)
+        if not line.startswith("#"))
+
+
+def get_variant_maps(chromosome, folder):
+    base_name = folder + "/" + str(chromosome)
+    graph = obg.Graph.from_file(base_name+ ".nobg")
+    snp_files = base_name + "_variant_map.tsv"
+    make_var_map(graph, parse_variants(snp_files))
+
+
+def write_precences(chromosome, folder="./"):
+    base_name = folder + "/" + str(chromosome)
+    precences = get_variant_precences(base_name + "_variants_small.vcf")
+    with open(base_name+"_precences.npy", "wb") as out_file:
+        for precence in precences:
+            np.save(out_file, precence)
+
+
+def get_precences(chromosome, folder="./"):
+    base_name = folder + "/" + str(chromosome)
+    with open(base_name+"_precences.npy", "rb") as in_file:
+        while True:
+            try:
+                yield np.load(in_file)
+            except OSError:
+                break
+
+
+def interval_to_variants_func(reference, graph):
+    reference_nodes = reference.nodes_in_interval()
+    get_next_node = next_node_func(graph, reference)
+
+    def interval_to_variants(interval):
+        if interval.region_paths[0] < 0:
+            assert np.all(interval.region_paths < 0)
+            interval = interval.get_reverse()
+            nodes = interval.region_paths
+        variant_nodes = [node-graph.min_node for node in nodes if node not in reference_nodes] # Offset nodes to array idx
+        variant_edges = [edge for edge in zip(nodes[:-1], nodes[1:])
+                         if all(node in reference for node in edge) and
+                         node[1] != get_next_node(node[0])]
+        return variant_nodes, variant_edges
+
+
+def get_variants_from_intervals(reference, graph, intervals):
+    interval_to_variants = interval_to_variants_func(reference, graph)
+    return (interval_to_variants(interval) for interval in intervals)
+
+
+def get_ids_from_variants(variant_maps, variants_list):
+    def nodes_edges_to_variant_ids(nodes, edges):
+        snps = variant_maps.snps[nodes]
+        insertions = variant_maps.insertions[nodes]
+        variants = np.where(insertions > 0, insertions, snps)
+        assert np.all(variants)
+        deletion_ids = [variant_maps.deletions[edge] for edge in edges]
+        return set(chain(variants, deletion_ids))
+
+    return [nodes_edges_to_variant_ids(*variants) for variants in variants_list]
