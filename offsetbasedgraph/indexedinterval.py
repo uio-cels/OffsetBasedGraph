@@ -185,10 +185,8 @@ class NumpyIndexedInterval(IndexedInterval):
         self._distance_to_node = distance_to_node_index
         self.min_node = min_node
         self._node_to_distance = node_to_distance_index
-
-
-
         self._nodes_in_interval_cache = None
+        self._sorted_nodes_in_interval_cache = None
 
     def length(self):
         return self._length
@@ -207,6 +205,15 @@ class NumpyIndexedInterval(IndexedInterval):
         nodes = set(np.unique(self._distance_to_node))
         self._nodes_in_interval_cache = nodes
         return nodes
+
+    def get_sorted_nodes_in_interval(self):
+        if self._sorted_nodes_in_interval_cache is not None:
+            return self._sorted_nodes_in_interval_cache
+
+        nodes = self._distance_to_node[np.nonzero(np.ediff1d(self._distance_to_node, to_begin=[-1]))]
+        self._sorted_nodes_in_interval_cache = nodes
+        return nodes
+
 
     @classmethod
     def from_interval(cls, interval):

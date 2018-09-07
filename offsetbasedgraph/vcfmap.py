@@ -206,21 +206,15 @@ def get_interval_nodes_touching_variants(interval, linear_map):
         assert np.all(interval.region_paths < 0)
         interval = interval.get_reverse()
 
+
     linear_path_nodes = linear_map.nodes_in_interval()
+    # Add all SNPS/Insertions
     variant_nodes = set(interval.region_paths) - linear_path_nodes
 
     # Find deletions
-    prev_linear_node = None  # Previous node that was on linear
-    nodes = interval.region_paths
-    for i, node in enumerate(nodes):
-        if i > 0:
-            if nodes[i-1] not in linear_path_nodes and node in linear_path_nodes:
-                # Have passed a deletion, add it
-                variant_nodes.add((prev_node_on_linear, node))
-
-        if node in linear_path_nodes:
-            prev_node_on_linear = node
-
+    # ..
+    linear_path_nodes_sorted = linear_map.get_sorted_nodes_in_interval
+    
     return variant_nodes
 
 
