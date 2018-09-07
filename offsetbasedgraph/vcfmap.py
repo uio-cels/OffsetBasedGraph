@@ -250,14 +250,6 @@ def get_variant_maps(chromosome, folder):
     make_var_map(graph, parse_variants(snp_files))
 
 
-def write_precences(chromosome, folder="./"):
-    base_name = folder + "/" + str(chromosome)
-    precences = get_variant_precences(base_name + "_variants_small.vcf")
-    with open(base_name+"_precences.npy", "wb") as out_file:
-        for precence in precences:
-            np.save(out_file, precence)
-
-
 def get_precences(chromosome, folder="./"):
     base_name = folder + "/" + str(chromosome)
     with open(base_name+"_precences.npy", "rb") as in_file:
@@ -268,34 +260,23 @@ def get_precences(chromosome, folder="./"):
                 break
 
 
-def interval_to_variants_func(reference, graph):
-    reference_nodes = reference.nodes_in_interval()
-    get_next_node = next_node_func(graph, reference)
-
-    def interval_to_variants(interval):
-        if interval.region_paths[0] < 0:
-            assert np.all(interval.region_paths < 0)
-            interval = interval.get_reverse()
-            nodes = interval.region_paths
-        variant_nodes = [node-graph.min_node for node in nodes if node not in reference_nodes] # Offset nodes to array idx
-        variant_edges = [edge for edge in zip(nodes[:-1], nodes[1:])
-                         if all(node in reference for node in edge) and
-                         node[1] != get_next_node(node[0])]
-        return variant_nodes, variant_edges
+def write_precences(chromosome, folder="./"):
+    base_name = folder + "/" + str(chromosome)
+    precences = get_variant_precences(base_name + "_variants_small.vcf")
+    with open(base_name+"_precences.npy", "wb") as out_file:
+        for precence in precences:
+            np.save(out_file, precence)
 
 
-def get_variants_from_intervals(reference, graph, intervals):
-    interval_to_variants = interval_to_variants_func(reference, graph)
-    return (interval_to_variants(interval) for interval in intervals)
+def nodes_edges_to_variant_ids(nodes, edges, variant_maps):
+    snps = variant_maps.snps[nodes]
+    insertions = variant_maps.insertions[nodes]
+    variants = np.where(insertions > 0, insertions, snps)
+    assert np.all(variants)
+    deletion_ids = [variant_maps.deletions[edge] for edge in edges]
+    return set(chain(variants, deletion_ids))
 
 
-def get_ids_from_variants(variant_maps, variants_list):
-    def nodes_edges_to_variant_ids(nodes, edges):
-        snps = variant_maps.snps[nodes]
-        insertions = variant_maps.insertions[nodes]
-        variants = np.where(insertions > 0, insertions, snps)
-        assert np.all(variants)
-        deletion_ids = [variant_maps.deletions[edge] for edge in edges]
-        return set(chain(variants, deletion_ids))
-
-    return [nodes_edges_to_variant_ids(*variants) for variants in variants_list]
+def simplify_vcf(chromosome, folder="./"):
+    write_variants(chromosome, folder)
+    write_precences(chromosome, folder)
