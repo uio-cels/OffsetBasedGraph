@@ -169,7 +169,6 @@ def entry_to_edge_func(graph, reference, seq_graph):
 
 
 def make_var_map(graph, variants):
-
     snp_map = np.zeros_like(graph.node_indexes)
     insertion_map = np.zeros_like(graph.node_indexes)
     deletion_map = {}
@@ -252,22 +251,15 @@ def get_variant_maps(chromosome, folder):
     write_variant_maps(var_maps, base_name)
 
 
-def get_precences(chromosome, folder="./"):
+def load_precences(chromosome, folder="./"):
     base_name = folder + "/" + str(chromosome)
-    with open(base_name+"_precences.npy", "rb") as in_file:
-        while True:
-            try:
-                yield np.load(in_file)
-            except OSError:
-                break
+    return np.load(base_name+"_precences.npy")
 
 
 def write_precences(chromosome, folder="./"):
     base_name = folder + "/" + str(chromosome)
-    precences = get_variant_precences(base_name + "_variants.vcf")
-    with open(base_name+"_precences.npy", "wb") as out_file:
-        for precence in precences:
-            np.save(out_file, precence)
+    precences = np.array(list(get_variant_precences(base_name + "_variants.vcf")))
+    np.save(base_name+"_precences.npy", precences)
 
 
 def nodes_edges_to_variant_ids(nodes, edges, variant_maps):

@@ -60,12 +60,13 @@ def analyze_interval_set_func(precences, reference, graph):
 
 
 def get_ids_from_variants(variant_maps, variants_list):
-    return [nodes_edges_to_variant_ids(variants[0], variants[1], variant_maps) for variants in variants_list]
+    return [nodes_edges_to_variant_ids(variants[0], variants[1], variant_maps)
+            for variants in variants_list]
 
 
 def pipeline_func_for_chromosome(chromosome, folder="./"):
     variant_maps = load_variant_maps(chromosome, folder)
-    precences = get_precences(chromosome, folder)
+    precences = load_precences(chromosome, folder)
     reference = SequenceGraph(folder+chromosome+"_linear_pathv2.interval")
     graph = Graph.from_file(folder+chromosome+".nobg")
     interval_to_variants = interval_to_variants_func(reference, graph)
