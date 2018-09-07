@@ -209,7 +209,8 @@ def write_variants(chromosome, folder):
     outfile.close()
 
 
-def load_variant_maps(variant_maps, base_name):
+def load_variant_maps(chromosome, folder="./"):
+    base_name = folder+chromosome
     snps = np.load(base_name+"_snp_map.npz")
     insertions = np.load(base_name+"_ins_map.npz")
     deletions = pickle.load(open(base_name+"_del_map.pickle", "rb"))
