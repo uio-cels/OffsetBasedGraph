@@ -247,7 +247,8 @@ def get_variant_maps(chromosome, folder):
     base_name = folder + "/" + str(chromosome)
     graph = obg.Graph.from_file(base_name+ ".nobg")
     snp_files = base_name + "_variant_map.tsv"
-    make_var_map(graph, parse_variants(snp_files))
+    var_maps = make_var_map(graph, parse_variants(snp_files))
+    write_variant_maps(var_maps, base_name)
 
 
 def get_precences(chromosome, folder="./"):
@@ -280,3 +281,4 @@ def nodes_edges_to_variant_ids(nodes, edges, variant_maps):
 def simplify_vcf(chromosome, folder="./"):
     write_variants(chromosome, folder)
     write_precences(chromosome, folder)
+    get_variant_maps(chromosome, folder)
