@@ -1,5 +1,6 @@
 import numpy as np
 import offsetbasedgraph as obg
+import logging
 import pickle
 from itertools import chain
 from collections import namedtuple
