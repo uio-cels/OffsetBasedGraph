@@ -86,7 +86,7 @@ def pipeline_func_for_chromosome(chromosome, folder="./"):
     variant_maps = load_variant_maps(chromosome, folder)
     precences = load_precences(chromosome, folder)
     reference = NumpyIndexedInterval.from_file(folder+chromosome+"_linear_pathv2.interval")
-    get_seq = SequenceGraph.from_file(folder+chromosome+".nobg.sequences").get_node_sequence
+    get_seq = obg.SequenceGraph.from_file(folder+chromosome+".nobg.sequences").get_node_sequence
     graph = Graph.from_file(folder+chromosome+".nobg")
 
 
