@@ -67,12 +67,15 @@ def _analyze_variants(haplotypes_list):
 
 def summarize_results(results):
     table = np.array(results)
-    type_percents = results[:, [1, 3]]/results[:, 4]
+    haplo_counts = table[:, 1]
+    diplo_counts = table[:, 3] + haplo_counts
+    type_ratios = np.hstack((haplo_counts[:, None], diplo_counts[:, None]))/table[:, 4][:, None]
     table_sum = np.sum(table, axis=0)
-    type_sums = np.sum(type_percents, axis=0)
-    haplo_hist=np.histogram(type_percents[0], nbins=20, range=(0, 1))
-    diplo_hist=np.histogram(type_percents[0], nbins=20, range=(0, 1))
-    return np.concatenate((table_sums[[1, 3, 4]), type_sums, haplo_hist, diplo_hist))
+    type_sums = np.sum(type_ratios, axis=0)
+    haplo_hist = np.histogram(type_ratios[:, 0], bins=20, range=(0, 1))
+    diplo_hist = np.histogram(type_ratios[:, 1], bins=20, range=(0, 1))
+    return np.concatenate(([table.shape[0]], table_sum[[1, 3, 4]], type_sums, haplo_hist[0], diplo_hist[0]))
+
 
 def analyze_interval_set_func(precences, reference, graph, variant_maps, debug_func=None):
     interval_to_variants = interval_to_variants_func(reference, graph)
