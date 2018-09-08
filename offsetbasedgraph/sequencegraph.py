@@ -113,6 +113,13 @@ class SequenceGraph():
             reverse_sequence = self.get_sequence(-node_id, new_start, new_end)
             return self._reverse_compliment(reverse_sequence)
 
+    def get_node_sequence(self, node_id):
+        index = node_id - self._node_id_offset
+        pos = self._indices[index]
+        node_size = self._node_sizes[index]
+        sequence = self._sequence_array[pos:pos+node_size]
+        return "".join(self._letters[sequence])
+
     def get_sequence(self, node_id, start=0, end=False):
         index = node_id - self._node_id_offset
         pos = self._indices[index]
@@ -123,7 +130,7 @@ class SequenceGraph():
 
         if end is False:
             end = node_size
-        
+        return "".join(self._letters[sequence[start:end]])
         assert end <= node_size, "End is > node size (%d, %d)" % (end, node_size)
 
         assert end >= start, "End in get_sequence is smaller than start (start: %d, end: %d. Node size: %d). Node: %d. Node id offset: %d" % (start, end, node_size, node_id, self._node_id_offset)

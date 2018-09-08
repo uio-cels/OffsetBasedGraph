@@ -31,7 +31,7 @@ def prune_entry(entry):
 
 def get_vcf_entries(filename):
     def get_entries(line):
-        parts = line.split("\t")
+        parts = line.split("\t", 5)
         pos = int(parts[1])-1
         ref = parts[3]
         alts = parts[4].split(",")
@@ -110,6 +110,15 @@ def prune(entry):
         return prune_insertion(entry)
 
 
+def basename_to_entry_func(chromosome, folder):
+    base_name = folder + "/" + str(chromosome)
+    graph = obg.Graph.from_file(base_name+".nobg")
+    seq_graph = obg.SequenceGraph.from_file(base_name + ".nobg.sequences")
+    reference = obg.NumpyIndexedInterval.from_file(
+        base_name + "_linear_pathv2.interval")
+    return entry_to_edge_func(graph, reference, seq_graph)
+
+
 def entry_to_edge_func(graph, reference, seq_graph):
     get_paralell_nodes = paralell_nodes_func(graph, reference)
     get_next_node = next_node_func(graph, reference)
@@ -127,14 +136,14 @@ def entry_to_edge_func(graph, reference, seq_graph):
         next_node = get_next_node(node)
         paralell_nodes = [
             par for par in get_paralell_nodes(node)
-            if seq_graph.get_sequence_on_directed_node(par)==entry.alt and next_node in list(graph.adj_list[par])]
+            if seq_graph.get_node_sequence(par)==entry.alt and next_node in graph.adj_list[par]]
         trails = find_trails(node, paralell_nodes, entry, full_entry)
         return SNP(paralell_nodes, trails)
 
     def get_insertion_node(entry, node):
         assert len(entry.alt) <= 64, entry  # Current limit
         paralell_nodes = get_paralell_nodes(node)
-        seqs = [seq_graph.get_sequence_on_directed_node(par) for par in paralell_nodes]
+        seqs = [seq_graph.get_node_sequence(par) for par in paralell_nodes]
         nextss = [graph.adj_list[par] for par in paralell_nodes]
         if len(entry.alt) <= 32:
             valid_nodes = [par for (par, seq, nexts) in zip(paralell_nodes, seqs, nextss)
@@ -144,7 +153,7 @@ def entry_to_edge_func(graph, reference, seq_graph):
                      if seq == entry.alt[:32]]
             assert len(fulls) == 1, (entry, seqs, paralell_nodes)
             paralell_nodes = graph.adj_list[fulls[0]]
-            seqs = [seq_graph.get_sequence_on_directed_node(par) for par in paralell_nodes]
+            seqs = [seq_graph.get_node_sequence(par) for par in paralell_nodes]
             nextss = [graph.adj_list[par] for par in paralell_nodes]
             valid_nodes = [par for (par, seq, nexts) in zip(paralell_nodes, seqs, nextss)
                            if seq == entry.alt[32:] and node in nexts]
@@ -173,7 +182,7 @@ def entry_to_edge_func(graph, reference, seq_graph):
             return []
         trail_seq = full_entry.ref[len(entry.ref):]
         trail_nodes = [node for node in chain.from_iterable(graph.adj_list[snp_node] for snp_node in snp_nodes)
-                       if seq_graph.get_sequence(node) == trail_seq and
+                       if seq_graph.get_node_sequence(node) == trail_seq and
                        node not in reference.nodes_in_interval() and after_trail in graph.adj_list[node]]
         assert all(trail_node in graph.adj_list[ref_node] for trail_node in trail_nodes)
         if trail_nodes:
@@ -186,7 +195,7 @@ def entry_to_edge_func(graph, reference, seq_graph):
             reference.get_node_offset_at_offset(entry.pos))
         assert node_offset == 0 or not (entry.alt and entry.ref), entry
         node = int(reference.get_node_at_offset(entry.pos))
-        ref_seq = seq_graph.get_sequence_on_directed_node(node)
+        ref_seq = seq_graph.get_node_sequence(node)
 
         if entry.ref and entry.alt:
             assert ref_seq == entry.ref, (entry, ref_seq)
@@ -225,6 +234,10 @@ def make_var_map(graph, variants):
 def parse_variants(filename):
     parts = (line.split("\t") for line in open(filename))
     return ((int(part[0]), eval(part[1])) for part in parts)
+
+
+def get_variants(vcf_entries, entry_to_edge):
+    return (entry_to_edge(entry) for entry in vcf_entries)
 
 
 def write_variants(chromosome, folder):
@@ -296,22 +309,23 @@ def write_precences(chromosome, folder="./"):
     np.save(base_name+"_precences.npy", precences)
 
 
-def nodes_edges_to_variant_ids(nodes, edges, variant_maps):
-    snps = variant_maps.snps[nodes]
-    insertions = variant_maps.insertions[nodes]
-    variants = np.where(insertions > 0, insertions, snps)
-    trails = variant_maps.trails[nodes]
-    if not np.all((variants > 0) | (trails > 0)):
-        logging.warning("Not found node (%s, %s, %s)", nodes, variants, trails)
-    deletion_ids = []
-    for edge in edges:
-        if edge not in variant_maps.deletions:
-            logging.warning("Deletion not found: %s", edge)
-        else:
-            deletion_ids.append(variant_maps.deletions[edge])
-            # deletion_ids = [variant_maps.deletions[edge] for edge in edges]
-    return set(chain(variants, deletion_ids))
+def variants_to_variants_ids_func(variant_maps, debug_func=None):
+    node_variants = np.where(variant_maps.insertions > 0, variant_maps.insertions, variant_maps.snps)
 
+    def nodes_edges_to_variant_ids(nodes, edges):
+        variants = np.nodes_variants[nodes]
+        trails = variant_maps.trails[nodes]
+        if not np.all((variants > 0) | (trails > 0)):
+            [debug_func(node) for i, node in nodes if variants[i] == 0 and trails[i] == 0]
+        deletion_ids = []
+        for edge in edges:
+            if edge not in variant_maps.deletions:
+                logging.warning("Deletion not found: %s", edge)
+            else:
+                deletion_ids.append(variant_maps.deletions[edge])
+        return set(chain(variants, deletion_ids))
+
+    return node_edges_to_vraiant_ids
 
 def simplify_vcf(chromosome, folder="./"):
     write_variants(chromosome, folder)
