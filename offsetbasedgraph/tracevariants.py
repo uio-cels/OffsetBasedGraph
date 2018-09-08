@@ -90,8 +90,8 @@ def pipeline_func_for_chromosome(chromosome, folder="./"):
     graph = Graph.from_file(folder+chromosome+".nobg")
 
 
-    get_prev_node = get_prev_node_func(graph, reference)
-    get_next_node = get_next_node_func(graph, reference)
+    get_prev_node = prev_node_func(graph, reference)
+    get_next_node = next_node_func(graph, reference)
 
     def debug_func(node):
         prev_ref = get_prev_node(node)
