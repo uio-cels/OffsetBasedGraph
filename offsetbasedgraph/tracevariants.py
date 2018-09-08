@@ -65,6 +65,15 @@ def _analyze_variants(haplotypes_list):
     return AnalysisResults(A_id, A_count, B_id, B_count, N)
 
 
+def summarize_results(results):
+    table = np.array(results)
+    type_percents = results[:, [1, 3]]/results[:, 4]
+    table_sum = np.sum(table, axis=0)
+    type_sums = np.sum(type_percents, axis=0)
+    haplo_hist=np.histogram(type_percents[0], nbins=20, range=(0, 1))
+    diplo_hist=np.histogram(type_percents[0], nbins=20, range=(0, 1))
+    return np.concatenate((table_sums[[1, 3, 4]), type_sums, haplo_hist, diplo_hist))
+
 def analyze_interval_set_func(precences, reference, graph, variant_maps, debug_func=None):
     interval_to_variants = interval_to_variants_func(reference, graph)
     variant_to_variant_ids = variants_to_variant_ids_func(variant_maps, debug_func)
