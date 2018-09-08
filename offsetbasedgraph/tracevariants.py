@@ -49,7 +49,7 @@ def _analyze_variants(haplotypes_list):
     haplotypes_list = list(haplotypes_list)
     N = len(haplotypes_list)
     if N == 0:
-        return AnalysisResults(-1, 0, -1, 0, 0)        
+        return AnalysisResults(-1, 0, -1, 0, 0)
     counter = Counter(chain.from_iterable(haplotypes_list))
     A_id, A_count = counter.most_common(1)[0]
     if A_count == N:
