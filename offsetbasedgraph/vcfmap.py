@@ -3,14 +3,17 @@ import offsetbasedgraph as obg
 import logging
 import pickle
 from itertools import chain
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 
 VCFEntry = namedtuple("VCFEntry", ["pos", "ref", "alt"])
 SNP = namedtuple("SNP", ["nodes", "trail"])
 TRAIL = namedtuple("TRAIL", ["nodes"])
-DEL = namedtuple("DEL", ["edge"])
+DEL = namedtuple("DEL", ["from_nodes", "to_nodes"])
 INS = namedtuple("INS", ["nodes"])
-VariantMap = namedtuple("VariantMap", ["snps", "insertions", "deletions", "trails"])
+VariantMap = namedtuple("VariantMap",
+                        ["snps", "insertions", "deletions", "trails"])
+
+DELMap = namedtuple("DELMap", ["from_ids", "to_ids"])
 
 
 def prune_entry_end(entry):
@@ -164,15 +167,18 @@ def entry_to_edge_func(graph, reference, seq_graph):
 
     def get_deletion_edge(entry, node):
         assert reference.get_node_offset_at_offset(entry.pos) == 0
-        prev_node = get_prev_node(node)
+        prev_nodes = [-prev for prev in graph.reverse_adj_list[-node]]
         deletion_len = len(entry.ref)
         paralell_nodes = get_paralell_nodes(node)
         while deletion_len > 0:
             deletion_len -= graph.node_size(node)
             node = get_next_node(node)
+        after_node = node
+        last_node = get_prev_node(after_node)
+        after_nodes = graph.adj_list[last_node]
         assert deletion_len == 0
-        assert node in paralell_nodes
-        return DEL((prev_node, node))
+        assert all(after_node in paralell_nodes for after_node in after_nodes), (after_nodes, paralell_nodes)
+        return DEL(list(prev_nodes), list(after_nodes))
 
     def find_trails(ref_node, snp_nodes, entry, full_entry):
         if entry == full_entry:
@@ -211,7 +217,7 @@ def make_var_map(graph, variants):
     snp_map = np.zeros_like(graph.node_indexes)
     insertion_map = np.zeros_like(graph.node_indexes)
     trail_map = np.zeros_like(graph.node_indexes)
-    deletion_map = {}
+    deletion_map = DELMap(defaultdict(set), defaultdict(set))
     for i, var in variants:
         if type(var) == SNP:
             nodes = [node-graph.min_node for node in var.nodes]
@@ -227,7 +233,11 @@ def make_var_map(graph, variants):
                         node-graph.min_node, insertion_map[node-graph.min_node], i)
                 insertion_map[node-graph.min_node] = i
         elif type(var) == DEL:
-            deletion_map[var.edge] = i
+            for node in var.from_nodes:
+                deletion_map.from_ids[node].add(i)
+            for node in var.to_nodes:
+                deletion_map.to_ids[node].add(i)
+
     return VariantMap(snp_map, insertion_map, deletion_map, trail_map)
 
 
@@ -318,14 +328,19 @@ def variants_to_variant_ids_func(variant_maps, debug_func=None):
         if not np.all((variants > 0) | (trails > 0)):
             [debug_func(node) for i, node in enumerate(nodes) if variants[i] == 0 and trails[i] == 0]
         deletion_ids = []
-        for edge in edges:
-            if edge not in variant_maps.deletions:
-                logging.warning("Deletion not found: %s", edge)
+        for from_node, to_node in edges:
+            pos_from = variant_maps.deletions.from_ids[from_node]
+            pos_to = variant_maps.deletions.to_ids[to_node]
+            del_ids = pos_from & pos_to
+            if not del_ids:
+                logging.warning("-DEL: %s (%s->%s)",
+                                (from_node, to_node), pos_from, pos_to)
             else:
-                deletion_ids.append(variant_maps.deletions[edge])
+                deletion_ids.extend(del_ids)
         return set(chain(variants, deletion_ids))
 
     return nodes_edges_to_variant_ids
+
 
 def simplify_vcf(chromosome, folder="./"):
     write_variants(chromosome, folder)
