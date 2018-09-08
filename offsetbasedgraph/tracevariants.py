@@ -51,9 +51,11 @@ def _analyze_variants(haplotypes_list):
     if N == 0:
         return AnalysisResults(-1, 0, -1, 0, 0)        
     counter = Counter(chain.from_iterable(haplotypes_list))
-    A_id, A_count = counter.most_common(1)[0]
+    assert counter or min(len(s) for s in haplotypes_list) == 0, haplotypes_list
+    A_id, A_count = counter.most_common(1)[0] if counter else (-1, 0)
     if A_count == N:
         return AnalysisResults(A_id, A_count, -1, 0, N)
+                       
     remaining = [h for h in haplotypes_list if A_id not in h]
     assert A_count+len(remaining) == N, (A_count, len(remaining), N, remaining)
     assert remaining, (haplotypes_list, A_id, A_count)
@@ -72,7 +74,7 @@ def summarize_results(results):
     type_sums = np.sum(type_percents, axis=0)
     haplo_hist=np.histogram(type_percents[0], nbins=20, range=(0, 1))
     diplo_hist=np.histogram(type_percents[0], nbins=20, range=(0, 1))
-    return np.concatenate((table_sums[[1, 3, 4]), type_sums, haplo_hist, diplo_hist))
+    return np.concatenate((table_sum[[1, 3, 4]], type_sums, haplo_hist, diplo_hist, [table.size[0]]))
 
 def analyze_interval_set_func(precences, reference, graph, variant_maps, debug_func=None):
     interval_to_variants = interval_to_variants_func(reference, graph)
