@@ -177,7 +177,8 @@ def entry_to_edge_func(graph, reference, seq_graph):
         last_node = get_prev_node(after_node)
         after_nodes = graph.adj_list[last_node]
         assert deletion_len == 0
-        assert all(after_node in paralell_nodes for after_node in after_nodes), (after_nodes, paralell_nodes)
+        if not all(after_node in paralell_nodes for after_node in after_nodes):
+            logging.warning("%s, %s: %s, %s", entry, node, list(after_nodes), list(paralell_nodes))
         return DEL(list(prev_nodes), list(after_nodes))
 
     def find_trails(ref_node, snp_nodes, entry, full_entry):

@@ -49,18 +49,20 @@ def _analyze_variants(haplotypes_list):
     haplotypes_list = list(haplotypes_list)
     N = len(haplotypes_list)
     if N == 0:
-        return AnalysisResults(0, -1, 0, -1, 0)        
+        return AnalysisResults(-1, 0, -1, 0, 0)        
     counter = Counter(chain.from_iterable(haplotypes_list))
     A_id, A_count = counter.most_common(1)[0]
     if A_count == N:
-        return AnalysisResults(A_count, A_id, 0, -1, N)
+        return AnalysisResults(A_id, A_count, -1, 0, N)
     remaining = [h for h in haplotypes_list if A_id not in h]
+    assert A_count+len(remaining) == N, (A_count, len(remaining), N, remaining)
     assert remaining, (haplotypes_list, A_id, A_count)
     counter2 = Counter(chain.from_iterable(remaining))
     assert counter2 or min(len(s) for s in remaining) == 0, remaining
 
     B_id, B_count = counter2.most_common(1)[0] if counter2 else (-1, 0)
-    return AnalysisResults(A_count, A_id, B_count, B_id, N)
+    assert A_count+B_count <= N, (A_count, B_count, N)
+    return AnalysisResults(A_id, A_count, B_id, B_count, N)
 
 
 def analyze_interval_set_func(precences, reference, graph, variant_maps, debug_func=None):
