@@ -309,14 +309,14 @@ def write_precences(chromosome, folder="./"):
     np.save(base_name+"_precences.npy", precences)
 
 
-def variants_to_variants_ids_func(variant_maps, debug_func=None):
+def variants_to_variant_ids_func(variant_maps, debug_func=None):
     node_variants = np.where(variant_maps.insertions > 0, variant_maps.insertions, variant_maps.snps)
 
     def nodes_edges_to_variant_ids(nodes, edges):
-        variants = np.nodes_variants[nodes]
+        variants = node_variants[nodes]
         trails = variant_maps.trails[nodes]
         if not np.all((variants > 0) | (trails > 0)):
-            [debug_func(node) for i, node in nodes if variants[i] == 0 and trails[i] == 0]
+            [debug_func(node) for i, node in enumerate(nodes) if variants[i] == 0 and trails[i] == 0]
         deletion_ids = []
         for edge in edges:
             if edge not in variant_maps.deletions:
@@ -325,7 +325,7 @@ def variants_to_variants_ids_func(variant_maps, debug_func=None):
                 deletion_ids.append(variant_maps.deletions[edge])
         return set(chain(variants, deletion_ids))
 
-    return node_edges_to_vraiant_ids
+    return nodes_edges_to_variant_ids
 
 def simplify_vcf(chromosome, folder="./"):
     write_variants(chromosome, folder)

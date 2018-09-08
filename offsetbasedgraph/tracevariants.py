@@ -65,13 +65,13 @@ def _analyze_variants(haplotypes_list):
 
 def analyze_interval_set_func(precences, reference, graph, variant_maps, debug_func=None):
     interval_to_variants = interval_to_variants_func(reference, graph)
-    variant_to_variant_ids = variants_to_variant_ids_func(variant_maps)
+    variant_to_variant_ids = variants_to_variant_ids_func(variant_maps, debug_func)
     variant_ids_to_haplotypes = get_haplotypes_func(precences)
 
     def analyze_intervals(intervals):
         variant_lists = (interval_to_variants(interval) for interval in intervals)
-        variant_id_sets = get_ids_from_variants(variant_maps, variant_lists)
-        haplotype_sets = [variants_to_haplotypes(variant_ids) for variant_ids in variant_id_sets]
+        variant_id_sets = [variant_to_variant_ids(*variant) for variant in variant_lists]
+        haplotype_sets = [variant_ids_to_haplotypes(variant_ids) for variant_ids in variant_id_sets]
         return _analyze_variants(haplotype_sets)
 
     return analyze_intervals
@@ -93,22 +93,61 @@ def pipeline_func_for_chromosome(chromosome, folder="./"):
     get_prev_node = prev_node_func(graph, reference)
     get_next_node = next_node_func(graph, reference)
 
+    def get_prev_ref(node):
+        nodes = [-node]
+        path = []
+        while len(nodes) == 1:
+            path.append(-nodes[0])
+            if -nodes[0] in reference.nodes_in_interval():
+                return path[::-1]
+
+            nodes = graph.reverse_adj_list[nodes[0]]
+
+        ref_nodes = [(reference.get_offset_at_node(-node), -node) for node in nodes if -node in reference.nodes_in_interval()]
+        if not ref_nodes:
+            return None
+        return [max(ref_nodes)[1]]+path[::-1]
+
+    # return (max(ref_nodes)[1])
+
+    def get_next_ref(node):
+        nodes = [node]
+        path = []
+        while len(nodes) == 1:
+            path.append(nodes[0])
+            if nodes[0] in reference.nodes_in_interval():
+                return path
+            nodes = graph.adj_list[nodes[0]]
+
+        ref_nodes = [(reference.get_offset_at_node(node), node) for node in nodes if node in reference.nodes_in_interval()]
+        if not ref_nodes:
+            return None
+        return path+[min(ref_nodes)[1]]
+
+
     def debug_func(node):
-        prev_ref = get_prev_node(node)
-        next_ref = get_next_node(node)
+        node += graph.min_node
+        prev_path = get_prev_ref(node)
+        next_path = get_next_ref(node)
+        prev_ref = prev_path[0]
+        next_ref = next_path[-1]
+        if prev_ref is None or next_ref is None:
+            logging.warning("(%s, %s)", node, get_seq(node))
+            return
         paralell_refs = []
         ref_node = prev_ref
         while ref_node != next_ref:
             ref_node = get_next_node(ref_node)
             paralell_refs.append(ref_node)
+        alt_path = prev_path[1:-1]+next_path
         ref_seq = "".join(get_seq(n) for n in paralell_refs)
-        if not ref_seq == get_seq(node):
-            logging.warning("(%s, %s), (%s, %s)", node, paralell_refs, get_seq_node, ref_seq)
+        alt_seq = "".join(get_seq(n) for n in alt_path)
+        if not ref_seq == alt_seq:
+            logging.warning("%s: (%s, %s), (%s, %s)", node, alt_path, paralell_refs, prev_path, next_path)
 
     analyze = analyze_interval_set_func(precences, reference, graph, variant_maps, debug_func)
 
     def pipeline(intervals):
-        print("Analyzing intervals")
         return analyze(intervals)
 
     return pipeline
