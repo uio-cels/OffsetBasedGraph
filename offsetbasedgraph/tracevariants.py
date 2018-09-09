@@ -65,15 +65,15 @@ def _analyze_variants(haplotypes_list):
     return AnalysisResults(A_id, A_count, B_id, B_count, N)
 
 
-def summarize_results(results):
+def summarize_results(results, nbins=20):
     table = np.array(results)
     haplo_counts = table[:, 1]
     diplo_counts = table[:, 3] + haplo_counts
     type_ratios = np.hstack((haplo_counts[:, None], diplo_counts[:, None]))/table[:, 4][:, None]
     table_sum = np.sum(table, axis=0)
     type_sums = np.sum(type_ratios, axis=0)
-    haplo_hist = np.histogram(type_ratios[:, 0], bins=20, range=(0, 1))
-    diplo_hist = np.histogram(type_ratios[:, 1], bins=20, range=(0, 1))
+    haplo_hist = np.histogram(type_ratios[:, 0], bins=100, range=(0, 1))
+    diplo_hist = np.histogram(type_ratios[:, 1], bins=100, range=(0, 1))
     return np.concatenate(([table.shape[0]], table_sum[[1, 3, 4]], type_sums, haplo_hist[0], diplo_hist[0]))
 
 
