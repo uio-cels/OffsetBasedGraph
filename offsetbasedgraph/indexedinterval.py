@@ -202,7 +202,7 @@ class NumpyIndexedInterval(IndexedInterval):
             return self._nodes_in_interval_cache
 
         # Hacky method to return nodes in interval
-        nodes = set(np.unique(np.astype(self._distance_to_node, int)))
+        nodes = set(np.unique(self._distance_to_node).astype(int))  
         self._nodes_in_interval_cache = nodes
         return nodes
 
