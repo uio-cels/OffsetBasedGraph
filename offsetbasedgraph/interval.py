@@ -559,7 +559,8 @@ class Interval(BaseInterval):
         cut_interval = new_interval.get_exact_subinterval(
             center_offset_new - window_size, center_offset_new + window_size
         )
-
+        cut_interval.graph = self.graph
+        assert cut_interval.length() == window_size * 2
         #print(cut_interval)
         return cut_interval
 
