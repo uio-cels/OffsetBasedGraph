@@ -305,6 +305,11 @@ class NumpyIndexedInterval(IndexedInterval):
         unique = values[:-1][values[1:]!=values[:-1]]
         return np.concatenate((unique, values[-1:]))
 
+    def position_at_offset(self, offset):
+        node_offset = self.get_node_offset_at_offset(offset)
+        node = self._distance_to_node[offset]
+        return Position(node, node_offset)
+
     def get_subinterval(self, start, end):
         return NodeInterval(self.get_nodes_between_offset(start, end))
 
