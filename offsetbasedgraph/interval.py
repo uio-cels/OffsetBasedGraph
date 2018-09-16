@@ -488,6 +488,82 @@ class Interval(BaseInterval):
         #print("Nodes: %s" % nodes)
         return Interval(start_pos, end_pos, nodes, self.graph)
 
+    def get_superinterval(self, center_offset, window_size, linear_reference_path):
+        from .indexedinterval import NumpyIndexedInterval
+        # Gets the interval centered at center offset with window size to each side.
+        # Following nodes in linear_ref_nodes when possible
+        linear_ref_nodes = linear_reference_path.nodes_in_interval()
+
+        # Extend this interval to start of node so that we can index it
+        extended = Interval(0, self.end_position.offset, self.region_paths, self.graph)
+        print(extended)
+        self_indexed = NumpyIndexedInterval.from_interval(extended)
+        center_position = self_indexed.position_at_offset(center_offset + self.start_position.offset)  # Add start offset since we measure on extended to start inteval
+
+        new_interval_rps = self.region_paths.copy()
+        start_node = self.region_paths[0]
+        end_node = self.region_paths[-1]
+        prev_start = [-node for node in self.graph.reverse_adj_list[-start_node]]
+        next_end = self.graph.adj_list[end_node]
+
+        # Extend left
+        # Add prev region path
+        prev_ref = [node for node in prev_start if node in linear_ref_nodes]
+        if len(prev_ref) == 0:
+            # There should be only a single other prev node that goes to ref
+            assert len(prev_start) == 1
+            prev = -prev_start[0]
+            new_interval_rps.insert(0, prev)
+            prev_ref = -self.graph.reverse_adj_list[prev][0]
+            assert prev_ref in linear_ref_nodes
+        else:
+            assert len(prev_ref) == 1
+            prev_ref = prev_ref[0]
+
+        prev_linear_end_offset = linear_reference_path.get_offset_at_position(Position(prev_ref, self.graph.blocks[prev_ref].length()))
+        prev_linear_interval = linear_reference_path.get_exact_subinterval(
+            int(prev_linear_end_offset - window_size), int(prev_linear_end_offset)
+        )
+
+        assert prev_linear_interval.region_paths[-1] == prev_ref
+        new_interval_rps = prev_linear_interval.region_paths + new_interval_rps
+        new_interval_start = Position(new_interval_rps[0], 0)
+
+        # Extend right
+        next_ref = [node for node in next_end if node in linear_ref_nodes]
+        if len(next_ref) == 0:
+            # There should be only a single other next node that goes to ref
+            assert len(next_end) == 1
+            next = next_end[0]
+            new_interval_rps.append(next)
+            next_ref = self.graph.adj_list[next][0]
+            assert next_ref in linear_ref_nodes
+        else:
+            assert len(next_ref) == 1
+            next_ref = next_ref[0]
+
+        offset_start_of_linear_interval = linear_reference_path.get_offset_at_position(Position(next_ref, 0))
+        next_linear_interval = linear_reference_path.get_exact_subinterval(
+            int(offset_start_of_linear_interval), int(offset_start_of_linear_interval + window_size)
+        )
+        assert next_linear_interval.region_paths[0] == next_ref
+        new_interval_rps.extend(next_linear_interval.region_paths)
+        new_interval_end = Position(new_interval_rps[-1], self.graph.blocks[new_interval_rps[-1]].length())
+
+        new_interval = Interval(new_interval_start, new_interval_end, new_interval_rps, self.graph)
+        assert new_interval.length() > window_size*2
+        #print(new_interval)
+        new_interval = NumpyIndexedInterval.from_interval(new_interval)
+        # Now cut new interval arround center
+        center_offset_new = int(new_interval.get_offset_at_position(center_position))
+        cut_interval = new_interval.get_exact_subinterval(
+            center_offset_new - window_size, center_offset_new + window_size
+        )
+        cut_interval.graph = self.graph
+        assert cut_interval.length() == window_size * 2
+        #print(cut_interval)
+        return cut_interval
+
     def to_areas(self):
         areas = {}
         for rp in self.region_paths:
@@ -551,6 +627,7 @@ class Interval(BaseInterval):
 
     def to_numpy_indexed_interval(self, only_create_distance_index=False):
         from .indexedinterval import NumpyIndexedInterval
+        assert self.graph is not None, "Graph cannot be None"
         return NumpyIndexedInterval.from_interval(self)
 
     def to_linear_offsets(self, linear_path):
@@ -578,7 +655,7 @@ class Interval(BaseInterval):
     def to_linear_offsets2(self, linear_path):
         nodes_in_linear = linear_path.nodes_in_interval()
         first_node = self.region_paths[0]
-
+        prev_on_linear_start = None
         if first_node in nodes_in_linear:
             start = linear_path.get_offset_at_position(self.start_position)
         else:
@@ -588,7 +665,9 @@ class Interval(BaseInterval):
             #assert len(prev_on_linear) >= 1, "Node %d has either none or multiple previous nodes on linear path (n=%d)" % (first_node, len(prev_on_linear))
             prev_on_linear = list(prev_on_linear)[0]
             start = linear_path.get_offset_at_node(prev_on_linear) + self.graph.node_size(prev_on_linear) + self.start_position.offset
+            prev_on_linear_start = prev_on_linear
 
+        prev_on_linear_end = None
         last_node = self.region_paths[-1]
         if last_node == first_node or last_node in nodes_in_linear:
             end = start + self.length()
@@ -599,7 +678,9 @@ class Interval(BaseInterval):
             #assert len(prev_on_linear) >= 1, "Node %d has either none or multiple previous nodes on linear path (n=%d)" % (last_node, len(prev_on_linear))
             prev_on_linear = list(prev_on_linear)[0]
             end = linear_path.get_offset_at_node(prev_on_linear) + self.graph.node_size(prev_on_linear) + self.end_position.offset
+            prev_on_linear_end = prev_on_linear
 
+        assert end > start, "End %d is <= start %d for interval %s. Previous nodes on start/end: %s/%s " % (end, start, self, prev_on_linear_start, prev_on_linear_end) 
         return int(start), int(end)
 
 

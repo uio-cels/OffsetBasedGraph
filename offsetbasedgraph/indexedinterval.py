@@ -7,6 +7,7 @@ from .graph import BlockArray
 import numpy as np
 from .directedinterval import DirectedInterval
 
+
 class IndexedInterval(Interval):
     """
     Subclass of interval that indexes distance to nodes,
@@ -169,7 +170,6 @@ class NodeInterval(Interval):
         raise Exception("Length of NodeInterval not supported as start/end is arbitrary with node")
 
 
-
 class NumpyIndexedInterval(IndexedInterval):
     """
     Simple index interval which is not an interval, just an index.
@@ -185,8 +185,8 @@ class NumpyIndexedInterval(IndexedInterval):
         self._distance_to_node = distance_to_node_index
         self.min_node = min_node
         self._node_to_distance = node_to_distance_index
-
         self._nodes_in_interval_cache = None
+        self._sorted_nodes_in_interval_cache = None
 
     def length(self):
         return self._length
@@ -202,9 +202,18 @@ class NumpyIndexedInterval(IndexedInterval):
             return self._nodes_in_interval_cache
 
         # Hacky method to return nodes in interval
-        nodes = set(np.unique(self._distance_to_node))
+        nodes = set(np.unique(self._distance_to_node).astype(int))  
         self._nodes_in_interval_cache = nodes
         return nodes
+
+    def get_sorted_nodes_in_interval(self):
+        if self._sorted_nodes_in_interval_cache is not None:
+            return self._sorted_nodes_in_interval_cache
+
+        nodes = self._distance_to_node[np.nonzero(np.ediff1d(self._distance_to_node, to_begin=[-1]))]
+        self._sorted_nodes_in_interval_cache = nodes
+        return nodes
+
 
     @classmethod
     def from_interval(cls, interval):
@@ -214,6 +223,9 @@ class NumpyIndexedInterval(IndexedInterval):
 
         assert isinstance(interval.graph.blocks, BlockArray), "Graph must have numpy backend"
         rps = np.array(interval.region_paths)
+
+        assert np.all(np.diff(interval.region_paths) > 0), "Region paths in linear path is not sorted asc"
+
         min_node = rps[0]
         max_node = rps[-1]
         max_alternative = np.max(rps)
@@ -265,25 +277,38 @@ class NumpyIndexedInterval(IndexedInterval):
         file = open(file_name, "rb")
         data = np.load(file)
         interval = cls(data["distance_to_node"], data["node_to_distance"],
-                   data["min_node"], data["length"])
+                       data["min_node"], data["length"])
         file.close()
         return interval
 
     def get_exact_subinterval(self, start, end):
+        assert start < end, "Start must be < than end (%d, %d)" % (start, end)
         rps = self.get_nodes_between_offset(start, end)
-        start_offset = self.get_node_offset_at_offset(start)
-        end_offset = self.get_node_offset_at_offset(end-1)
-        return DirectedInterval(int(start_offset), int(end_offset)+1, list(rps))
+        start_offset = self.get_node_offset_at_offset(start, rps[0])
+        end_offset = self.get_node_offset_at_offset(end-1, rps[-1])
+        return DirectedInterval(
+            int(start_offset), int(end_offset)+1, list(rps))
 
     def get_node_at_offset(self, offset):
         return self._distance_to_node[offset]
 
-    def get_node_offset_at_offset(self, offset):
+    def get_node_offset_at_offset(self, offset, true_node=None):
         node = self._distance_to_node[offset]
+        if true_node is not None:
+            assert node == true_node, (node, true_node)
         return offset - self.get_offset_at_node(node)
 
     def get_nodes_between_offset(self, start, end):
-        return np.unique(self._distance_to_node[start:end])
+        assert end <= len(self._distance_to_node)
+        assert start >= 0
+        values = self._distance_to_node[start:end]
+        unique = values[:-1][values[1:]!=values[:-1]]
+        return np.concatenate((unique, values[-1:]))
+
+    def position_at_offset(self, offset):
+        node_offset = self.get_node_offset_at_offset(offset)
+        node = self._distance_to_node[offset]
+        return Position(node, node_offset)
 
     def get_subinterval(self, start, end):
         return NodeInterval(self.get_nodes_between_offset(start, end))
@@ -296,9 +321,3 @@ class NumpyIndexedInterval(IndexedInterval):
             raise NotImplementedError("Not implemented")
 
         return self.get_offset_at_node(position.region_path_id) + position.offset
-
-
-
-
-
-

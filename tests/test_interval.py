@@ -303,5 +303,23 @@ class TestIntervalCollection(unittest.TestCase):
             self.assertEqual(interval, intervals[i])
 
 
+class TestGetSuperInterval(unittest.TestCase):
+    def test_basic(self):
+        graph = Graph({1: Block(20), 2: Block(10), 3: Block(10), 5: Block(20), 4: Block(2)},
+                      {
+                          1: [2, 3],
+                          2: [5],
+                          3: [4],
+                          4: [5]
+                      })
+        graph.convert_to_numpy_backend()
+
+        linear_ref = Interval(0, 20, [1, 2, 5], graph).to_numpy_indexed_interval()
+        interval = Interval(3, 2, [3, 4], graph)
+
+        superinterval = interval.get_superinterval(2, 10, linear_ref)
+        self.assertEqual(superinterval, Interval(15, 3, [1, 3, 4, 5]))
+
+
 if __name__ == "__main__":
     unittest.main()

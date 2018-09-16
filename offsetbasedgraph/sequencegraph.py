@@ -4,6 +4,7 @@ import json
 import logging
 import re
 
+
 class SequenceGraph():
     _compliments = {"A": "T",
                     "a": "t",
@@ -12,7 +13,9 @@ class SequenceGraph():
                     "T": "A",
                     "t": "a",
                     "G": "C",
-                    "g": "c"}
+                    "g": "c",
+                    "n": "n",
+                    "N": "N"}
 
     _letters = np.array(["n", "a", "c", "t", "g", "m"])
 
@@ -95,7 +98,6 @@ class SequenceGraph():
             raise ValueError("Trying to create sequence graph with "
                              "invalid sequence (not containing A,C,G,T,N): %s" % sequence)
 
-
     def get_sequence_on_directed_node(self, node_id, start=0, end=False):
         """Handles directed nodes"""
         if node_id > 0:
@@ -111,19 +113,37 @@ class SequenceGraph():
             reverse_sequence = self.get_sequence(-node_id, new_start, new_end)
             return self._reverse_compliment(reverse_sequence)
 
+    def get_node_sequence(self, node_id):
+        index = node_id - self._node_id_offset
+        pos = self._indices[index]
+        node_size = self._node_sizes[index]
+        sequence = self._sequence_array[pos:pos+node_size]
+        return "".join(self._letters[sequence])
+
     def get_sequence(self, node_id, start=0, end=False):
         index = node_id - self._node_id_offset
         pos = self._indices[index]
         node_size = self._node_sizes[index]
         sequence = self._sequence_array[pos:pos+node_size]
 
-        if not end:
-            end = node_size
+        assert len(sequence) == node_size
 
-        return ''.join(self._letters[sequence[start:end]])
+        if end is False:
+            end = node_size
+        return "".join(self._letters[sequence[start:end]])
+        assert end <= node_size, "End is > node size (%d, %d)" % (end, node_size)
+
+        assert end >= start, "End in get_sequence is smaller than start (start: %d, end: %d. Node size: %d). Node: %d. Node id offset: %d" % (start, end, node_size, node_id, self._node_id_offset)
+
+        subsequence = ''.join(self._letters[sequence[start:end]])
+        assert len(subsequence) == end - start, "len subsequence: %d, end:%d, start%d, node: %d. Node size: %d" % (len(subsequence), end, start, node_id, node_size)
+        return subsequence
 
     def _reverse_compliment(self, sequenence):
         return "".join(self._compliments[c] for c in sequenence[::-1])
+
+    def node_size(self, node_id):
+        return self._node_sizes[abs(node_id)-self._node_id_offset]
 
     def get_interval_sequence(self, interval):
 
@@ -132,7 +152,7 @@ class SequenceGraph():
         end_node = rps[-1]
 
         if start_node == end_node and len(rps) == 1:
-            return self.get_sequence_on_directed_node(
+            ret_str =  self.get_sequence_on_directed_node(
                 start_node,
                 interval.start_position.offset,
                 interval.end_position.offset)
@@ -149,4 +169,15 @@ class SequenceGraph():
             for rp in rps[1:-1]:
                 middle_sequence += self.get_sequence_on_directed_node(rp)
 
-            return "%s%s%s" % (start_sequence, middle_sequence, end_sequence)
+            ret_str =  "%s%s%s" % (start_sequence, middle_sequence, end_sequence)
+        if interval.graph is None:
+            interval.graph = self
+        assert len(ret_str) == interval.length(), (ret_str, interval)
+        return ret_str
+
+    def count_gc_content(self):
+        alphabet = np.array([[1], [2], [3], [4]])
+        counts = np.count_nonzero(self._sequence_array == alphabet, axis=1)
+        g_c = counts[1]+counts[3]
+        a_t = counts[0]+counts[2]
+        return self._sequence_array.size, g_c, a_t
