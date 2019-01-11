@@ -216,7 +216,7 @@ class NumpyIndexedInterval(IndexedInterval):
 
 
     @classmethod
-    def from_interval(cls, interval):
+    def from_interval(cls, interval, assert_on_sorted_node_ids=True):
         assert interval.start_position.offset == 0, "Currently only simple implementation supporting start offset=0"
         logging.info("Creating indexes for indexed interval")
         assert interval.graph is not None, "graph attribute cannot be None when indexing interval"
@@ -224,7 +224,10 @@ class NumpyIndexedInterval(IndexedInterval):
         assert isinstance(interval.graph.blocks, BlockArray), "Graph must have numpy backend"
         rps = np.array(interval.region_paths)
 
-        assert np.all(np.diff(interval.region_paths) > 0), "Region paths in linear path is not sorted asc"
+        if assert_on_sorted_node_ids:
+            #assert np.all(np.diff(interval.region_paths) > 0), "Region paths in linear path is not sorted asc"
+            if not np.all(np.diff(interval.region_paths) > 0):
+                logging.warning("Region paths in linear path is not sorted asc. Linear path can be buggy.")
 
         min_node = rps[0]
         max_node = rps[-1]

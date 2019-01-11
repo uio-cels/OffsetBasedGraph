@@ -47,7 +47,8 @@ class BaseInterval(object):
         """Set length cache used by lenght()
         :param l: length (int)
         """
-        assert l > 0
+        if l <= 0:
+            logging.error("Length is < 0")
         self.length_cache = l
 
     def _calculate_length(self):
@@ -73,9 +74,9 @@ class BaseInterval(object):
         r_sum = sum(rp_lengths)
         length = r_sum-self.start_position.offset+self.end_position.offset
 
-        assert length >= 0,\
-            "Length is %d for interval %s. r_lengths: %s."\
-            % (length, self, rp_lengths)
+        if length <= 0:
+            logging.error("Length is %d for interval %s. r_lengths: %s."\
+            % (length, self, rp_lengths))
 
         return length
 
@@ -628,7 +629,7 @@ class Interval(BaseInterval):
     def to_numpy_indexed_interval(self, only_create_distance_index=False):
         from .indexedinterval import NumpyIndexedInterval
         assert self.graph is not None, "Graph cannot be None"
-        return NumpyIndexedInterval.from_interval(self)
+        return NumpyIndexedInterval.from_interval(self, False)
 
     def to_linear_offsets(self, linear_path):
         intersecting_nodes = set(self.region_paths).intersection(linear_path.nodes_in_interval())
@@ -680,7 +681,8 @@ class Interval(BaseInterval):
             end = linear_path.get_offset_at_node(prev_on_linear) + self.graph.node_size(prev_on_linear) + self.end_position.offset
             prev_on_linear_end = prev_on_linear
 
-        assert end > start, "End %d is <= start %d for interval %s. Previous nodes on start/end: %s/%s " % (end, start, self, prev_on_linear_start, prev_on_linear_end) 
+        if end < start:
+            raise NoLinearProjectionException("End %d is <= start %d for interval %s. Previous nodes on start/end: %s/%s " % (end, start, self, prev_on_linear_start, prev_on_linear_end))
         return int(start), int(end)
 
 

@@ -33,7 +33,7 @@ class SequenceGraph():
                             node_sizes=self._node_sizes,
                             sequence_array=self._sequence_array)
         file.close()
-
+    
     @classmethod
     def from_file(cls, file_name):
         file = open(file_name, "rb")
@@ -70,13 +70,15 @@ class SequenceGraph():
                     self.set_sequence(int(node_object["id"]), node_object["sequence"])
 
     def _letter_sequence_to_numeric(self, sequence):
-        sequence[np.where(sequence == "n")[0]] = 0
-        sequence[np.where(sequence == "a")[0]] = 1
-        sequence[np.where(sequence == "c")[0]] = 2
-        sequence[np.where(sequence == "t")[0]] = 3
-        sequence[np.where(sequence == "g")[0]] = 4
-        sequence[np.where(sequence == "m")[0]] = 4
-        return sequence
+        assert isinstance(sequence, np.ndarray), "Sequence must be numpy array"
+        numeric = np.zeros_like(sequence, dtype=np.uint8)
+        numeric[np.where(sequence == "n")[0]] = 0
+        numeric[np.where(sequence == "a")[0]] = 1
+        numeric[np.where(sequence == "c")[0]] = 2
+        numeric[np.where(sequence == "t")[0]] = 3
+        numeric[np.where(sequence == "g")[0]] = 4
+        numeric[np.where(sequence == "m")[0]] = 4
+        return numeric
 
     def set_sequence(self, node_id, sequence):
         sequence = sequence.lower()
@@ -112,6 +114,13 @@ class SequenceGraph():
             new_end = node_size - start
             reverse_sequence = self.get_sequence(-node_id, new_start, new_end)
             return self._reverse_compliment(reverse_sequence)
+
+    def get_numeric_node_sequence(self, node_id):
+        index = node_id - self._node_id_offset
+        pos = self._indices[index]
+        node_size = self._node_sizes[index]
+        sequence = self._sequence_array[pos:pos+node_size]
+        return sequence
 
     def get_node_sequence(self, node_id):
         index = node_id - self._node_id_offset
