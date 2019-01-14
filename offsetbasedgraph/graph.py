@@ -580,11 +580,11 @@ class Graph(BaseGraph):
         :rtype: list(Graph)
         """
         if isinstance(self.blocks, BlockArray):
-            logging.info("Using fast way to get first block")
+            logging.debug("Using fast way to get first block")
             min_block_id = self.min_node
             assert min_block_id in self.blocks
             if len(self.reverse_adj_list[min_block_id]) == 0:
-                logging.info("Fast way used")
+                logging.debug("Fast way used")
                 return [min_block_id]
 
         return [b for b in self._possible_node_ids()
