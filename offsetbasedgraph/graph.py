@@ -672,7 +672,7 @@ class Graph(BaseGraph):
 
     @classmethod
     def from_file(cls, file_name):
-        logging.info("Reading Offset Based Graph from file: %s" % file_name)
+        logging.debug("Reading Offset Based Graph from file: %s" % file_name)
         file = open(file_name, "rb")
         data = np.load(file)
 
@@ -698,7 +698,6 @@ class Graph(BaseGraph):
                     adj_list=adj_list,
                     rev_adj_list=rev_adj_list)
         file.close()
-        logging.info("Done reading from file")
         return graph
 
     def to_numpy_file(self, name):
