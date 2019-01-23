@@ -32,9 +32,9 @@ def prune_entry(entry):
     return VCFEntry(entry.pos+i, entry.ref[i:], entry.alt[i:])
 
 
-def get_vcf_entries(filename):
+def get_vcf_entries(filename, filters={}):
     def get_entries(line):
-        parts = line.split("\t", 5)
+        parts = line.split(None, 5)
         pos = int(parts[1])-1
         ref = parts[3]
         alts = parts[4].split(",")
@@ -42,7 +42,7 @@ def get_vcf_entries(filename):
 
     return chain.from_iterable(
         get_entries(line) for line in open(filename)
-        if not line.startswith("#"))
+        if (not line.startswith("#")) and (line.split()[2] not in filters))
 
 
 def paralell_nodes_func(graph, linear_path):
@@ -251,13 +251,13 @@ def get_variants(vcf_entries, entry_to_edge):
     return (entry_to_edge(entry) for entry in vcf_entries)
 
 
-def write_variants(chromosome, folder):
+def write_variants(chromosome, folder, vcf_name="_variants.vcf"):
     base_name = folder + "/" + str(chromosome)
     graph = obg.Graph.from_file(base_name+".nobg")
     seq_graph = obg.SequenceGraph.from_file(base_name + ".nobg.sequences")
     reference = obg.NumpyIndexedInterval.from_file(
         base_name + "_linear_pathv2.interval")
-    vcf_entries = get_vcf_entries(base_name + "_variants.vcf")
+    vcf_entries = get_vcf_entries(base_name + vcf_name)
     outfile = open(base_name + "_variant_map.tsv", "w")
     entry_to_edge = entry_to_edge_func(graph, reference, seq_graph)
     variants = (entry_to_edge(entry) for entry in vcf_entries)
@@ -303,7 +303,7 @@ def get_variant_precences(vcf_file_name):
 
 def get_variant_maps(chromosome, folder):
     base_name = folder + "/" + str(chromosome)
-    graph = obg.Graph.from_file(base_name+ ".nobg")
+    graph = obg.Graph.from_file(base_name + ".nobg")
     snp_files = base_name + "_variant_map.tsv"
     var_maps = make_var_map(graph, parse_variants(snp_files))
     write_variant_maps(var_maps, base_name)

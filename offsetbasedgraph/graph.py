@@ -6,6 +6,7 @@ import numpy as np
 import logging
 import warnings
 
+
 class Block(object):
     def __init__(self, length):
         assert length > 0
