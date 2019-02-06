@@ -29,3 +29,6 @@ def test_simple_deletion():
     true_graph = VCFGraph([4, 2, 4], adj_list, SNPs())
     assert graph == true_graph
 
+
+def test_construct_graph():
+    construct_graph(get_vcf_entries(path))
