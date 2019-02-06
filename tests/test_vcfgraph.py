@@ -1,3 +1,4 @@
+from collections import defaultdict
 from offsetbasedgraph.vcfgraph import construct_graph, VCFGraph, AdjList, SNPs, graph_from_indels
 from offsetbasedgraph.vcfmap import get_vcf_entries
 import pytest

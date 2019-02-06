@@ -32,9 +32,11 @@ class AdjList:
         return True
 
     @classmethod
-    def from_dict(cls, adj_list, n_nodes):
+    def from_dict(cls, tmp_adj_list, n_nodes):
+        adj_list = defaultdict(list)
+        adj_list.update(tmp_adj_list)
         node_index = np.empty(n_nodes+1, dtype="int")
-        lens = [len(adj_list[from_node]) for from_node in range(n_nodes)]
+        lens = [len(adj_list[from_node]) if from_node in adj_list else 0 for from_node in range(n_nodes)]
         node_index[1:] = np.cumsum(lens)
         node_index[0] = 0
         to_nodes = [to_node for from_node in range(n_nodes) for to_node in sorted(adj_list[from_node])]
@@ -77,18 +79,19 @@ def classify_vcf_entry(vcf_entry):
     return SNP
 
 
-def graph_from_indels(deletions, insertions, reference_length):
-    break_points = np.concatenate((deletions[0]+1, deletions[0]+deletions[1]+1, insertions[0]+1))
+def get_node_starts(deletions, insertions):
+    break_points = np.concatenate((deletions[0]+1,
+                                   deletions[0]+deletions[1]+1,
+                                   insertions[0]+1))
     args = np.argsort(break_points, kind="mergesort")
     sorted_break_points = break_points[args]
-    print(sorted_break_points)
     diffs = np.diff(sorted_break_points)
-    node_starts = np.r_[0, sorted_break_points[diffs>0], sorted_break_points[-1]]
-    all_node_starts = np.concatenate((insertions[0]+1, node_starts))
-    print(all_node_starts)
-    code_args = np.argsort(all_node_starts, kind="mergesort")
-    reference_node_ids = code_args[-node_starts.size:]
-    insertion_node_ids = code_args[:-node_starts.size]
+    node_starts = np.r_[0, sorted_break_points[:-1][diffs > 0],
+                        sorted_break_points[-1]]
+    return node_starts
+
+
+def create_adj_list(reference_node_ids, node_starts, insertions, insertion_node_ids):
     adj_list = defaultdict(list)
     for from_node, to_node in zip(reference_node_ids[:-1], reference_node_ids[1:]):
         adj_list[from_node].append(to_node)
@@ -98,15 +101,36 @@ def graph_from_indels(deletions, insertions, reference_length):
     for from_node, to_node, node_id in zip(from_nodes, to_nodes, insertion_node_ids):
         adj_list[from_node].append(node_id)
         adj_list[node_id].append(to_node)
+    return adj_list
+    return 
+
+
+def create_node_lens(node_starts, reference_length, insertions, code_args):
     reference_node_lens = np.diff(np.r_[node_starts, reference_length])
-    print(reference_node_lens)
     insertion_node_lens = insertions[1]
     node_lens = np.empty(reference_node_lens.size+insertion_node_lens.size)
     node_lens[code_args[-node_starts.size:]] = reference_node_lens
     node_lens[code_args[:-node_starts.size]] = insertion_node_lens
-    print(node_lens)
-    print(adj_list)
-    return VCFGraph(node_lens, AdjList.from_dict(adj_list, node_lens.size), SNPs)
+    return node_lens
+
+
+def graph_from_indels(deletions, insertions, reference_length):
+    node_starts = get_node_starts(deletions, insertions)
+    all_node_starts = np.concatenate((insertions[0]+1, node_starts))
+    print(all_node_starts)
+    tmp_code_args = np.argsort(all_node_starts, kind="mergesort")
+    code_args = tmp_code_args.copy()
+    code_args[tmp_code_args] = np.arange(tmp_code_args.size)
+    print(tmp_code_args)
+    print(code_args)
+    reference_node_ids = code_args[-node_starts.size:]
+    insertion_node_ids = code_args[:-node_starts.size]
+    print(reference_node_ids, insertion_node_ids)
+    adj_list = create_adj_list(reference_node_ids, node_starts,
+                               insertions, insertion_node_ids)
+    node_lens = create_node_lens(node_starts, reference_length, insertions, code_args)
+    return VCFGraph(node_lens, AdjList.from_dict(adj_list, all_node_starts.size), SNPs)
+
 
 def construct_graph(vcf_entries, reference_length):
     cur_node = 0
