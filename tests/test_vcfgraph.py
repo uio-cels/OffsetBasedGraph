@@ -22,3 +22,10 @@ def test_two_insertion():
     true_graph = VCFGraph([3, 3, 2, 2, 5], adj_list, SNPs())
     assert graph == true_graph
 
+
+def test_simple_deletion():
+    graph = graph_from_indels(np.array([[3], [2]]), np.array([[], []]), 10)
+    adj_list = AdjList.from_dict({0: [1, 2], 1: [2]}, 5)
+    true_graph = VCFGraph([4, 2, 4], adj_list, SNPs())
+    assert graph == true_graph
+

@@ -117,12 +117,9 @@ def create_node_lens(node_starts, reference_length, insertions, code_args):
 def graph_from_indels(deletions, insertions, reference_length):
     node_starts = get_node_starts(deletions, insertions)
     all_node_starts = np.concatenate((insertions[0]+1, node_starts))
-    print(all_node_starts)
     tmp_code_args = np.argsort(all_node_starts, kind="mergesort")
-    code_args = tmp_code_args.copy()
+    code_args = tmp_code_args.copy() # TODO: prob easyier way to to this
     code_args[tmp_code_args] = np.arange(tmp_code_args.size)
-    print(tmp_code_args)
-    print(code_args)
     reference_node_ids = code_args[-node_starts.size:]
     insertion_node_ids = code_args[:-node_starts.size]
     print(reference_node_ids, insertion_node_ids)
