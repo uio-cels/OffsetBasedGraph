@@ -90,8 +90,7 @@ def get_node_starts(deletions, insertions):
                         sorted_break_points[-1]]
     return node_starts
 
-
-def create_adj_list(reference_node_ids, node_starts, insertions, insertion_node_ids):
+def create_adj_list(reference_node_ids, node_starts, insertions, insertion_node_ids, deletions):
     adj_list = defaultdict(list)
     for from_node, to_node in zip(reference_node_ids[:-1], reference_node_ids[1:]):
         adj_list[from_node].append(to_node)
@@ -101,8 +100,14 @@ def create_adj_list(reference_node_ids, node_starts, insertions, insertion_node_
     for from_node, to_node, node_id in zip(from_nodes, to_nodes, insertion_node_ids):
         adj_list[from_node].append(node_id)
         adj_list[node_id].append(to_node)
+
+    node_start_idxs = np.searchsorted(node_starts, deletions[0]+1)
+    from_nodes = reference_node_ids[node_start_idxs-1]
+    node_start_idxs = np.searchsorted(node_starts, deletions[0]+deletions[1]+1)
+    to_nodes = reference_node_ids[node_start_idxs]
+    for from_node, to_node in zip(from_nodes, to_nodes):
+        adj_list[from_node].append(to_node)
     return adj_list
-    return 
 
 
 def create_node_lens(node_starts, reference_length, insertions, code_args):
@@ -116,15 +121,15 @@ def create_node_lens(node_starts, reference_length, insertions, code_args):
 
 def graph_from_indels(deletions, insertions, reference_length):
     node_starts = get_node_starts(deletions, insertions)
+    print(node_starts)
     all_node_starts = np.concatenate((insertions[0]+1, node_starts))
     tmp_code_args = np.argsort(all_node_starts, kind="mergesort")
     code_args = tmp_code_args.copy() # TODO: prob easyier way to to this
     code_args[tmp_code_args] = np.arange(tmp_code_args.size)
     reference_node_ids = code_args[-node_starts.size:]
     insertion_node_ids = code_args[:-node_starts.size]
-    print(reference_node_ids, insertion_node_ids)
     adj_list = create_adj_list(reference_node_ids, node_starts,
-                               insertions, insertion_node_ids)
+                               insertions, insertion_node_ids, deletions)
     node_lens = create_node_lens(node_starts, reference_length, insertions, code_args)
     return VCFGraph(node_lens, AdjList.from_dict(adj_list, all_node_starts.size), SNPs)
 
