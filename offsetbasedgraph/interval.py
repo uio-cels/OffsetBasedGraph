@@ -292,6 +292,7 @@ class Interval(BaseInterval):
         :rtype: Position
 
         """
+        assert self.graph is not None, "Need graph to get position in interval"
         total_offset = offset + self.start_position.offset
         if rp_lens is None:
             rp_lens = [self.graph.blocks[rp].length()

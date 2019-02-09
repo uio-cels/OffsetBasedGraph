@@ -116,10 +116,19 @@ class SequenceGraph():
             return self._reverse_compliment(reverse_sequence)
 
     def get_numeric_node_sequence(self, node_id):
+        is_reverse = False
+        if node_id < 0:
+            is_reverse = True
+            node_id = abs(node_id)
+
         index = node_id - self._node_id_offset
         pos = self._indices[index]
         node_size = self._node_sizes[index]
         sequence = self._sequence_array[pos:pos+node_size]
+
+        if is_reverse:
+            return self._numeric_reverse_compliment(sequence)
+
         return sequence
 
     def get_node_sequence(self, node_id):
@@ -150,6 +159,21 @@ class SequenceGraph():
 
     def _reverse_compliment(self, sequenence):
         return "".join(self._compliments[c] for c in sequenence[::-1])
+
+    def _numeric_reverse_compliment(self, sequence):
+        new = np.zeros(len(sequence))
+        for i in range(0, len(sequence)):
+            old = sequence[len(sequence) - 1 - i]
+            if old == 1:
+                new[i] = 3
+            elif old == 2:
+                new[i] = 4
+            elif old == 3:
+                new[i] = 1
+            elif old == 4:
+                new[i] = 2
+
+        return new
 
     def node_size(self, node_id):
         return self._node_sizes[abs(node_id)-self._node_id_offset]
