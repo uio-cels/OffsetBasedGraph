@@ -24,6 +24,7 @@ class SequenceGraph():
         self._node_id_offset = node_id_offset
         self._node_sizes = node_sizes
         self._sequence_array = sequence_array
+        self._sequence_cache = {}
 
     def to_file(self, file_name):
         file = open(file_name, "wb")
@@ -139,6 +140,10 @@ class SequenceGraph():
         return "".join(self._letters[sequence])
 
     def get_sequence(self, node_id, start=0, end=False):
+        cache_id = "%d-%d-%d" % (node_id, start, end)
+        if cache_id in self._sequence_cache:
+            return self._sequence_cache[cache_id]
+
         index = node_id - self._node_id_offset
         pos = self._indices[index]
         node_size = self._node_sizes[index]
@@ -148,14 +153,9 @@ class SequenceGraph():
 
         if end is False:
             end = node_size
-        return "".join(self._letters[sequence[start:end]])
-        assert end <= node_size, "End is > node size (%d, %d)" % (end, node_size)
-
-        assert end >= start, "End in get_sequence is smaller than start (start: %d, end: %d. Node size: %d). Node: %d. Node id offset: %d" % (start, end, node_size, node_id, self._node_id_offset)
-
-        subsequence = ''.join(self._letters[sequence[start:end]])
-        assert len(subsequence) == end - start, "len subsequence: %d, end:%d, start%d, node: %d. Node size: %d" % (len(subsequence), end, start, node_id, node_size)
-        return subsequence
+        text_sequence = "".join(self._letters[sequence[start:end]])
+        self._sequence_cache[cache_id] = text_sequence
+        return text_sequence
 
     def _reverse_compliment(self, sequenence):
         return "".join(self._compliments[c] for c in sequenence[::-1])
