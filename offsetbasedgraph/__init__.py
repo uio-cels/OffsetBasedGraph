@@ -7,6 +7,7 @@ from .directedinterval import DirectedInterval
 from .interval import Position
 from .interval import IntervalCollection
 from .sequencegraph import SequenceGraph
+from .sequencegraphv2 import SequenceGraphv2
 from .multipathinterval import GeneralMultiPathInterval,\
     CriticalPathsMultiPathInterval, FuzzyMultipathInterval
 

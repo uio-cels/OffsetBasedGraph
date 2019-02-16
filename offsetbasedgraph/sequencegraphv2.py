@@ -5,7 +5,7 @@ import logging
 import re
 
 
-class SequenceGraph():
+class SequenceGraphv2():
     _compliments = {"A": "T",
                     "a": "t",
                     "C": "G",
@@ -19,10 +19,8 @@ class SequenceGraph():
 
     _letters = np.array(["n", "a", "c", "t", "g", "m"])
 
-    def __init__(self, node_id_offset, indices, node_sizes, sequence_array):
-        self._indices = indices
+    def __init__(self, node_id_offset, sequence_array):
         self._node_id_offset = node_id_offset
-        self._node_sizes = node_sizes
         self._sequence_array = sequence_array
         self._sequence_cache = {}
 
@@ -30,8 +28,6 @@ class SequenceGraph():
         file = open(file_name, "wb")
         np.savez_compressed(file,
                             node_id_offset=self._node_id_offset,
-                            indices=self._indices,
-                            node_sizes=self._node_sizes,
                             sequence_array=self._sequence_array)
         file.close()
     
@@ -40,8 +36,6 @@ class SequenceGraph():
         file = open(file_name, "rb")
         data = np.load(file)
         seqgraph = cls(data["node_id_offset"],
-                       data["indices"],
-                       data["node_sizes"],
                        data["sequence_array"])
         file.close()
         return seqgraph
@@ -49,12 +43,8 @@ class SequenceGraph():
     @classmethod
     def create_empty_from_ob_graph(cls, ob_graph):
         assert isinstance(ob_graph.blocks, BlockArray), "Block backend must be BlockArray"
-        blocks = ob_graph.blocks
-        node_sizes = ob_graph.blocks._array
-        indices = np.cumsum(node_sizes)
-        indices = np.insert(indices, 0, 0)
-        sequence_array = np.zeros(np.sum(node_sizes), dtype=np.uint8)
-        return cls(ob_graph.blocks.node_id_offset, indices, node_sizes, sequence_array)
+        sequence_array = np.array(["X" * size for size in ob_graph.blocks._array], dtype=str)
+        return cls(ob_graph.blocks.node_id_offset, sequence_array)
 
     def set_sequences_using_vg_json_graph(self, file_name):
         logging.info("Setting sequences using vg json graph %s" % file_name)
@@ -70,17 +60,6 @@ class SequenceGraph():
                         logging.info("%d nodes processed" % i)
                     self.set_sequence(int(node_object["id"]), node_object["sequence"])
 
-    def _letter_sequence_to_numeric(self, sequence):
-        assert isinstance(sequence, np.ndarray), "Sequence must be numpy array"
-        numeric = np.zeros_like(sequence, dtype=np.uint8)
-        numeric[np.where(sequence == "n")[0]] = 0
-        numeric[np.where(sequence == "a")[0]] = 1
-        numeric[np.where(sequence == "c")[0]] = 2
-        numeric[np.where(sequence == "t")[0]] = 3
-        numeric[np.where(sequence == "g")[0]] = 4
-        numeric[np.where(sequence == "m")[0]] = 4
-        return numeric
-
     def set_sequence(self, node_id, sequence):
         sequence = sequence.lower()
         new_sequence = re.sub(r'[^acgtn]', "n", sequence)
@@ -90,13 +69,9 @@ class SequenceGraph():
             sequence = new_sequence
 
         index = node_id - self._node_id_offset
-        node_size = self._node_sizes[index]
-        assert node_size == len(sequence), "Invalid sequence. Does not cover whole node"
-        sequence = np.array(list(sequence))
-        sequence = self._letter_sequence_to_numeric(sequence)
         try:
-            pos = self._indices[index]
-            self._sequence_array[pos:pos+node_size] = sequence
+            pos = index
+            self._sequence_array[pos] = sequence
         except ValueError:
             raise ValueError("Trying to create sequence graph with "
                              "invalid sequence (not containing A,C,G,T,N): %s" % sequence)
@@ -116,22 +91,6 @@ class SequenceGraph():
             reverse_sequence = self.get_sequence(-node_id, new_start, new_end)
             return self._reverse_compliment(reverse_sequence)
 
-    def get_numeric_node_sequence(self, node_id):
-        is_reverse = False
-        if node_id < 0:
-            is_reverse = True
-            node_id = abs(node_id)
-
-        index = node_id - self._node_id_offset
-        pos = self._indices[index]
-        node_size = self._node_sizes[index]
-        sequence = self._sequence_array[pos:pos+node_size]
-
-        if is_reverse:
-            return self._numeric_reverse_compliment(sequence)
-
-        return sequence
-
     def get_node_sequence(self, node_id):
         index = node_id - self._node_id_offset
         pos = self._indices[index]
@@ -141,42 +100,31 @@ class SequenceGraph():
 
     def get_sequence(self, node_id, start=0, end=False):
         if start == 0 and not end:
+            return self._sequence_array[node_id - self._node_id_offset]
+        else:
+            raise NotImplementedError("Not implemented, but should be trivial to do")
+
+
+        if start == 0 and not end:
             cache_id = node_id
             if cache_id in self._sequence_cache:
                 return self._sequence_cache[cache_id]
 
         index = node_id - self._node_id_offset
-        pos = self._indices[index]
-        node_size = self._node_sizes[index]
-        sequence = self._sequence_array[pos:pos+node_size]
+        sequence = self._sequence_array[index]
 
         assert len(sequence) == node_size
 
         if end is False:
             end = node_size
-        text_sequence = "".join(self._letters[sequence[start:end]])
+        sliced_sequence = sequence[start:end]
         if start == 0 and end == node_size:
             cache_id = node_id
-            self._sequence_cache[cache_id] = text_sequence
-        return text_sequence
+            self._sequence_cache[cache_id] = sliced_sequence
+        return sliced_sequence
 
     def _reverse_compliment(self, sequenence):
         return "".join(self._compliments[c] for c in sequenence[::-1])
-
-    def _numeric_reverse_compliment(self, sequence):
-        new = np.zeros(len(sequence))
-        for i in range(0, len(sequence)):
-            old = sequence[len(sequence) - 1 - i]
-            if old == 1:
-                new[i] = 3
-            elif old == 2:
-                new[i] = 4
-            elif old == 3:
-                new[i] = 1
-            elif old == 4:
-                new[i] = 2
-
-        return new
 
     def node_size(self, node_id):
         return self._node_sizes[abs(node_id)-self._node_id_offset]
@@ -211,9 +159,3 @@ class SequenceGraph():
         assert len(ret_str) == interval.length(), (ret_str, interval)
         return ret_str
 
-    def count_gc_content(self):
-        alphabet = np.array([[1], [2], [3], [4]])
-        counts = np.count_nonzero(self._sequence_array == alphabet, axis=1)
-        g_c = counts[1]+counts[3]
-        a_t = counts[0]+counts[2]
-        return self._sequence_array.size, g_c, a_t
