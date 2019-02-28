@@ -24,6 +24,12 @@ def prune_entry_end(entry):
     return VCFEntry(entry.pos, entry.ref[:len(entry.ref)-i], entry.alt[:len(entry.alt)-i])
 
 
+def prune_one(entry):
+    if not entry.alt[0] == entry.ref[0]:
+        print("Different ref on insertion", entry)
+    return VCFEntry(entry.pos+1, entry.ref[1:], entry.alt[1:])
+
+
 def prune_entry(entry):
     for i, (c1, c2) in enumerate(zip(entry.ref, entry.alt)):
         if c1 != c2:
@@ -94,13 +100,19 @@ def prune_SNP(entry):
 
 def prune_deletion(entry):
     pruned = prune_entry(prune_entry_end(entry))
-    assert len(pruned.alt) == 0, pruned
+    if not len(pruned.alt) == 0:
+        assert len(pruned.alt) == 1, pruned
+        print("Wierd INS: ", entry)
+        return VCFEntry(entry.pos+1, entry.ref[1:], entry.alt[1:])
     return pruned
 
 
 def prune_insertion(entry):
-    pruned = prune_entry(prune_entry_end(entry))
-    assert len(pruned.ref) == 0, pruned
+    pruned = prune_entry_end(prune_one(entry))
+    if not len(pruned.ref) == 0:
+        print("Wierd INS: ", entry)
+        assert len(pruned.ref) == 1, entry
+        return VCFEntry(entry.pos+1, entry.ref[1:], entry.alt[1:])
     return pruned
 
 
@@ -191,7 +203,9 @@ def entry_to_edge_func(graph, reference, seq_graph):
         trail_nodes = [node for node in chain.from_iterable(graph.adj_list[snp_node] for snp_node in snp_nodes)
                        if seq_graph.get_node_sequence(node) == trail_seq and
                        node not in reference.nodes_in_interval() and after_trail in graph.adj_list[node]]
-        assert all(trail_node in graph.adj_list[ref_node] for trail_node in trail_nodes)
+
+        assert all(trail_node in graph.adj_list[ref_node]
+                   for trail_node in trail_nodes)
         if trail_nodes:
             logging.debug("--->%s, %s", snp_nodes, trail_nodes)
         return trail_nodes
