@@ -81,6 +81,12 @@ class SequenceGraphv2():
         if node_id > 0:
             return self.get_sequence(node_id, start, end)
         else:
+
+            if start == 0 and not end:
+                reverse_sequence = self.get_sequence(-node_id, 0, False)
+                return self._reverse_compliment(reverse_sequence)
+
+            raise NotImplementedError("TODO")
             node_size = len(self.get_sequence(-node_id))
 
             if not end:
@@ -92,6 +98,7 @@ class SequenceGraphv2():
             return self._reverse_compliment(reverse_sequence)
 
     def get_node_sequence(self, node_id):
+        assert node_id > 0
         index = node_id - self._node_id_offset
         pos = self._indices[index]
         node_size = self._node_sizes[index]
@@ -100,7 +107,7 @@ class SequenceGraphv2():
 
     def get_sequence(self, node_id, start=0, end=False):
         if start == 0 and not end:
-            return self._sequence_array[node_id - self._node_id_offset]
+            return str(self._sequence_array[node_id - self._node_id_offset])
         else:
             raise NotImplementedError("Not implemented, but should be trivial to do")
 
