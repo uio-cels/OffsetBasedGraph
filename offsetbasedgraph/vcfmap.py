@@ -42,7 +42,7 @@ def get_vcf_entries(filename, filters={}):
 
     return chain.from_iterable(
         get_entries(line) for line in open(filename)
-        if (not line.startswith("#")) and (line.split()[2] not in filters))
+        if (not line.startswith("#")) and (line.split()[2] not in filters) and line.split()[2] != ".")
 
 
 def paralell_nodes_func(graph, linear_path):
