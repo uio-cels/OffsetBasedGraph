@@ -217,3 +217,6 @@ class SequenceGraph():
         g_c = counts[1]+counts[3]
         a_t = counts[0]+counts[2]
         return self._sequence_array.size, g_c, a_t
+
+    def get_nodes_sequences(self, nodes):
+        return "".join(self.get_node_sequence(node) for node in nodes)
