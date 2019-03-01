@@ -23,6 +23,12 @@ def prune_entry_end(entry):
     i = min(len(entry.alt), len(entry.ref))
     return VCFEntry(entry.pos, entry.ref[:len(entry.ref)-i], entry.alt[:len(entry.alt)-i])
 
+def prune_entry_start(entry):
+    for i, (c1, c2) in enumerate(zip(entry.ref, entry.alt)):
+        if c1 != c2:
+            return VCFEntry(entry.pos+i, entry.ref[i:], entry.alt[i:])
+    i = min(len(entry.alt), len(entry.ref))
+    return VCFEntry(entry.pos+i, entry.ref[i:], entry.alt[i:])
 
 def prune_one(entry):
     if not entry.alt[0] == entry.ref[0]:
@@ -108,7 +114,7 @@ def prune_deletion(entry):
 
 
 def prune_insertion(entry):
-    pruned = prune_entry_end(prune_one(entry))
+    pruned = prune_entry_start(prune_entry_end(prune_one(entry)))
     if not len(pruned.ref) == 0:
         print("Wierd INS: ", entry)
         assert len(pruned.ref) == 1, entry

@@ -1,4 +1,4 @@
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 from itertools import takewhile, chain
 import pickle
 import numpy as np
@@ -103,7 +103,7 @@ class TranslationBuilder:
             -1*np.ones(size, dtype="int"))
         self.snp_index = -1*np.ones(size, dtype="int")
         self.visited = np.zeros(size)
-        self.extra_nodes = {}
+        self.extra_nodes = defaultdict(list)
 
     def build(self):
         self.build_ref_translation()
@@ -248,8 +248,13 @@ class TranslationBuilder:
         overlap_offset = 0
         for vcf_node_id, start, end in self.full_vcf_graph.path.get_node_intervals():
             assert vcf_node_id != -1
+            if overlap_offset>=(end-start):
+                self.extra_nodes[overlapping_node].append(vcf_node_id)
+                overlap_offset = overlap_offset-(end-start)
+                continue
             if overlapping_node is not None:
-                self.extra_nodes[overlapping_node] = (vcf_node_id, overlap_offset)
+                self.extra_nodes[overlapping_node].append(vcf_node_id)
+                self.extra_nodes[overlapping_node].append(overlap_offset)
             obg_nodes = []
             e = None
             tmp_overlapping_node = None
@@ -261,6 +266,7 @@ class TranslationBuilder:
                 e = s + self.full_obg_graph.graph.node_size(node)
                 if e == end:
                     tmp_overlapping_node = None
+                    tmp_overlap_offset = 0
                     break
                 if e > end:
                     print("overflow", node, vcf_node_id, e, end)
@@ -282,7 +288,7 @@ class TranslationBuilder:
             self.add_translation(obg_nodes, vcf_node_id, overlap_offset)
             obg_seq = self.full_obg_graph.seq_graph.get_nodes_sequences(obg_nodes).lower()
             vcf_seq = self.full_vcf_graph.graph._seqs[vcf_node_id][overlap_offset:].lower()
-            assert (obg_seq[:len(obg_seq)-tmp_overlap_offset] == vcf_seq), (obg_seq, vcf_seq)
+            assert (obg_seq[:len(obg_seq)-tmp_overlap_offset] == vcf_seq), (obg_seq, vcf_seq, tmp_overlap_offset, self.full_vcf_graph.graph._node_lens[vcf_node_id])
             assert np.count_nonzero(self.translation.node_id[obg_nodes]==-1) == 0
             overlap_offset = tmp_overlap_offset
             overlapping_node = tmp_overlapping_node

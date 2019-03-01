@@ -219,15 +219,10 @@ def create_adj_list(reference_node_ids, node_starts, insertions, insertion_node_
         adj_list[node_id].append(to_node)
 
     node_start_idxs = np.searchsorted(node_starts, deletions[0])
-    tmp = np.flatnonzero(deletions[0]==2924585)[0]
     from_nodes = reference_node_ids[node_start_idxs-1]
     node_start_idxs = np.searchsorted(node_starts, deletions[0]+deletions[1])
     to_nodes = reference_node_ids[node_start_idxs]
-    print("-->", from_nodes[tmp])
-    print("-->", to_nodes[tmp])
     for from_node, to_node in zip(from_nodes, to_nodes):
-        if from_node == 9224 or to_node == 9226:
-            print("DEL", from_node, to_node)
         adj_list[from_node].append(to_node)
     return adj_list
 
@@ -324,9 +319,6 @@ def construct_graph(vcf_entries, reference_length, fasta=None):
             except AssertionError as e:
                 raise e
                 continue
-            if entry.pos == 1124908:
-                print(entry)
-                print(new_entry)
             insertion_positions.append(new_entry.pos)
             insertion_lens.append(len(new_entry.alt))
             insertion_seqs.append(new_entry.alt)
@@ -338,8 +330,6 @@ def construct_graph(vcf_entries, reference_length, fasta=None):
             except AssertionError:
                 raise
                 continue
-            if new_entry.pos in (4487571, 4487570):
-                print(new_entry)
             deletion_starts.append(new_entry.pos)
             deletion_lens.append(len(new_entry.ref))
         dels = np.array([deletion_starts, deletion_lens])
@@ -348,5 +338,3 @@ def construct_graph(vcf_entries, reference_length, fasta=None):
     vcfmap.fill_snps(snp_var_ids, snp_positions)
     graph, reference_path = graph_from_snps_and_indels(dels, insertions, snp_positions, reference_length, insertion_seqs, snp_seqs, fasta, vcf_map=vcfmap, insertion_var_ids=ins_var_ids)
     return graph, reference_path, vcfmap
-    print(len(deletion_starts))
-    print(len(insertion_positions))
