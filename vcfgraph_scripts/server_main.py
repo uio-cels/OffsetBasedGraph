@@ -12,27 +12,50 @@ from graph_peak_caller.intervals import UniqueIntervals
 from graph_peak_caller.callpeaks_interface import find_or_create_linear_map
 from itertools import chain
 from pyfaidx import Fasta
+chrom_sizes = {
+    1:	249250621,
+    2:	243199373,
+    3:	198022430,
+    4:	191154276,
+    5:	180915260,
+    6:	171115067,
+    7:	159138663,
+    8:	146364022,
+    9:	141213431,
+    10:	135534747,
+    11:	135006516,
+    12:	133851895,
+    13:	115169878,
+    14:	107349540,
+    15:	102531392,
+    16:	90354753,
+    17:	81195210,
+    18:	78077248,
+    20:	63025520,
+    19:	59128983,
+    22:	51304566,
+    21:	48129895}
+
 data_path = "/data/bioinf/human_1pc/"
-vcf_path = data_path + "filtered_20.vcf"
+vcf_path = data_path + "filtered_%s.vcf"
 fasta_path = data_path + "hg19_chr1-Y.fa"
-gpc_path = "/data/bioinf/benchmarking/data/HUMAN_CTCF_ENCSR000DUB/1/filtered_low_qual_reads_removed_20.json"
+gpc_path = "/data/bioinf/benchmarking/data/HUMAN_CTCF_ENCSR000DUB/1/filtered_low_qual_reads_removed_%s.json"
 # gpc_path = "/home/knut/Documents/phd/graph_peak_caller/tests/mhc_test_data/"
-obg_base_name = data_path + "20"
-vcf_base_name = "20_test"
+obg_base_name = data_path + "%s"
+vcf_base_name = "%s_test"
 
-def build_vcf_graph():
-    fasta = Fasta(fasta_path)["20"]
-    graph, ref, _ = construct_graph(get_vcf_entries(vcf_path), 63025520, fasta)
-    graph.save("20_test_graph")
-    ref.save("20_test_ref")
+def build_vcf_graph(i=20):
+    fasta = Fasta(fasta_path)[str(i)]
+    graph, ref, _ = construct_graph(get_vcf_entries(vcf_path % i), chrom_sizes[i], fasta)
+    graph.save("%s_test_graph" % i)
+    ref.save("%s_test_ref" % i)
 
-def build_translation():
-    obg_full_graph = FullGraph.from_files(obg_base_name)
-    print(max(obg_full_graph.graph.blocks._array))
-    vcf_full_graph = FullVCFGraph.from_files(vcf_base_name)
+def build_translation(i=20):
+    obg_full_graph = FullGraph.from_files(obg_base_name % i)
+    vcf_full_graph = FullVCFGraph.from_files(vcf_base_name % i)
     t = TranslationBuilder(obg_full_graph, vcf_full_graph)
     translator = t.build()
-    translator.save("20_test")
+    translator.save("%s_test" % i)
     
 
 def translate_interval(interval, translator, graph, ob_graph):
@@ -59,15 +82,15 @@ def translate_graph(vcf_graph):
     return graph
 
 
-def translate_intervals():
-    obg_full_graph = FullGraph.from_files(obg_base_name)
-    vcf_full_graph = FullVCFGraph.from_files(vcf_base_name)
-    translator = Translator.load("20_test")
-    interval_collection = vg_json_file_to_interval_collection(gpc_path, obg_full_graph.graph)
+def translate_intervals(i=20):
+    obg_full_graph = FullGraph.from_files(obg_base_name % i)
+    vcf_full_graph = FullVCFGraph.from_files(vcf_base_name % i)
+    translator = Translator.load("%s_test" % i)
+    interval_collection = vg_json_file_to_interval_collection(gpc_path % i, obg_full_graph.graph)
     intervals = list(interval_collection)
     counter = 0
     obg_graph = translate_graph(vcf_full_graph.graph)
-    obg_graph.to_file("20_small.npz")
+    obg_graph.to_file("%s_small.npz" % i )
     new_intervals = [translate_interval(interval, translator, vcf_full_graph.graph, obg_graph)
                      for interval in intervals]
     print("----------------------------------")
@@ -79,8 +102,7 @@ def translate_intervals():
             if abs(i2.length()-i.length())>5:
                 print(i, i2)
     
-    obg.IntervalCollection(new_intervals).to_file("20_test_translated.intervalcollection")
-
+    obg.IntervalCollection(new_intervals).to_file("%s_test_translated.intervalcollection" % i)
     print(counter)
 
 def run_old_callpeaks():
@@ -98,22 +120,19 @@ def run_old_callpeaks():
     callpeaks.run(sample, control)
     
 
-def run_callpeaks():
-    obg_graph = obg.Graph.from_file("20_small.npz")
-    new_intervals = obg.IntervalCollection.from_file("20_test_translated.intervalcollection")
-    new_intervals2 = obg.IntervalCollection.from_file("20_test_translated.intervalcollection")
+def run_callpeaks(i=20):
+    obg_graph = obg.Graph.from_file("%s_small.npz" % i)
+    new_intervals = obg.IntervalCollection.from_file("%s_test_translated.intervalcollection" % i)
+    new_intervals2 = obg.IntervalCollection.from_file("%s_test_translated.intervalcollection" % i)
     sample = UniqueIntervals(new_intervals)
     control = UniqueIntervals(new_intervals2)
     
     config = Configuration()
-    config.read_length = 70
-    config.fragment_length = 120
-    config.linear_map_name = "lin_map.npz"
+    config.read_length = 34
+    config.fragment_length = 141
+    config.linear_map_name = "lin_map_%s.npz" % i
     linear_map = find_or_create_linear_map(obg_graph, config.linear_map_name)
-    
-    callpeaks = CallPeaks(obg_graph, config, Reporter("testrun"))
-    
-    
+    callpeaks = CallPeaks(obg_graph, config, Reporter("testrun%s" %i))
     callpeaks.run(sample, control)
 
 def compare_peaks():
@@ -134,12 +153,13 @@ def compare_peaks():
 
 
 if __name__ == "__main__":
-    # build_vcf_graph()
-    # build_translation()
-    # translate_intervals()
-    # run_callpeaks()
-    # run_old_callpeaks()
-    compare_peaks()
+    for i in range(1, 22):
+        build_vcf_graph(i)
+        build_translation(i)
+        translate_intervals(i)
+        run_callpeaks(i)
+        # run_old_callpeaks()
+        # compare_peaks()
 # obg_full_graph = FullGraph.from_files(obg_base_name)
 # vcf_full_graph = FullVCFGraph.from_files(vcf_base_name)
 # t = TranslationBuilder(obg_full_graph, vcf_full_graph)
