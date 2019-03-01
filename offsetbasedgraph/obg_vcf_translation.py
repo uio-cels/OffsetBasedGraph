@@ -205,6 +205,19 @@ class TranslationBuilder:
                     assert False, (var_type, variant)
                 assert (not res) or np.count_nonzero(self.translation.node_id[variant.alt_node_ids]==-1) == 0, (variant, t)
 
+    def build_ref_translation_numpy(self):
+        obg_distances = self.full_obg_graph.linear_path._node_to_distance
+        idxs = np.flatnonzero(obg_distances[:-1] != obg_distances[1:])+1
+        obg_distances = obg_distances[idxs]
+        vcf_distances = self.full_vcf_graph.path._distance_to_node
+        obg_idxs = np.searchsorted(vcf_distances, obg_distances, side="right")-1
+        vcf_node_idxs = self.full_vcf_graph.path._node_ids[obg_idxs]
+        offsets = obg_distances-vcf_distances[obg_idxs]
+        self.translation.node_id[idxs+1] = vcf_node_idxs
+        self.translation.node_id[idxs+1] = offsets
+
+        multi_nodes = obg_distances > vcf_distances[obg_idxs+1]
+        self.handle_multi_nodes(idxs[multi_nodes]+1)
 
     def _build_ref_translation(self):
         obg_ref_nodes = self.full_obg_graph.traverse_ref_nodes()
@@ -289,8 +302,6 @@ class TranslationBuilder:
             overlapping_node = tmp_overlapping_node
 
     def add_translation(self, obg_nodes, vcf_node, start_size=0):
-        if vcf_node == 14081:
-            print("S14081", obg_nodes, vcf_node, start_size)
         sizes = [start_size] + [self.full_obg_graph.graph.node_size(node)
                                 for node in obg_nodes[:-1]]
         self.translation.node_id[obg_nodes] = vcf_node

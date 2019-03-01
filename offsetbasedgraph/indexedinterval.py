@@ -268,11 +268,12 @@ class NumpyIndexedInterval(IndexedInterval):
 
     def to_file(self, file_name):
         file = open(file_name, "wb")
-        np.savez_compressed(file,
-                 length=self._length,
-                 min_node=self.min_node,
-                 node_to_distance=self._node_to_distance,
-                 distance_to_node=self._distance_to_node)
+        np.savez_compressed(
+            file,
+            length=self._length,
+            min_node=self.min_node,
+            node_to_distance=self._node_to_distance,
+            distance_to_node=self._distance_to_node)
         file.close()
 
     @classmethod
