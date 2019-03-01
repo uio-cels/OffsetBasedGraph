@@ -48,12 +48,12 @@ class BlockArray:
         return cls(np.load(filename))
 
     @staticmethod
-    def from_dict(node_dict):
+    def from_dict(node_dict, dtype="uint8"):
         max_key = max(node_dict.keys())
         min_key = min(node_dict.keys())
         node_id_offset = min_key-1
 
-        array = np.zeros((max_key-min_key)+2, dtype="uint8")
+        array = np.zeros((max_key-min_key)+2, dtype=dtype)
         for key, val in node_dict.items():
             array[key-node_id_offset] = val.length()
 
@@ -611,13 +611,13 @@ class Graph(BaseGraph):
             return True
         return False
 
-    def convert_to_numpy_backend(self):
+    def convert_to_numpy_backend(self, dtype="uint8"):
         if self.uses_numpy_backend():
             logging.warning("Trying to convert to numpy backend, but is already on numpy backend")
             return
 
         logging.info("Converting to numpy backend...")
-        self.blocks = BlockArray.from_dict(self.blocks)
+        self.blocks = BlockArray.from_dict(self.blocks, dtype)
         self.adj_list = AdjListAsNumpyArrays.create_from_edge_dict(self.adj_list)
         self.reverse_adj_list = AdjListAsNumpyArrays.create_from_edge_dict(self.reverse_adj_list)
         logging.info("Conversion finished")

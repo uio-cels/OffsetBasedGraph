@@ -41,12 +41,11 @@ class Translator:
     def translate_position(self, position, vcf_graph=None, is_start=True):
         node_id = self._translation.node_id[position.region_path_id]
         offset = self._translation.offset[position.region_path_id]+position.offset
-        if vcf_graph is not None and position.region_path_id in self._extra_nodes:
-            if offset >= vcf_graph._node_lens[node_id]:
-                if is_start or offset > vcf_graph._node_lens[node_id]:
-                    node, _ = self._extra_nodes[position.region_path_id]
-                    return Pos(node,
-                               offset-vcf_graph._node_lens[node_id])
+        i = 0
+        while (offset+is_start) > vcf_graph._node_lens[node_id]:
+            offset -= vcf_graph._node_lens[node_id]
+            node_id = self._extra_nodes[position.region_path_id][i]
+            i += 1
         return Pos(node_id, offset)
 
     def get_snp_indices(self, node_ids):
@@ -66,7 +65,7 @@ class Translator:
         for i, node_id in enumerate(unique_node_ids):
             e_node_ids.append(node_id)
             if node_id in self._extra_nodes:
-                e_node_ids.append(self._extra_nodes[node_id][0])
+                e_node_ids.extend(self._extra_nodes[node_id])
         unique_node_ids = np.array(e_node_ids, dtype="int")
         for node_a, node_b in zip(unique_node_ids[:-1], unique_node_ids[1:]):
             if node_b not in vcf_graph._adj_list[node_a]:
@@ -178,18 +177,13 @@ class TranslationBuilder:
         offset = self.translation.offset[ref_node]
         size = self.full_vcf_graph.graph._node_lens[vcf_node]
         for alt_node in variant.alt_node_ids:
-            if vcf_node == 14081:
-                print("SPECIAL 14081")
-                print(alt_node, vcf_node, ref_node, offset)
-                print(variant)
             self.translation.node_id[alt_node] = vcf_node
             self.translation.offset[alt_node] = offset
             offset += self.full_obg_graph.graph.node_size(alt_node)
             while offset >= size:
                 vcf_node = self.full_vcf_graph.next_node(vcf_node)
                 if offset > size:
-                    print("E:", alt_node, vcf_node)
-                    self.extra_nodes[alt_node] = (vcf_node, offset-size)
+                    self.extra_nodes[alt_node].append(vcf_node)
                 offset -= size
                 size = self.full_vcf_graph.graph._node_lens[vcf_node]
 
@@ -210,6 +204,7 @@ class TranslationBuilder:
                 else:
                     assert False, (var_type, variant)
                 assert (not res) or np.count_nonzero(self.translation.node_id[variant.alt_node_ids]==-1) == 0, (variant, t)
+
 
     def _build_ref_translation(self):
         obg_ref_nodes = self.full_obg_graph.traverse_ref_nodes()
@@ -248,13 +243,13 @@ class TranslationBuilder:
         overlap_offset = 0
         for vcf_node_id, start, end in self.full_vcf_graph.path.get_node_intervals():
             assert vcf_node_id != -1
-            if overlap_offset>=(end-start):
+            if overlap_offset >= (end-start):
                 self.extra_nodes[overlapping_node].append(vcf_node_id)
                 overlap_offset = overlap_offset-(end-start)
                 continue
             if overlapping_node is not None:
                 self.extra_nodes[overlapping_node].append(vcf_node_id)
-                self.extra_nodes[overlapping_node].append(overlap_offset)
+                # self.extra_nodes[overlapping_node].append(overlap_offset)
             obg_nodes = []
             e = None
             tmp_overlapping_node = None

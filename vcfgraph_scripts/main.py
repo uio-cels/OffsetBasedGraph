@@ -8,6 +8,7 @@ from graph_peak_caller.reporter import Reporter
 from graph_peak_caller.intervals import UniqueIntervals
 from graph_peak_caller.callpeaks_interface import find_or_create_linear_map
 from itertools import chain
+
 gpc_path = "/home/knut/Documents/phd/graph_peak_caller/tests/mhc_test_data/"
 data_path = "/home/knut/Documents/phd/two_step_graph_mapper/benchmarking/mhc_graph_data/"
 obg_base_name = data_path + "6"
@@ -31,8 +32,11 @@ def translate_graph(vcf_graph):
     assert np.all(vcf_graph._node_lens > 0)
     edges = {i+1: vcf_graph._adj_list[i]+1 for
              i in range(vcf_graph._node_lens.size)}
+    print([blocks[i] for i in range(1, 10)])
     graph = obg.Graph(blocks, edges)
-    graph.convert_to_numpy_backend()
+    print([graph.blocks[i] for i in range(1, 10)])
+    graph.convert_to_numpy_backend("uint32")
+    print(graph.blocks._array[:10])
     for i, b in blocks.items():
         assert graph.blocks._array[i] == b.length(), (i, b, graph.blocks._array[i])
     return graph
@@ -40,11 +44,9 @@ def translate_graph(vcf_graph):
 
 obg_full_graph = FullGraph.from_files(obg_base_name)
 vcf_full_graph = FullVCFGraph.from_files(vcf_base_name)
-t = TranslationBuilder(obg_full_graph, vcf_full_graph)
-# print("BUILDING")n
+# t = TranslationBuilder(obg_full_graph, vcf_full_graph)
+# print("BUILDING")
 # translator = t.build()
-# exit()
-
 # translator.save("test")
 translator = Translator.load("test")
 interval_collection = vg_json_file_to_interval_collection(gpc_path + "chips.json", obg_full_graph.graph)
@@ -53,6 +55,8 @@ counter = 0
 obg_graph = translate_graph(vcf_full_graph.graph)
 new_intervals = [translate_interval(interval, translator, vcf_full_graph.graph, obg_graph)
                  for interval in intervals]
+
+print("--------------------------------------")
 for i, i2 in zip(intervals, new_intervals):
     if not i2.length() == i.length():
         print(i, i2)
