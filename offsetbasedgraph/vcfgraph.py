@@ -44,7 +44,10 @@ class SNPs:
             offsets = self._snps[a:]
         valid = a + np.flatnonzero(offsets == offset)
         seq_valid = [v for v in valid if self._seqs[v] == seq]
-        assert len(seq_valid) == 1
+        if not seq_valid:
+            return None
+        assert len(seq_valid) >= 1, (node, offset, seq, seq_valid)
+
         return seq_valid[0]
 
     def save(self, basename):
@@ -80,6 +83,17 @@ class Path:
     def distance_to_node_id(self, node_id):
         idx = np.flatnonzero(self._node_ids == node_id)[0]
         return self._distance_to_node[idx]
+
+    def project_interval(self, interval):
+        start_idx = np.search_sorted(self._distance_to_node, interval.node_ids[0], side="left")
+        end_idx = np.search_sorted(self._distance_to_node, interval.node_ids[-1], side="right")
+        start = self._distance_to_node[start_idx]
+        end = self._distance_to_node[end_idx]
+        if interval.node_ids[0] == self._node_ids[start_idx]:
+            start += interval.start
+        if interval.node_ids[-1] == self._node_ids[end_idx-1]:
+            end = self._distance_to_node[end_idx-1]+interval.end
+        return (start, end)
 
     @classmethod
     def load(cls, basename):
@@ -245,6 +259,7 @@ def get_snps(snp_positions, reference_path, n_nodes, seqs=None, indices=None):
     if seqs is not None:
         seqs = np.asanyarray(seqs)
         seqs = seqs[args]
+
     snp_positions.sort()
     snp_idxs = np.searchsorted(reference_path._distance_to_node, snp_positions, side="right")-1
     snp_offsets = snp_positions-reference_path._distance_to_node[snp_idxs]

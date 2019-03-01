@@ -138,12 +138,10 @@ class TranslationBuilder:
         assert node_id != -1
         offset = self.translation.offset[ref_node]
         self.translation.node_id[alt_node] = node_id
-        if node_id == 14081:
-            print("NODE", 14081)
-            print(alt_node, node_id, ref_node)
         self.translation.offset[alt_node] = offset
         snp_id = self.full_vcf_graph.graph._snps.find_snp(node_id, offset, variant.alt_seq)
-        self.snp_index[variant.alt_node_ids[0]] = snp_id
+        if snp_id is not None:
+            self.snp_index[variant.alt_node_ids[0]] = snp_id
 
     def add_ins(self, variant):
         assert not any(node in self.full_obg_graph.linear_path.nodes_in_interval()
