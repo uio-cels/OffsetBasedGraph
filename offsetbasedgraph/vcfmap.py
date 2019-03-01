@@ -2,7 +2,7 @@ import numpy as np
 import offsetbasedgraph as obg
 import logging
 import pickle
-from itertools import chain
+from itertools import chain, groupby
 from collections import namedtuple, defaultdict
 
 VCFEntry = namedtuple("VCFEntry", ["pos", "ref", "alt"])
@@ -55,6 +55,22 @@ def get_vcf_entries(filename, filters={}):
     return chain.from_iterable(
         get_entries(line) for line in open(filename)
         if (not line.startswith("#")) and (line.split()[2] not in filters) and line.split()[2] != ".")
+
+
+def get_all_vcf_entries(filename, filters={}):
+    def get_entries(line):
+        parts = line.split(None, 5)
+        pos = int(parts[1])-1
+        ref = parts[3]
+        alts = parts[4].split(",")
+        return (VCFEntry(pos, ref.lower(), alt.lower()) for alt in alts)
+
+    def get_chrom(line):
+        return line.split(None, 2)[0]
+
+    all_lines = (line for line in open(filename) if not line.startswith("#"))
+    return ((chrom, chain.from_iterable(get_entries(line) for line in lines))
+            for chrom, lines in groupby(all_lines, get_chrom))
 
 
 def paralell_nodes_func(graph, linear_path):

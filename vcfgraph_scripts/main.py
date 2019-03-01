@@ -8,12 +8,53 @@ from graph_peak_caller.reporter import Reporter
 from graph_peak_caller.intervals import UniqueIntervals
 from graph_peak_caller.callpeaks_interface import find_or_create_linear_map
 from itertools import chain
+from offsetbasedgraph.vcfgraph import construct_graphs
+from offsetbasedgraph.vcfmap import get_all_vcf_entries
+from pyfaidx import Fasta
+chrom_sizes = {
+    1:	249250621,
+    2:	243199373,
+    3:	198022430,
+    4:	191154276,
+    5:	180915260,
+    6:	171115067,
+    7:	159138663,
+    8:	146364022,
+    9:	141213431,
+    10:	135534747,
+    11:	135006516,
+    12:	133851895,
+    13:	115169878,
+    14:	107349540,
+    15:	102531392,
+    16:	90354753,
+    17:	81195210,
+    18:	78077248,
+    20:	63025520,
+    19:	59128983,
+    22:	51304566,
+    21:	48129895}
 
 gpc_path = "/home/knut/Documents/phd/graph_peak_caller/tests/mhc_test_data/"
 data_path = "/home/knut/Documents/phd/two_step_graph_mapper/benchmarking/mhc_graph_data/"
 obg_base_name = data_path + "6"
 vcf_base_name = "test"
 
+data_path = "/home/knut/Documents/phd/two_step_graph_mapper/benchmarking/mhc_graph_data/"
+path = data_path + "1000genomes_variants.vcf"
+fasta_path = data_path + "linear_ref.fa"
+
+
+def build_vcf_graphs():
+    fasta = Fasta(fasta_path)
+    entries = get_all_vcf_entries(path)
+    for chrom, graphs in construct_graphs(entries, chrom_sizes, fasta):
+        graph, ref, _ = graphs
+        graph.save("%s_test_graph" % chrom)
+        ref.save("%s_test_ref" % chrom)
+
+build_vcf_graphs()
+exit()
 
 def translate_interval(interval, translator, graph, ob_graph):
     reverse = interval.region_paths[0] < 0

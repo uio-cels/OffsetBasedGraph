@@ -3,8 +3,8 @@ import offsetbasedgraph as obg
 import graph_peak_caller as gpc
 from offsetbasedgraph.fullgraph import FullGraph, FullVCFGraph
 from offsetbasedgraph.obg_vcf_translation import TranslationBuilder, Translator
-from offsetbasedgraph.vcfgraph import construct_graph
-from offsetbasedgraph.vcfmap import get_vcf_entries
+from offsetbasedgraph.vcfgraph import construct_graph, construct_graphs
+from offsetbasedgraph.vcfmap import get_vcf_entries, get_all_vcf_entries
 from pyvg.conversion import vg_json_file_to_interval_collection
 from graph_peak_caller.callpeaks import CallPeaks, Configuration
 from graph_peak_caller.reporter import Reporter
@@ -38,17 +38,29 @@ chrom_sizes = {
 
 data_path = "/data/bioinf/human_1pc/"
 vcf_path = data_path + "filtered_%s.vcf"
+all_vcf_path = data_path + "filtered.vcf"
 fasta_path = data_path + "hg19_chr1-Y.fa"
 gpc_path = "/data/bioinf/benchmarking/data/HUMAN_CTCF_ENCSR000DUB/1/filtered_low_qual_reads_removed_%s.json"
 # gpc_path = "/home/knut/Documents/phd/graph_peak_caller/tests/mhc_test_data/"
 obg_base_name = data_path + "%s"
 vcf_base_name = "%s_test"
 
+
+def build_vcf_graphs():
+    fasta = Fasta(fasta_path)
+    entries = get_all_vcf_entries(all_vcf_path)
+    for chrom, graphs in construct_graphs(entries, chrom_sizes, fasta):
+        graph, ref, _ = graphs
+        graph.save("%s_test_graph" % chrom)
+        ref.save("%s_test_ref" % chrom)
+
+
 def build_vcf_graph(i=20):
     fasta = Fasta(fasta_path)[str(i)]
     graph, ref, _ = construct_graph(get_vcf_entries(vcf_path % i), chrom_sizes[i], fasta)
     graph.save("%s_test_graph" % i)
     ref.save("%s_test_ref" % i)
+
 
 def build_translation(i=20):
     obg_full_graph = FullGraph.from_files(obg_base_name % i)

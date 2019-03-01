@@ -303,6 +303,12 @@ def graph_from_snps_and_indels(deletions, insertions, snp_positions, reference_l
     return VCFGraph(node_lens, AdjList.from_dict(adj_list, all_node_starts.size), snps, seqs), reference_path
 
 
+def construct_graphs(vcf_entries, reference_lengths, fasta):
+    return ((chrom, construct_graph(entries, reference_lengths[int(chrom)],
+                                    fasta[chrom]))
+            for chrom, entries in vcf_entries if chrom.isdigit())
+
+
 def construct_graph(vcf_entries, reference_length, fasta=None):
     insertion_positions = []
     insertion_lens = []
