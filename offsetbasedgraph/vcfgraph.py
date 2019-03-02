@@ -28,13 +28,13 @@ class VCFMap:
 
 
 class SNPs:
-    def __init__(self, node_index=[0], snps=[], seqs=None):
+    def __init__(self, node_index=[0], snps=[], seqs=None, char_seqs=True):
         self._node_index = np.asanyarray(node_index, dtype="int")
         self._snps = np.asanyarray(snps, dtype="int")
-        if isinstance(seqs, np.array) and seqs.dtype == np.dtype("uint8"):
-            self._seqs = seqs
-        else:
+        if char_seqs:
             self._seqs = np.array([char_codes[c] for c in seqs], dtype="uint8")
+        else:
+            self._seqs = np.asanyarray(seqs, dtype="uint8")
 
     def __eq__(self, other):
         if not np.all(self._node_index == other._node_index):
@@ -67,7 +67,7 @@ class SNPs:
         node_index = np.load(basename+"_snps_node_index.npy")
         snps = np.load(basename+"_snps_snps.npy")
         seqs = np.load(basename+"_snps_seqs.npy")
-        return cls(node_index, snps, seqs)
+        return cls(node_index, snps, seqs, char_seqs=False)
 
 
 class Path:
