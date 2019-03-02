@@ -3,7 +3,7 @@ from offsetbasedgraph.vcfgraph import VCFGraph, Path
 import numpy as np
 from itertools import takewhile, chain
 from collections import deque, namedtuple
-
+import logging
 Variant = namedtuple("Variant",
                      ["ref_node_ids", "alt_node_ids", "ref_seq",  "alt_seq", "ref_node"])
 
@@ -103,7 +103,8 @@ class FullVCFGraph:
             next_seq = self.graph._seqs[next_node]
             if next_seq == seq:
                 return next_node
-        assert False, (node, seq, next_nodes)
+        logging.warning("Missing insertion from node %s: %s", node, seq)
+        return next_ref
 
     def interval_length(self, interval):
         node_lens = [self.graph._node_lens[node]
