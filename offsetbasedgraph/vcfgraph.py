@@ -31,7 +31,10 @@ class SNPs:
     def __init__(self, node_index=[0], snps=[], seqs=None):
         self._node_index = np.asanyarray(node_index, dtype="int")
         self._snps = np.asanyarray(snps, dtype="int")
-        self._seqs = np.array([char_codes[c] for c in seqs], dtype="uint8")
+        if isinstance(seqs, np.array) and seqs.dtype == np.dtype("uint8"):
+            self._seqs = seqs
+        else:
+            self._seqs = np.array([char_codes[c] for c in seqs], dtype="uint8")
 
     def __eq__(self, other):
         if not np.all(self._node_index == other._node_index):
@@ -322,7 +325,7 @@ def construct_graphs(vcf_entries, reference_lengths, fasta):
 
 def construct_graph(vcf_entries, reference_length, fasta=None):
     if fasta is not None:
-        assert fasta.unpadded_len == reference_length, (fasta.unpadded_len, reference_length)
+        assert len(fasta) == reference_length, (len(unpadded_len), reference_length)
     insertion_positions = []
     insertion_lens = []
     deletion_starts = []
