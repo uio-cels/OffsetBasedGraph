@@ -334,7 +334,7 @@ def construct_graph(vcf_entries, reference_length, fasta=None):
     counter = 0
     for entry in vcf_entries:
         if counter % 1000 == 0:
-            Logging.info("Entry %s" % counter)
+            logging.info("Entry %s" % counter)
         counter += 1
                 
         if fasta:

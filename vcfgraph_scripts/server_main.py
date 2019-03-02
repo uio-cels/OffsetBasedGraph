@@ -1,3 +1,5 @@
+import logging
+logging.basicConfig(filename="logfile.out", level="INFO")
 import numpy as np
 import offsetbasedgraph as obg
 import graph_peak_caller as gpc
@@ -11,8 +13,6 @@ from graph_peak_caller.reporter import Reporter
 from graph_peak_caller.intervals import UniqueIntervals
 from graph_peak_caller.callpeaks_interface import find_or_create_linear_map
 from pyfaidx import Fasta
-import logging
-logging.basicConfig(filename="logfile.out", level="INFO")
 
 chrom_sizes = {
     1:	249250621,
@@ -50,11 +50,12 @@ vcf_base_name = out_path + "%s_test"
 
 
 def build_vcf_graphs():
-    print("Building VCF Graphs")
+    logging.info("Building VCF Graphs")
+    print("-------------------_")
     fasta = Fasta(fasta_path)
     entries = get_all_vcf_entries(all_vcf_path)
     for chrom, graphs in construct_graphs(entries, chrom_sizes, fasta):
-        print("CHROMOSOME %s " % chrom)
+        logging.info("CHROMOSOME %s ", chrom)
         graph, ref, _ = graphs
         graph.save((vcf_base_name + "_graph") % chrom)
         ref.save((vcf_base_name + "_ref ") % chrom)
