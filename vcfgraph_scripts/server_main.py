@@ -37,13 +37,14 @@ chrom_sizes = {
     21:	48129895}
 
 data_path = "/data/bioinf/human_1pc/"
+out_path = data_path+"smallgraph/"
 vcf_path = data_path + "filtered_%s.vcf"
 all_vcf_path = data_path + "filtered.vcf"
 fasta_path = data_path + "hg19_chr1-Y.fa"
 gpc_path = "/data/bioinf/benchmarking/data/HUMAN_CTCF_ENCSR000DUB/1/filtered_low_qual_reads_removed_%s.json"
 # gpc_path = "/home/knut/Documents/phd/graph_peak_caller/tests/mhc_test_data/"
 obg_base_name = data_path + "%s"
-vcf_base_name = "%s_test"
+vcf_base_name = out_path + "%s_test"
 
 
 def build_vcf_graphs():
@@ -51,10 +52,10 @@ def build_vcf_graphs():
     fasta = Fasta(fasta_path)
     entries = get_all_vcf_entries(all_vcf_path)
     for chrom, graphs in construct_graphs(entries, chrom_sizes, fasta):
-        print("CHROMOSOME %s " % i)
+        print("CHROMOSOME %s " % chrom)
         graph, ref, _ = graphs
-        graph.save("%s_test_graph" % chrom)
-        ref.save("%s_test_ref" % chrom)
+        graph.save((vcf_base_name + "_graph") % chrom)
+        ref.save((vcf_base_name + "_ref ") % chrom)
 
 
 def build_vcf_graph(i=20):
@@ -70,7 +71,7 @@ def build_translation(i=20):
     vcf_full_graph = FullVCFGraph.from_files(vcf_base_name % i)
     t = TranslationBuilder(obg_full_graph, vcf_full_graph)
     translator = t.build()
-    translator.save("%s_test" % i)
+    translator.save(vcf_base_name % i)
     
 
 def translate_interval(interval, translator, graph, ob_graph):
@@ -101,12 +102,12 @@ def translate_intervals(i=20):
     print("Translating Intervals")
     obg_full_graph = FullGraph.from_files(obg_base_name % i)
     vcf_full_graph = FullVCFGraph.from_files(vcf_base_name % i)
-    translator = Translator.load("%s_test" % i)
+    translator = Translator.load(vcf_base_name % i)
     interval_collection = vg_json_file_to_interval_collection(gpc_path % i, obg_full_graph.graph)
     intervals = list(interval_collection)
     counter = 0
     obg_graph = translate_graph(vcf_full_graph.graph)
-    obg_graph.to_file("%s_small.npz" % i )
+    obg_graph.to_file(out_path + "%s_small.npz" % i )
     new_intervals = [translate_interval(interval, translator, vcf_full_graph.graph, obg_graph)
                      for interval in intervals]
     print("----------------------------------")
@@ -138,7 +139,7 @@ def run_old_callpeaks():
 
 def run_callpeaks(i=20):
     print("Running Callpeaks on %s" % i)
-    obg_graph = obg.Graph.from_file("%s_small.npz" % i)
+    obg_graph = obg.Graph.from_file(out_path + "%s_small.npz" % i)
     new_intervals = obg.IntervalCollection.from_file("%s_test_translated.intervalcollection" % i)
     new_intervals2 = obg.IntervalCollection.from_file("%s_test_translated.intervalcollection" % i)
     sample = UniqueIntervals(new_intervals)
@@ -147,7 +148,7 @@ def run_callpeaks(i=20):
     config = Configuration()
     config.read_length = 34
     config.fragment_length = 141
-    config.linear_map_name = "lin_map_%s.npz" % i
+    config.linear_map_name = out_path +"lin_map_%s.npz" % i
     linear_map = find_or_create_linear_map(obg_graph, config.linear_map_name)
     callpeaks = CallPeaks(obg_graph, config, Reporter("testrun%s" %i))
     callpeaks.run(sample, control)
