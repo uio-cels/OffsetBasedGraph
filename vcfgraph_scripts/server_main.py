@@ -69,7 +69,7 @@ def build_vcf_graph(i=20):
 
 
 def build_translation(i=20):
-    print("Building traslation: %s" % i)
+    logging.info("Building traslation: %s", i)
     obg_full_graph = FullGraph.from_files(obg_base_name % i)
     vcf_full_graph = FullVCFGraph.from_files(vcf_base_name % i)
     t = TranslationBuilder(obg_full_graph, vcf_full_graph)
@@ -102,7 +102,7 @@ def translate_graph(vcf_graph):
 
 
 def translate_intervals(i=20):
-    print("Translating Intervals")
+    logging.info("Translating Intervals")
     obg_full_graph = FullGraph.from_files(obg_base_name % i)
     vcf_full_graph = FullVCFGraph.from_files(vcf_base_name % i)
     translator = Translator.load(vcf_base_name % i)
@@ -174,7 +174,7 @@ def compare_peaks():
 
 
 if __name__ == "__main__":
-    build_vcf_graphs()
+    # build_vcf_graphs()
     for i in range(1, 22):
         build_translation(i)
         translate_intervals(i)
