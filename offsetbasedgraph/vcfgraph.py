@@ -321,6 +321,8 @@ def construct_graphs(vcf_entries, reference_lengths, fasta):
 
 
 def construct_graph(vcf_entries, reference_length, fasta=None):
+    if fasta is not None:
+        assert fasta.unpadded_len == reference_length, (fasta.unpadded_len, reference_length)
     insertion_positions = []
     insertion_lens = []
     deletion_starts = []
@@ -336,7 +338,6 @@ def construct_graph(vcf_entries, reference_length, fasta=None):
         if counter % 1000 == 0:
             logging.info("Entry %s" % counter)
         counter += 1
-                
         if fasta:
             f = fasta[entry.pos:entry.pos+len(entry.ref)]
             assert str(f).lower() == entry.ref.lower(), (f, entry)
@@ -350,26 +351,18 @@ def construct_graph(vcf_entries, reference_length, fasta=None):
             snp_var_ids.append(i)
             i += 1
         elif var_type == INS:
-            try:
-                new_entry = prune_insertion(entry)
-            except AssertionError as e:
-                raise e
-                continue
+            new_entry = prune_insertion(entry)
             insertion_positions.append(new_entry.pos)
             insertion_lens.append(len(new_entry.alt))
             insertion_seqs.append(new_entry.alt)
             ins_var_ids.append(i)
             i += 1
         elif var_type == DEL:
-            try:
-                new_entry = prune_deletion(entry)
-            except AssertionError:
-                raise
-                continue
+            new_entry = prune_deletion(entry)
             deletion_starts.append(new_entry.pos)
             deletion_lens.append(len(new_entry.ref))
-        dels = np.array([deletion_starts, deletion_lens])
-        insertions = np.array([insertion_positions, insertion_lens])
+    dels = np.array([deletion_starts, deletion_lens])
+    insertions = np.array([insertion_positions, insertion_lens])
     logging.info("Finsihed parsing VCF")
     vcfmap = VCFMap.empty(i)
     vcfmap.fill_snps(snp_var_ids, snp_positions)
