@@ -47,9 +47,11 @@ vcf_base_name = "%s_test"
 
 
 def build_vcf_graphs():
+    print("Building VCF Graphs")
     fasta = Fasta(fasta_path)
     entries = get_all_vcf_entries(all_vcf_path)
     for chrom, graphs in construct_graphs(entries, chrom_sizes, fasta):
+        print("CHROMOSOME %s " % i)
         graph, ref, _ = graphs
         graph.save("%s_test_graph" % chrom)
         ref.save("%s_test_ref" % chrom)
@@ -63,6 +65,7 @@ def build_vcf_graph(i=20):
 
 
 def build_translation(i=20):
+    print("Building traslation: %s" % i)
     obg_full_graph = FullGraph.from_files(obg_base_name % i)
     vcf_full_graph = FullVCFGraph.from_files(vcf_base_name % i)
     t = TranslationBuilder(obg_full_graph, vcf_full_graph)
@@ -95,6 +98,7 @@ def translate_graph(vcf_graph):
 
 
 def translate_intervals(i=20):
+    print("Translating Intervals")
     obg_full_graph = FullGraph.from_files(obg_base_name % i)
     vcf_full_graph = FullVCFGraph.from_files(vcf_base_name % i)
     translator = Translator.load("%s_test" % i)
@@ -107,11 +111,11 @@ def translate_intervals(i=20):
                      for interval in intervals]
     print("----------------------------------")
     counter = 0
-    for i, i2 in zip(intervals, new_intervals):
+    for i1, i2 in zip(intervals, new_intervals):
 
-        if not i2.length() == i.length():
+        if not i2.length() == i1.length():
             counter += 1
-            if abs(i2.length()-i.length())>5:
+            if abs(i2.length()-i1.length())>5:
                 print(i, i2)
     
     obg.IntervalCollection(new_intervals).to_file("%s_test_translated.intervalcollection" % i)
@@ -133,6 +137,7 @@ def run_old_callpeaks():
     
 
 def run_callpeaks(i=20):
+    print("Running Callpeaks on %s" % i)
     obg_graph = obg.Graph.from_file("%s_small.npz" % i)
     new_intervals = obg.IntervalCollection.from_file("%s_test_translated.intervalcollection" % i)
     new_intervals2 = obg.IntervalCollection.from_file("%s_test_translated.intervalcollection" % i)
@@ -165,79 +170,10 @@ def compare_peaks():
 
 
 if __name__ == "__main__":
+    build_vcf_graphs()
     for i in range(1, 22):
-        build_vcf_graph(i)
         build_translation(i)
         translate_intervals(i)
         run_callpeaks(i)
         # run_old_callpeaks()
         # compare_peaks()
-# obg_full_graph = FullGraph.from_files(obg_base_name)
-# vcf_full_graph = FullVCFGraph.from_files(vcf_base_name)
-# t = TranslationBuilder(obg_full_graph, vcf_full_graph)
-# # print("BUILDING")n
-# # translator = t.build()
-# # exit()
-# 
-# # translator.save("test")
-# translator = Translator.load("test")
-# interval_collection = vg_json_file_to_interval_collection(gpc_path + "chips.json", obg_full_graph.graph)
-# intervals = list(interval_collection)
-# counter = 0
-# obg_graph = translate_graph(vcf_full_graph.graph)
-# new_intervals = [translate_interval(interval, translator, vcf_full_graph.graph, obg_graph)
-#                  for interval in intervals]
-# for i, i2 in zip(intervals, new_intervals):
-#     if not i2.length() == i.length():
-#         print(i, i2)
-# sample = UniqueIntervals(new_intervals)
-# control = UniqueIntervals(new_intervals)
-# # sample = UniqueIntervals(list(intervals))
-# # control = UniqueIntervals(list(intervals))
-# 
-# config = Configuration()
-# config.read_length = 70
-# config.fragment_length = 120
-# config.linear_map_name = "lin_map.npz"
-# # obg_graph = obg_full_graph.graph
-# linear_map = find_or_create_linear_map(obg_graph, config.linear_map_name)
-# 
-# callpeaks = CallPeaks(obg_graph, config, Reporter("testrun"))
-# 
-# 
-# callpeaks.run(sample, control)
-# 
-# print(counter)
-# print("FINISHED")
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# graph = obg.Graph.from_file(base_name+".nobg")
-# seq_graph = obg.SequenceGraph.from_file(base_name + ".nobg.sequences")
-# reference = obg.NumpyIndexedInterval.from_file(
-#     base_name + "_linear_pathv2.interval")
-# vcf_entries = get_vcf_entries(path)
-# outfile = open("6_variant_map.tsv", "w")
-# entry_to_edge_tmp = entry_to_edge_func(graph, reference, seq_graph)
-# 
-# 
-# def entry_to_edge(full_entry):
-#     if full_entry.alt.startswith("<"):
-#         return None
-#     try:
-#         return entry_to_edge_tmp(full_entry)
-#     except AssertionError:
-#         return None
-# 
-# variants = (entry_to_edge(entry) for entry in vcf_entries)
-# variants = (v for v in variants if v is not None)
-# var_maps = make_var_map(graph, enumerate(variants))
-# write_variant_maps(var_maps, "6")
-# # 
-# # for t in enumerate(variants):
-# #     outfile.write("%s\t%s\n" % t)
-# # outfile.close()

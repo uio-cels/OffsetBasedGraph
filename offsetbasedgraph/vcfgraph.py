@@ -321,7 +321,12 @@ def construct_graph(vcf_entries, reference_length, fasta=None):
     insertion_seqs = []
     i = 0
     prev_del = -1
+    counter = 0
     for entry in vcf_entries:
+        if counter % 1000 == 0:
+            print("Entry %s" % counter)
+        counter += 1
+                
         if fasta:
             f = fasta[entry.pos:entry.pos+len(entry.ref)]
             assert str(f).lower() == entry.ref.lower(), (f, entry)
