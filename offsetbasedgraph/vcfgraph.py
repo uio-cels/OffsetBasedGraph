@@ -209,6 +209,7 @@ def classify_vcf_entry(vcf_entry):
 
 
 def get_node_starts(deletions, insertions):
+    logging.info("Getting node starts (%s del, %s ins)", len(deletions[0]), len(insertions[0]))
     break_points = np.concatenate((deletions[0],
                                    deletions[0]+deletions[1],
                                    insertions[0]))
@@ -223,6 +224,7 @@ def get_node_starts(deletions, insertions):
 
 
 def create_adj_list(reference_node_ids, node_starts, insertions, insertion_node_ids, deletions):
+    logging.info("Creating adj list")
     adj_list = defaultdict(list)
 
     # Add reference neighbours
@@ -246,6 +248,7 @@ def create_adj_list(reference_node_ids, node_starts, insertions, insertion_node_
 
 
 def create_node_lens(node_starts, reference_length, insertions, code_args):
+    logging.info("Getting node starts (%s starts, %s insertions", len(node_starts), len(insertions[0]))
     reference_node_lens = np.diff(np.r_[node_starts, reference_length])
     insertion_node_lens = insertions[1]
     node_lens = np.empty(reference_node_lens.size+insertion_node_lens.size)
@@ -255,6 +258,7 @@ def create_node_lens(node_starts, reference_length, insertions, code_args):
 
 
 def get_snps(snp_positions, reference_path, n_nodes, seqs=None, indices=None):
+    logging.info("Creating SNPs %s", len(snp_positions))
     snp_positions = np.asanyarray(snp_positions, dtype="int")
     if not snp_positions.size:
         return SNPs()
@@ -273,6 +277,7 @@ def get_snps(snp_positions, reference_path, n_nodes, seqs=None, indices=None):
 
 
 def build_seq_graph(insertion_seqs, insertion_node_ids, reference_path, fasta, n_nodes):
+    logging.info("Building seq_graph")
     seqs = np.array(insertion_seqs)
     all_seqs = np.empty(n_nodes, dtype=object)
     all_seqs[insertion_node_ids] = seqs
@@ -286,6 +291,7 @@ def graph_from_snps_and_indels(deletions, insertions, snp_positions, reference_l
     deletions = np.asanyarray(deletions, dtype="int")
     insertions = np.asanyarray(insertions, dtype="int")
     node_starts = get_node_starts(deletions, insertions)
+    logging.info("Sorting")
     all_node_starts = np.concatenate((insertions[0], node_starts))
     tmp_code_args = np.argsort(all_node_starts, kind="mergesort")
     code_args = tmp_code_args.copy() # TODO: prob easyier way to to this
@@ -293,6 +299,7 @@ def graph_from_snps_and_indels(deletions, insertions, snp_positions, reference_l
     reference_node_ids = code_args[-node_starts.size:]
     insertion_node_ids = code_args[:-node_starts.size]
     if vcf_map is not None:
+        logging.info("Creating vcf map")
         vcf_map.fill_insertions(insertion_var_ids, insertion_node_ids)
     adj_list = create_adj_list(reference_node_ids, node_starts,
                                insertions, insertion_node_ids, deletions)
@@ -324,11 +331,10 @@ def construct_graph(vcf_entries, reference_length, fasta=None):
     ins_var_ids = []
     insertion_seqs = []
     i = 0
-    prev_del = -1
     counter = 0
     for entry in vcf_entries:
         if counter % 1000 == 0:
-            print("Entry %s" % counter)
+            Logging.info("Entry %s" % counter)
         counter += 1
                 
         if fasta:
@@ -364,6 +370,7 @@ def construct_graph(vcf_entries, reference_length, fasta=None):
             deletion_lens.append(len(new_entry.ref))
         dels = np.array([deletion_starts, deletion_lens])
         insertions = np.array([insertion_positions, insertion_lens])
+    logging.info("Finsihed parsing VCF")
     vcfmap = VCFMap.empty(i)
     vcfmap.fill_snps(snp_var_ids, snp_positions)
     graph, reference_path = graph_from_snps_and_indels(dels, insertions, snp_positions, reference_length, insertion_seqs, snp_seqs, fasta, vcf_map=vcfmap, insertion_var_ids=ins_var_ids)

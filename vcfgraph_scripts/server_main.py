@@ -10,8 +10,10 @@ from graph_peak_caller.callpeaks import CallPeaks, Configuration
 from graph_peak_caller.reporter import Reporter
 from graph_peak_caller.intervals import UniqueIntervals
 from graph_peak_caller.callpeaks_interface import find_or_create_linear_map
-from itertools import chain
 from pyfaidx import Fasta
+import logging
+logging.basicConfig(filename="logfile.out", level="INFO")
+
 chrom_sizes = {
     1:	249250621,
     2:	243199373,
