@@ -3,6 +3,9 @@ from collections import defaultdict
 import numpy as np
 import logging
 
+char_codes = {"a": 0, "c": 1, "g": 2, "t": 3}
+char_rev = np.array(["a", "c", "g", "t"])
+
 
 class VCFMap:
     def __init__(self, ids, codes):
@@ -28,7 +31,7 @@ class SNPs:
     def __init__(self, node_index=[0], snps=[], seqs=None):
         self._node_index = np.asanyarray(node_index, dtype="int")
         self._snps = np.asanyarray(snps, dtype="int")
-        self._seqs = seqs
+        self._seqs = np.array([char_codes[c] for c in seqs], dtype="uint8")
 
     def __eq__(self, other):
         if not np.all(self._node_index == other._node_index):
@@ -36,6 +39,7 @@ class SNPs:
         return np.all(self._snps == other._snps)
 
     def find_snp(self, node, offset, seq):
+        seq = char_codes[seq]
         a = self._node_index[node]
         if node+1 < self._node_index.size:
             b = self._node_index[node+1]
