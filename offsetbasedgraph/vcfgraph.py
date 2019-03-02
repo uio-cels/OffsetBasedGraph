@@ -34,6 +34,7 @@ class SNPs:
         if isinstance(seqs, np.array) and seqs.dtype == np.dtype("uint8"):
             self._seqs = seqs
         else:
+            print(type(seqs))
             self._seqs = np.array([char_codes[c] for c in seqs], dtype="uint8")
 
     def __eq__(self, other):
