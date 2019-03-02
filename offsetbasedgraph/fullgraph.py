@@ -115,5 +115,5 @@ class FullVCFGraph:
     @classmethod
     def from_files(cls, base_name):
         graph = VCFGraph.load(base_name + "_graph")
-        path = Path.load(base_name + "_ref")
+        path = Path.load(base_name + "_ref ")
         return cls(graph, path)
