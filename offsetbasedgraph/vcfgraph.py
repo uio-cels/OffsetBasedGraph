@@ -322,7 +322,7 @@ def construct_graphs(vcf_entries, reference_lengths, fasta):
 
 def construct_graph(vcf_entries, reference_length, fasta=None):
     if fasta is not None:
-        assert fasta.unpadded_len == reference_length, (fasta.unpadded_len, reference_length)
+        assert len(fasta) == reference_length, (len(fasta), reference_length)
     insertion_positions = []
     insertion_lens = []
     deletion_starts = []
