@@ -103,18 +103,20 @@ class TranslationBuilder:
         self.snp_index = -1*np.ones(size, dtype="int")
         self.visited = np.zeros(size)
         self.extra_nodes = defaultdict(list)
+        self._obg_sizes = self.full_obg_graph.graph.blocks._array
 
     def build(self):
-        self.build_ref_translation()
-        for node_id in self.full_obg_graph.traverse_ref_nodes():
-            obg_pos = self.full_obg_graph.linear_path.get_offset_at_node(node_id)
-            vcf_node = self.translation.node_id[node_id]
-            vcf_pos = self.full_vcf_graph.path.distance_to_node_id(vcf_node)
-            assert vcf_pos<=obg_pos<=vcf_pos+self.full_vcf_graph.graph._node_lens[vcf_node], (node_id, obg_pos, vcf_node, vcf_pos)
+        self.build_ref_translation_numpy()
+        # for node_id in self.full_obg_graph.traverse_ref_nodes():
+        #     obg_pos = self.full_obg_graph.linear_path.get_offset_at_node(node_id)
+        #     vcf_node = self.translation.node_id[node_id]
+        #     assert vcf_node != -1, node_id
+        #     vcf_pos = self.full_vcf_graph.path.distance_to_node_id(vcf_node)
+        #     assert vcf_pos<=obg_pos<=vcf_pos+self.full_vcf_graph.graph._node_lens[vcf_node], (node_id, obg_pos, vcf_node, vcf_pos)
         print("EXTRA:")
         print(self.extra_nodes)
         print("------------")
-        assert not any(self.translation.node_id[node_id]== -1 for node_id in self.full_obg_graph.traverse_ref_nodes())
+        # assert not any(self.translation.node_id[node_id]== -1 for node_id in self.full_obg_graph.traverse_ref_nodes())
         self.build_alt_translation()
         for node_id in self.full_obg_graph.traverse_ref_nodes():
             obg_pos = self.full_obg_graph.linear_path.get_offset_at_node(node_id)
@@ -203,18 +205,30 @@ class TranslationBuilder:
                     assert False, (var_type, variant)
                 assert (not res) or np.count_nonzero(self.translation.node_id[variant.alt_node_ids]==-1) == 0, (variant, t)
 
+    def handle_multi_nodes(self, multi_nodes):
+        for m_node in multi_nodes:
+            extra_nodes = []
+            vcf_node_id = self.translation.node_id[m_node]
+            offset = self.translation.offset[m_node]+self.full_obg_graph.graph.node_size(m_node)
+            offset -= self.full_vcf_graph.graph._node_lens[vcf_node_id]
+            while offset > 0:
+                vcf_node_id = self.full_vcf_graph.next_node(vcf_node_id)
+                extra_nodes.append(vcf_node_id)
+                offset -= self.full_vcf_graph.graph._node_lens[vcf_node_id]
+            self.extra_nodes[m_node] = extra_nodes
+
     def build_ref_translation_numpy(self):
-        obg_distances = self.full_obg_graph.linear_path._node_to_distance
-        idxs = np.flatnonzero(obg_distances[:-1] != obg_distances[1:])+1
+        obg_distances = self.full_obg_graph.linear_path._node_to_distance[:-1]
+        idxs = np.flatnonzero(obg_distances != np.roll(obg_distances, 1))
         obg_distances = obg_distances[idxs]
         vcf_distances = self.full_vcf_graph.path._distance_to_node
         obg_idxs = np.searchsorted(vcf_distances, obg_distances, side="right")-1
         vcf_node_idxs = self.full_vcf_graph.path._node_ids[obg_idxs]
         offsets = obg_distances-vcf_distances[obg_idxs]
         self.translation.node_id[idxs+1] = vcf_node_idxs
-        self.translation.node_id[idxs+1] = offsets
+        self.translation.offset[idxs+1] = offsets
 
-        multi_nodes = obg_distances > vcf_distances[obg_idxs+1]
+        multi_nodes = obg_distances+self._obg_sizes[idxs+1] > vcf_distances[obg_idxs+1]
         self.handle_multi_nodes(idxs[multi_nodes]+1)
 
     def _build_ref_translation(self):

@@ -119,9 +119,8 @@ def translate_intervals(i=20):
 
         if not i2.length() == i1.length():
             counter += 1
-            if abs(i2.length()-i1.length())>5:
+            if abs(i2.length()-i1.length()) > 5:
                 print(i, i2)
-    
     obg.IntervalCollection(new_intervals).to_file("%s_test_translated.intervalcollection" % i)
     print(counter)
 
