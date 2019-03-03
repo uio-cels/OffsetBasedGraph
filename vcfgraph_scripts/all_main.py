@@ -142,7 +142,9 @@ if __name__ == "__main__":
         from knut_config import *
     elif config == "server":
         from server_config import *
-    build_vcf_graphs()
+    build_graph = int(sys.argv[2])
+    if build_graph:
+        build_vcf_graphs()
     for i in chroms:
         build_translation(i)
         translate_intervals(i)

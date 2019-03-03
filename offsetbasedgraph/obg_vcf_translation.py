@@ -151,11 +151,10 @@ class TranslationBuilder:
     def add_ins(self, variant):
         assert not any(node in self.full_obg_graph.linear_path.nodes_in_interval()
                        for node in variant.alt_node_ids)
-        assert not all(node in self.full_obg_graph.linear_path.nodes_in_interval()
-                       for node in variant.alt_node_ids)
-
+        assert variant.ref_node in self.full_obg_graph.linear_path.nodes_in_interval(), (variant.ref_node, variant)
         node = variant.ref_node
         vcf_ref_node = self.translation.node_id[node]
+        assert vcf_ref_node != -1
         offset = self.translation.offset[node]
         vcf_node_end = self.full_vcf_graph.path.distance_to_node_id(vcf_ref_node) + self.full_vcf_graph.graph._node_lens[vcf_ref_node]
         obg_node_end = self.full_obg_graph.linear_path.get_offset_at_node(node) + self._obg_sizes[node]
@@ -230,6 +229,7 @@ class TranslationBuilder:
     def build_ref_translation_numpy(self):
         obg_distances = self.full_obg_graph.linear_path._node_to_distance[:-1]
         idxs = np.flatnonzero(obg_distances != np.roll(obg_distances, 1))
+        assert len(idxs) == len(self.full_obg_graph.linear_path.nodes_in_interval()), (len(idxs), len(self.full_obg_graph.linear_path.nodes_in_interval()))
         obg_distances = obg_distances[idxs]
         vcf_distances = self.full_vcf_graph.path._distance_to_node
         obg_idxs = np.searchsorted(vcf_distances, obg_distances, side="right")-1
