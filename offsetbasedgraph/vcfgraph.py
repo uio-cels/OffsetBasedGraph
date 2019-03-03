@@ -108,6 +108,53 @@ class Path:
                    np.load(basename+"_distance_to_node.npy"))
 
 
+class IndexedPath(Path):
+    def __init__(self, node_ids, distance_to_node, n_nodes=None, node_lookup=None):
+        super().__init__(node_ids, distance_to_node)
+        if node_lookup is not None:
+            self._node_lookup = np.asanyarray(node_lookup, dtype="int")
+            return
+        if n_nodes is None:
+            n_nodes = np.max(self._node_ids)+1
+        self._node_lookup = -1*np.ones(n_nodes, dtype="int")
+        self._node_lookup[self._node_ids] = np.arange(self._node_ids.size)
+
+    def is_in_path(self, node_id):
+        return node_id < self._node_lookup.size and self._node_lookup[node_id] >= 0
+
+    def distance_to_node_id(self, node_id):
+        idx = self._node_lookup[node_id]
+        return self._distance_to_node[idx]
+
+    def traverse_ref_nodes(self, node_id=None):
+        if node_id is None:
+            node_id = self._node_ids[0]
+        idx = 0
+        if node_id is not None:
+            idx = self._node_lookup[node_id]
+        return self._node_ids[idx:]
+        return (node for node in self._node_ids[idx:])
+        # while node_id != -1:
+        #     yield node_id
+        #     node_id = self._node_ids[self._node_lookup[node_id]]
+
+    def ref_nodes_between(self, start_node, end_node):
+        start_idxs = self._node_lookup[start_node]
+        end_idx = self._node_lookup[end_node]
+        return self._node_ids[start_idxs:end_idx]
+
+    def next_node(self, node_id):
+        return self._node_ids[self._node_lookup[node_id]+1]
+
+    @classmethod
+    def from_indexed_interval(cls, indexed_interval):
+        node_ids = indexed_interval.get_sorted_nodes_in_interval()
+        distances = np.hstack((
+            indexed_interval._node_to_distance[node_ids-indexed_interval.min_node],
+            indexed_interval._length))
+        return cls(node_ids, distances)
+
+
 class AdjList:
     def __init__(self, node_index=[0], to_nodes=[]):
         self._node_index = np.asanyarray(node_index, dtype="int")
