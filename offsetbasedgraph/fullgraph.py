@@ -1,5 +1,5 @@
 import offsetbasedgraph as obg
-from offsetbasedgraph.vcfgraph import VCFGraph, Path
+from offsetbasedgraph.vcfgraph import VCFGraph, Path, IndexedPath
 import numpy as np
 from itertools import takewhile, chain
 from collections import deque, namedtuple
@@ -13,20 +13,23 @@ class FullGraph:
         self.graph = graph
         self.seq_graph = seq_graph
         self.linear_path = linear_path
+        self.indexed_path = IndexedPath.from_indexed_interval(linear_path)
         self._visited = np.zeros(self.graph.blocks.max_node_id()+1)
 
     def traverse_ref_nodes(self, node=None):
-        if node is None:
-            node = self.linear_path.get_node_at_offset(0)
-        while True:
-            yield node
-            if not len(self.graph.adj_list[node]):
-                break
-            node = self.get_next_node(node)
+        return self.indexed_path.traverse_ref_nodes(node)
+        # if node is None:
+        #     node = self.linear_path.get_node_at_offset(0)
+        # while True:
+        #     yield node
+        #     if not len(self.graph.adj_list[node]):
+        #         break
+        #     node = self.get_next_node(node)
 
     def ref_nodes_between(self, start_node, end_node):
-        return list(takewhile(lambda node: node != end_node,
-                              self.traverse_ref_nodes(start_node)))
+        return self.indexed_path.ref_nodes_between(start_node, end_node)
+        # return list(takewhile(lambda node: node != end_node,
+        #                       self.traverse_ref_nodes(start_node)))
 
     def get_variants_from_node(self, node_id):
         self._visited[node_id] = 1
@@ -88,7 +91,8 @@ class FullVCFGraph:
         self.ref_nodes = set(self.path._node_ids)
 
     def next_node(self, node_id):
-        return min(n for n in self.graph._adj_list[node_id] if n in self.ref_nodes)
+        return self.path.next_node(node_id)
+    # return min(n for n in self.graph._adj_list[node_id] if n in self.ref_nodes)
 
     def find_insertion_from_node(self, node, seq):
         node = int(node)
@@ -116,5 +120,5 @@ class FullVCFGraph:
     @classmethod
     def from_files(cls, base_name):
         graph = VCFGraph.load(base_name + "_graph")
-        path = Path.load(base_name + "_ref")
+        path = IndexedPath.load(base_name + "_ref")
         return cls(graph, path)
