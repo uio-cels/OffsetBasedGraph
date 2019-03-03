@@ -1,5 +1,4 @@
-import logging
-logging.basicConfig(filename="logfile.out", level="INFO")
+import sys
 import numpy as np
 import offsetbasedgraph as obg
 import graph_peak_caller as gpc
@@ -13,40 +12,8 @@ from graph_peak_caller.reporter import Reporter
 from graph_peak_caller.intervals import UniqueIntervals
 from graph_peak_caller.callpeaks_interface import find_or_create_linear_map
 from pyfaidx import Fasta
-
-chrom_sizes = {
-    1:	249250621,
-    2:	243199373,
-    3:	198022430,
-    4:	191154276,
-    5:	180915260,
-    6:	171115067,
-    7:	159138663,
-    8:	146364022,
-    9:	141213431,
-    10:	135534747,
-    11:	135006516,
-    12:	133851895,
-    13:	115169878,
-    14:	107349540,
-    15:	102531392,
-    16:	90354753,
-    17:	81195210,
-    18:	78077248,
-    20:	63025520,
-    19:	59128983,
-    22:	51304566,
-    21:	48129895}
-
-data_path = "/data/bioinf/human_1pc/"
-out_path = data_path+"smallgraph/"
-vcf_path = data_path + "filtered_%s.vcf"
-all_vcf_path = data_path + "filtered.vcf"
-fasta_path = data_path + "hg19_chr1-Y.fa"
-gpc_path = "/data/bioinf/benchmarking/data/HUMAN_CTCF_ENCSR000DUB/1/filtered_low_qual_reads_removed_%s.json"
-# gpc_path = "/home/knut/Documents/phd/graph_peak_caller/tests/mhc_test_data/"
-obg_base_name = data_path + "%s"
-vcf_base_name = out_path + "%s_test"
+import logging
+logging.basicConfig(filename="logfile.out", level="INFO")
 
 
 def build_vcf_graphs():
@@ -57,7 +24,7 @@ def build_vcf_graphs():
         logging.info("CHROMOSOME %s ", chrom)
         graph, ref, _ = graphs
         graph.save((vcf_base_name + "_graph") % chrom)
-        ref.save((vcf_base_name + "_ref ") % chrom)
+        ref.save((vcf_base_name + "_ref") % chrom)
 
 
 def build_vcf_graph(i=20):
@@ -169,10 +136,14 @@ def compare_peaks():
     print(sum(diffs), sum(diffs)/len(diffs))
 
 
-
 if __name__ == "__main__":
-    # build_vcf_graphs()
-    for i in range(1, 22):
+    config = sys.argv[1]
+    if config == "knut":
+        from knut_config import *
+    elif config == "server":
+        from server_config import *
+    build_vcf_graphs()
+    for i in chroms:
         build_translation(i)
         translate_intervals(i)
         run_callpeaks(i)
