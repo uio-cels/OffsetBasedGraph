@@ -150,7 +150,7 @@ class IndexedPath(Path):
     def from_indexed_interval(cls, indexed_interval):
         node_ids = indexed_interval.get_sorted_nodes_in_interval()
         distances = np.hstack((
-            indexed_interval._node_to_distance[node_ids],
+            indexed_interval._node_to_distance[node_ids-indexed_interval.min_node],
             indexed_interval._length))
         return cls(node_ids, distances)
 
