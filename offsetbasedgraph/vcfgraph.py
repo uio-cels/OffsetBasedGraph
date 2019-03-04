@@ -28,7 +28,7 @@ class VCFMap:
 
 
 class SNPs:
-    def __init__(self, node_index=[0], snps=[], seqs=None, char_seqs=True):
+    def __init__(self, node_index=[0], snps=[], seqs=[], char_seqs=True):
         self._node_index = np.asanyarray(node_index, dtype="int")
         self._snps = np.asanyarray(snps, dtype="int")
         if char_seqs:
@@ -148,17 +148,41 @@ class IndexedPath(Path):
 
     @classmethod
     def from_indexed_interval(cls, indexed_interval):
-        node_ids = indexed_interval.get_sorted_nodes_in_interval()
+        node_ids = indexed_interval.get_sorted_nodes_in_interval()-indexed_interval.min_node
         distances = np.hstack((
-            indexed_interval._node_to_distance[node_ids-indexed_interval.min_node],
+            indexed_interval._node_to_distance[node_ids],
             indexed_interval._length))
         return cls(node_ids, distances)
+
+
+class Sequences:
+    _letters = np.array(["n", "a", "c", "t", "g", "m"])
+
+    def __init__(self, indices, sequence):
+        self._node_indices = np.asanyarray(indices, dtype="int")
+        self._sequences = np.asanyarray(sequence, dtype="uint8")
+
+    def __getitem__(self, node_id):
+        if isinstance(node_id, list) or isinstance(node_id, np.ndarray):
+            return [self[n] for n in node_id]
+        start, end = self._node_indices[[node_id, node_id+1]]
+        return "".join(self._letters[self._sequences[start:end]])
 
 
 class AdjList:
     def __init__(self, node_index=[0], to_nodes=[]):
         self._node_index = np.asanyarray(node_index, dtype="int")
         self._to_nodes = np.asanyarray(to_nodes, dtype="int")
+
+    def items(self):
+        return zip(self.keys(), self.values())
+
+    def values(self):
+        return (self._to_nodes[self._node_index[i]:self._node_index[i+1]]
+                for i in self.keys())
+
+    def keys(self):
+        return range(self._node_index.size-1)
 
     def __len__(self):
         return len(self._node_index)-1
@@ -200,16 +224,36 @@ class AdjList:
                     for to_node in sorted(adj_list[from_node])]
         return cls(node_index, to_nodes)
 
+    def _get_reverse_edges(self):
+        reverse_edges = defaultdict(list)
+        for block, edges in self.items():
+            for edge in edges:
+                reverse_edges[edge].append(block)
+
+        return reverse_edges
+
+    def get_reverse(self):
+        return self.from_dict(self._get_reverse_edges(), self._node_index.size-1)
+
     def __repr__(self):
         return "AdjList(%s, %s)" % (self._node_index, self._to_nodes)
+
+    @classmethod
+    def from_obg_adj(cls, adj_list, n_nodes):
+        padding = adj_list._values.size*np.ones(n_nodes+1-adj_list._indices.size)
+        indices = np.hstack((adj_list._indices, padding))
+        print(adj_list._indices.size, indices.size)
+        to_nodes = adj_list._values-adj_list.node_id_offset
+        return cls(indices, to_nodes)
 
 
 class VCFGraph:
     def __init__(self, node_lens, adj_list, snps, seqs=None):
         self._node_lens = np.asanyarray(node_lens, dtype="int")
         self._adj_list = adj_list
+        self._rev_adj_list = adj_list.get_reverse()
         self._snps = snps
-        self._seqs = np.asanyarray(seqs)
+        self._seqs = seqs  # np.asanyarray(seqs)
 
     def save(self, basename):
         np.save(basename+"_node_lens.npy", self._node_lens)
@@ -244,10 +288,19 @@ class VCFGraph:
             return "VCFGraph(%s, %s, %s)" % (self._node_lens.size, self._adj_list._to_nodes.size, sum(len(seq) for seq in self._seqs))
         return "VCFGraph(%s, %s, %s)" % (self._node_lens, self._adj_list, self._seqs)
 
+
     @classmethod
-    def from_vcf(filename):
-        with open(filename) as f:
-            pass
+    def from_obg_graph(cls, graph, seq_graph=None):
+        node_lens = graph.blocks._array[1:]
+        adj_list = AdjList.from_obg_adj(graph.adj_list, node_lens.size)
+
+        if seq_graph is not None:
+            seqs = Sequences(seq_graph._indices[seq_graph._node_id_offset+1:],
+                             seq_graph._sequence_array)
+        else:
+            seqs = None
+
+        return cls(node_lens, adj_list, snps=SNPs(), seqs=seqs)
 
 
 def classify_vcf_entry(vcf_entry):
@@ -328,11 +381,11 @@ def get_snps(snp_positions, reference_path, n_nodes, seqs=None, indices=None):
 
 def build_seq_graph(insertion_seqs, insertion_node_ids, reference_path, fasta, n_nodes):
     logging.info("Building seq_graph")
-    seqs = np.array(insertion_seqs)
+    seqs = np.array([s.lower() for s in insertion_seqs])
     all_seqs = np.empty(n_nodes, dtype=object)
     all_seqs[insertion_node_ids] = seqs
     for node_id, start, stop in reference_path.get_node_intervals():
-        all_seqs[node_id] = fasta[start:stop].seq
+        all_seqs[node_id] = fasta[start:stop].seq.lower()
         assert len(all_seqs[node_id]) == stop-start, (start, stop, all_seqs[node_id])
     return all_seqs
 

@@ -1,4 +1,5 @@
 from collections import namedtuple, defaultdict
+import offsetbasedgraph as obg
 from itertools import takewhile, chain
 import logging
 import pickle
@@ -22,22 +23,26 @@ def var_type(variant):
 
 
 class Translator:
-    def __init__(self, translation, snp_index, extra_nodes):
+    def __init__(self, translation, snp_index, extra_nodes, node_offset=0):
         self._translation = translation
         self._snp_index = snp_index
         self._extra_nodes = extra_nodes
+        self._node_offset = node_offset
 
     def save(self, basename):
         np.save(basename+"_translation.npy", np.array(self._translation))
         np.save(basename+"_snp_index.npy", self._snp_index)
+        np.save(basename+"_node_offset.npy", self._node_offset)
         pickle.dump(self._extra_nodes, open(basename+"_extra_nodes.pickle", "wb"))
 
     @classmethod
     def load(cls, basename):
         translation = Translation(*np.load(basename+"_translation.npy"))
         snp_index = np.load(basename+"_snp_index.npy")
+        node_offset = np.load(basename+"_node_offset.npy")
         extra_nodes = pickle.load(open(basename+"_extra_nodes.pickle", "rb"))
-        return cls(translation, snp_index, extra_nodes)
+
+        return cls(translation, snp_index, extra_nodes, node_offset)
 
     def translate_position(self, position, vcf_graph=None, is_start=True):
         node_id = self._translation.node_id[position.region_path_id]
@@ -52,9 +57,15 @@ class Translator:
     def get_snp_indices(self, node_ids):
         return [idx for idx in self._snp_index[node_ids] if idx >= 0 ]
 
+    def offset_interval(self, interval):
+        return obg.Interval(interval.start_position.offset,
+                            interval.end_position.offset,
+                            [rp-self._node_offset for rp in interval.region_paths],
+                            graph=interval.graph)
+
     def translate_interval(self, interval, vcf_graph):
         """TODO: Only handles forward intervals"""
-
+        interval = self.offset_interval(interval)
         node_ids = self._translation.node_id[interval.region_paths]
         offsets = self._translation.offset[interval.region_paths]
         changes = np.flatnonzero(np.diff(node_ids))
@@ -97,44 +108,27 @@ class TranslationBuilder:
     def __init__(self, full_obg_graph, full_vcf_graph):
         self.full_obg_graph = full_obg_graph
         self.full_vcf_graph = full_vcf_graph
-        size = full_obg_graph.graph.blocks.max_node_id()+1
+        size = full_obg_graph.graph._node_lens.size
         self.translation = Translation(
             -1*np.ones(size, dtype="int"),
             -1*np.ones(size, dtype="int"))
         self.snp_index = -1*np.ones(size, dtype="int")
         self.visited = np.zeros(size)
         self.extra_nodes = defaultdict(list)
-        self._obg_sizes = self.full_obg_graph.graph.blocks._array
+        self._obg_sizes = self.full_obg_graph.graph._node_lens
 
     def build(self):
         logging.info("Building Ref tranlsation")
         self.build_ref_translation_numpy()
-        # for node_id in self.full_obg_graph.traverse_ref_nodes():
-        #     obg_pos = self.full_obg_graph.linear_path.get_offset_at_node(node_id)
-        #     vcf_node = self.translation.node_id[node_id]
-        #     assert vcf_node != -1, node_id
-        #     vcf_pos = self.full_vcf_graph.path.distance_to_node_id(vcf_node)
-        #     assert vcf_pos<=obg_pos<=vcf_pos+self.full_vcf_graph.graph._node_lens[vcf_node], (node_id, obg_pos, vcf_node, vcf_pos)
-        print("EXTRA:")
-        print(self.extra_nodes)
-        print("------------")
-        # assert not any(self.translation.node_id[node_id]== -1 for node_id in self.full_obg_graph.traverse_ref_nodes())
         logging.info("Building Alt translation")
         self.build_alt_translation()
-        # for node_id in self.full_obg_graph.traverse_ref_nodes():
-        #     obg_pos = self.full_obg_graph.linear_path.get_offset_at_node(node_id)
-        #     vcf_node = self.translation.node_id[node_id]
-        #     vcf_pos = self.full_vcf_graph.path.distance_to_node_id(vcf_node)
-        #     assert vcf_pos<=obg_pos<=vcf_pos+self.full_vcf_graph.graph._node_lens[vcf_node], (node_id, obg_pos, vcf_node, vcf_pos)
 
-        return Translator(self.translation, self.snp_index, self.extra_nodes)
+        return Translator(self.translation, self.snp_index, self.extra_nodes, self.full_obg_graph.node_offset)
 
     def add_snp(self, variant):
         assert len(variant.ref_node_ids) == 1
         assert len(variant.alt_node_ids) == 1
-        assert not any(node in self.full_obg_graph.linear_path.nodes_in_interval()
-                       for node in variant.alt_node_ids)
-        assert not all(node in self.full_obg_graph.linear_path.nodes_in_interval()
+        assert not any(self.full_obg_graph.path.is_in_path(node)
                        for node in variant.alt_node_ids)
 
         alt_node = variant.alt_node_ids[0]
@@ -149,15 +143,15 @@ class TranslationBuilder:
             self.snp_index[variant.alt_node_ids[0]] = snp_id
 
     def add_ins(self, variant):
-        assert not any(node in self.full_obg_graph.linear_path.nodes_in_interval()
+        assert not any(self.full_obg_graph.path.is_in_path(node)
                        for node in variant.alt_node_ids)
-        assert variant.ref_node in self.full_obg_graph.linear_path.nodes_in_interval(), (variant.ref_node, variant)
+
         node = variant.ref_node
         vcf_ref_node = self.translation.node_id[node]
         assert vcf_ref_node != -1
         offset = self.translation.offset[node]
         vcf_node_end = self.full_vcf_graph.path.distance_to_node_id(vcf_ref_node) + self.full_vcf_graph.graph._node_lens[vcf_ref_node]
-        obg_node_end = self.full_obg_graph.linear_path.get_offset_at_node(node) + self._obg_sizes[node]
+        obg_node_end = self.full_obg_graph.path.distance_to_node_id(node) + self._obg_sizes[node]
         if not vcf_node_end == obg_node_end:
             print("Not registered INS at", vcf_node_end, obg_node_end)
             return False
@@ -168,9 +162,7 @@ class TranslationBuilder:
         return True
 
     def add_dup(self, variant):
-        assert not any(node in self.full_obg_graph.linear_path.nodes_in_interval()
-                       for node in variant.alt_node_ids)
-        assert not all(node in self.full_obg_graph.linear_path.nodes_in_interval()
+        assert not any(self.full_obg_graph.path.is_in_path(node)
                        for node in variant.alt_node_ids)
 
         ref_node = variant.ref_node_ids[0]
@@ -205,7 +197,7 @@ class TranslationBuilder:
             elif t == "DUP":
                 self.add_dup(variant)
             else:
-                assert False, (var_type, variant)
+                assert False, (var_type(variant), variant)
         counter = 0
         for variant in variants:
             if counter % 1000 == 0:
@@ -228,8 +220,8 @@ class TranslationBuilder:
             self.extra_nodes[m_node] = extra_nodes
 
     def build_ref_translation_numpy(self):
-        obg_distances = self.full_obg_graph.indexed_path._distance_to_node[:-1]
-        obg_node_ids = self.full_obg_graph.indexed_path._node_ids
+        obg_distances = self.full_obg_graph.path._distance_to_node[:-1]
+        obg_node_ids = self.full_obg_graph.path._node_ids
         vcf_distances = self.full_vcf_graph.path._distance_to_node
         obg_idxs = np.searchsorted(vcf_distances, obg_distances, side="right")-1
         vcf_node_idxs = self.full_vcf_graph.path._node_ids[obg_idxs]
@@ -244,12 +236,11 @@ class TranslationBuilder:
         obg_ref_nodes = self.full_obg_graph.traverse_ref_nodes()
         for vcf_node_id, start, end in self.full_vcf_graph.path.get_node_intervals():
             assert vcf_node_id != -1
-            # print(start, end)
             obg_nodes = []
             e = None
             for node in obg_ref_nodes:
                 obg_nodes.append(node)
-                s = self.full_obg_graph.linear_path.get_offset_at_node(node)
+                s = self.full_obg_graph.path.distance_to_node_id(node)
                 e = s+self._obg_sizes[node]
                 if e == end:
                     break
@@ -258,10 +249,10 @@ class TranslationBuilder:
                 print("FINISHED")
             assert e == end, (e, end)
             self.visited[obg_nodes] = 1
-            # obg_nodes = list(takewhile(lambda node: self.full_obg_graph.linear_path.get_offset_at_node(node) < end, obg_ref_nodes))
-            obg_start = self.full_obg_graph.linear_path.get_offset_at_node(obg_nodes[0])
+            obg_start = self.full_obg_graph.path.distance_to_node_id(obg_nodes[0])
             assert obg_start == start, (obg_start, start)
-            obg_end = self.full_obg_graph.linear_path.get_offset_at_node(obg_nodes[-1])+self._obg_sizes[obg_nodes[-1]]
+            obg_end = self.full_obg_graph.path.distance_to_node_id(
+                obg_nodes[-1])+self._obg_sizes[obg_nodes[-1]]
             assert obg_end == e, (obg_end, end, obg_nodes)
             assert obg_end == end, (obg_end, end, obg_nodes)
 
@@ -290,7 +281,7 @@ class TranslationBuilder:
             tmp_overlap_offset = 0
             for node in obg_ref_nodes:
                 obg_nodes.append(node)
-                s = self.full_obg_graph.linear_path.get_offset_at_node(node)
+                s = self.full_obg_graph.path.distance_to_node_id(node)
                 assert e is None or s == e, (s, e)
                 e = s + self._obg_sizes[node]
                 if e == end:
@@ -308,7 +299,7 @@ class TranslationBuilder:
             assert tmp_overlapping_node is not None or e == end, (e, end)
             self.visited[obg_nodes] = 1
             if overlapping_node is None:
-                obg_start = self.full_obg_graph.linear_path.get_offset_at_node(obg_nodes[0])
+                obg_start = self.full_obg_graph.path.distance_to_node_id(obg_nodes[0])
                 assert obg_start == start, (obg_start, start)
                 # obg_end = self.full_obg_graph.linear_path.get_offset_at_node(obg_nodes[-1])+self._obg_sizes[obg_nodes[-1]]
                 # assert obg_end == e, (obg_end, end, obg_nodes)
@@ -328,92 +319,3 @@ class TranslationBuilder:
         self.translation.node_id[obg_nodes] = vcf_node
         offsets = np.cumsum(sizes)
         self.translation.offset[obg_nodes] = offsets
-
-
-# class Translation:
-#     def __init__(self, node_ids, offsets):
-#         self._node_ids = node_ids
-#         self._offsets = offsets
-# 
-#     def translate_node_id(self, node_id):
-#         vcf_node_id = self._node_ids[node_id]
-#         if vcf_node_id == SNP_CODE:
-#             return SNP(self._offsets[node_id])
-#         return Pos(vcf_node_id, self._offsets[node_id])
-# 
-#     def translate_position(self, position):
-#         pos = self.translate_node_id(position.node_id)
-#         if isinstance(pos, SNP):
-#             return pos
-#         return Pos(pos.node_id, pos.offset+position.offset)
-# 
-#     @classmethod
-#     def add_link(self, obg_nodes, vcf_node, translation):
-#         translation.node_id[obg_nodes] = vcf_node
-#         offsets = list(accumulate(chain([0], (
-#         translation.offset
-#         
-#         
-# 
-#     @classmethod
-#     def create_from_graphs(cls, full_obg_graph, full_vcf_graph):
-#         translation = np.zeros((full_obg_graph.blocks.n_nodes, 2))
-#         fill_ref_translation(full_obg_graph, full_vcf_graph, translation)
-#         for ref_node in full_obg_graph.traverse_ref_nodes():
-#             variants = full_obg_graph.get_variants_from_node(ref_node)
-#             vcf_ref_node, vcf_offset = translation[ref_node]
-#             for variant in variants:
-#                 t = var_type(variant)
-#                 if t == "INS":
-#                     vcf_node = full_vcf_graph.find_insertion_from_node(vcf_ref_node, variant.alt_seq)
-#                     translation[variant.alt_nodes, 0] = vcf_node
-#                     translation[variant.alt_nodes] = np.cumsum(
-# 
-#     @classmethod
-#     def create_from_maps(obg_to_vcf_map, vcf_to_graph_map, translation):
-#         insertions = obg_to_vcf_map.ins_map != 0
-#         translation[insertions, 0] = vcf_to_graph_map._ids[obg_to_vcf_map.ins_map[insertions]]
-#         translation[insertions, 1] = vcf_to_graph_map._offsets[obg_to_vcf_map.ins_map[insertions]]
-#         snps = obg_to_vcf_map.snp_map != 0
-#         translation[snps, 0] = SNP_CODE
-#         translation[snps, 1] = vcf_to_graph_map._ids[obg_to_vcf_map[snps]]
-# 
-# def fill_ref_translation(full_graph, full_vcf_graph, translation):
-#     lookup = {}
-#     cur_vcf_node_idx = 0
-#     cur_vcf_offset = 0
-#     path = full_vcf_graph.path
-#     vcf_graph = full_vcf_graph.graph
-#     for obg_node_id in full_graph.linear_path.get_sorted_nodes_in_interval():
-#         offset = int(full_graph.linear_path.get_offset_at_node(obg_node_id))
-#         if offset >= path._distance_to_node[cur_vcf_node_idx+1]:
-#             cur_vcf_node_idx += 1
-#             cur_vcf_offset = path._distance_to_node[cur_vcf_node_idx]
-#             assert cur_vcf_offset == offset, (cur_vcf_offset, offset)
-#         vcf_node_id = path._node_ids[cur_vcf_node_idx]
-#         translation[obg_node_id] = (vcf_node_id, offset-cur_vcf_offset)
-#         obg_seq = full_graph.seq_graph.get_sequence_on_directed_node(obg_node_id)
-#         vcf_node_offset = offset-cur_vcf_offset
-#         vcf_seq = vcf_graph._seqs[vcf_node_id][vcf_node_offset:vcf_node_offset+len(obg_seq)]
-#         assert obg_seq == vcf_seq, (obg_seq, vcf_seq, obg_node_id, vcf_node_id)
-# 
-# def get_translation(ob_graph, sequence_graph, linear_interval,  vcf_graph, path):
-#     lookup = {}
-#     cur_vcf_node_idx = 0
-#     cur_vcf_offset = 0
-#     for obg_node_id in linear_interval.get_sorted_nodes_in_interval():
-#         offset = int(linear_interval.get_offset_at_node(obg_node_id))
-#         if offset >= path._distance_to_node[cur_vcf_node_idx+1]:
-#             cur_vcf_node_idx += 1
-#             cur_vcf_offset = path._distance_to_node[cur_vcf_node_idx]
-#             assert cur_vcf_offset == offset, (cur_vcf_offset, offset)
-#         vcf_node_id = path._node_ids[cur_vcf_node_idx]
-#         lookup[obg_node_id] = (vcf_node_id, offset-cur_vcf_offset)
-#         obg_seq = sequence_graph.get_sequence_on_directed_node(obg_node_id)
-#         vcf_node_offset = offset-cur_vcf_offset
-#         print("#", vcf_node_offset)
-#         vcf_seq = vcf_graph._seqs[vcf_node_id][vcf_node_offset:vcf_node_offset+len(obg_seq)]
-#         assert obg_seq == vcf_seq, (obg_seq, vcf_seq, obg_node_id, vcf_node_id)
-#     return lookup
-# 
-# 

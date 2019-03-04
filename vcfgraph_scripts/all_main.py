@@ -38,9 +38,11 @@ def build_translation(i=20):
     logging.info("Building traslation: %s", i)
     obg_full_graph = FullGraph.from_files(obg_base_name % i)
     vcf_full_graph = FullVCFGraph.from_files(vcf_base_name % i)
+    obg_full_graph = FullVCFGraph.from_full_graph(obg_full_graph)
     t = TranslationBuilder(obg_full_graph, vcf_full_graph)
     translator = t.build()
     translator.save(vcf_base_name % i)
+
 
 def translate_interval(interval, translator, graph, ob_graph):
     reverse = interval.region_paths[0] < 0
@@ -71,6 +73,7 @@ def translate_intervals(i=20):
     obg_full_graph = FullGraph.from_files(obg_base_name % i)
     vcf_full_graph = FullVCFGraph.from_files(vcf_base_name % i)
     translator = Translator.load(vcf_base_name % i)
+    print(translator._extra_nodes, translator._node_offset)
     interval_collection = vg_json_file_to_interval_collection(gpc_path % i, obg_full_graph.graph)
     intervals = list(interval_collection)
     counter = 0
@@ -81,7 +84,6 @@ def translate_intervals(i=20):
     print("----------------------------------")
     counter = 0
     for i1, i2 in zip(intervals, new_intervals):
-
         if not i2.length() == i1.length():
             counter += 1
             if abs(i2.length()-i1.length()) > 5:
@@ -120,6 +122,7 @@ def run_callpeaks(i=20):
     callpeaks = CallPeaks(obg_graph, config, Reporter("testrun%s" %i))
     callpeaks.run(sample, control)
 
+
 def compare_peaks():
     new_peaks = gpc.peakcollection.PeakCollection.from_file("testrunmax_paths.intervalcollection", text_file=True)
     old_peaks = gpc.peakcollection.PeakCollection.from_file("testoldmax_paths.intervalcollection", text_file=True)
@@ -142,7 +145,7 @@ if __name__ == "__main__":
         from knut_config import *
     elif config == "server":
         from server_config import *
-    build_graph = int(sys.argv[2])
+    build_graph = len(sys.argv) > 2 and int(sys.argv[2])
     if build_graph:
         build_vcf_graphs()
     for i in chroms:
