@@ -72,24 +72,27 @@ class Translator:
         """TODO: Only handles forward intervals"""
         interval = self.offset_interval(interval)
         node_ids = self._translation.node_id[interval.region_paths]
-        unique_node_ids = np.unique(node_ids)
+        changes = np.flatnonzero(node_ids[:-1] != node_ids[1:])
         all_node_ids = []
-        for i, node_id in enumerate(unique_node_ids):
-            all_node_ids.append(node_id)
-            if node_id in self._extra_nodes:
-                all_node_ids.extend(self._extra_nodes[node_id])
-        all_node_ids = np.unique(all_node_ids)
+        for i in changes:
+            all_node_ids.append(node_ids[i])
+            all_node_ids.extend(self._extra_nodes[interval.region_paths[i]])
+        all_node_ids.append(node_ids[-1])
+        all_node_ids.extend(self._extra_nodes[interval.region_paths[-1]])
+        all_node_ids = list(np.unique(all_node_ids))
         self._check_edges(all_node_ids, vcf_graph)
         start = self.translate_position(
-            interval.start_position, vcf_graph, True).offset
+            interval.start_position, vcf_graph, True)
+        s_node = start.node_id
+        start = start.offset
+        assert s_node in all_node_ids, (s_node, all_node_ids)
         end = self.translate_position(interval.end_position, vcf_graph, False)
         e_node = end.node_id
         end = end.offset
-        while not e_node == all_node_ids[-1]:
-            node_ids = all_node_ids[:-1]
-        assert e_node == all_node_ids[-1], (e_node, all_node_ids)
+        start_idx = all_node_ids.index(s_node)
+        end_idx = all_node_ids.index(e_node)
         snps = self.get_snp_indices(interval.region_paths)
-        new_interval = VCFInterval(start, end, all_node_ids, snps)
+        new_interval = VCFInterval(start, end, np.array(all_node_ids[start_idx:end_idx+1], dtype="int"), snps)
         return new_interval
 
 

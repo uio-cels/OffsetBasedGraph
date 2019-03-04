@@ -30,4 +30,4 @@ fasta_path = data_path + "hg19_chr1-Y.fa"
 gpc_path = "/data/bioinf/benchmarking/data/HUMAN_CTCF_ENCSR000DUB/1/filtered_low_qual_reads_removed_%s.json"
 obg_base_name = data_path + "%s"
 vcf_base_name = out_path + "%s_test"
-chroms = range(1, 22)
+chroms = [1] # range(1, 22)
