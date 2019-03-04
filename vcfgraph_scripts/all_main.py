@@ -81,15 +81,11 @@ def translate_intervals(i=20):
     obg_graph.to_file(out_path + "%s_small.npz" % i )
     new_intervals = [translate_interval(interval, translator, vcf_full_graph.graph, obg_graph)
                      for interval in intervals]
-    print("----------------------------------")
     counter = 0
-    for i1, i2 in zip(intervals, new_intervals):
-        if not i2.length() == i1.length():
-            counter += 1
-            if abs(i2.length()-i1.length()) > 5:
-                print(i, i2)
+    not_equal_length = sum(1 for i1, i2 in zip(intervals, new_intervals) if
+                           i2.length() != i1.length())
+    logging.info("Number of unequeal length: %s/%s" % (not_equal_length, intervals.size()))
     obg.IntervalCollection(new_intervals).to_file("%s_test_translated.intervalcollection" % i)
-    print(counter)
 
 def run_old_callpeaks():
     graph = FullGraph.from_files(obg_base_name).graph
@@ -148,9 +144,11 @@ if __name__ == "__main__":
     build_graph = len(sys.argv) > 2 and int(sys.argv[2])
     if build_graph:
         build_vcf_graphs()
+    chroms = list(chroms)
     for i in chroms:
         build_translation(i)
         translate_intervals(i)
+    for i in chroms:
         run_callpeaks(i)
         # run_old_callpeaks()
         # compare_peaks()
