@@ -168,6 +168,11 @@ class Sequences:
         start, end = self._node_indices[[node_id, node_id+1]]
         return "".join(self._letters[self._sequences[start:end]])
 
+    @classmethod
+    def from_sequence_graph(cls, seq_graph):
+        return  cls(seq_graph._indices[1:],
+                    seq_graph._sequence_array)
+
 
 class AdjList:
     def __init__(self, node_index=[0], to_nodes=[]):
@@ -268,6 +273,8 @@ class VCFGraph:
         adj_list = AdjList.load(basename)
         snps = SNPs.load(basename)
         seqs = np.load(basename+"_seqs.npy")
+        for i in range(seqs.size):
+            seqs[i] = seqs[i].lower()
         return cls(node_lens, adj_list, snps, seqs)
 
     def __eq__(self, other):
@@ -292,14 +299,17 @@ class VCFGraph:
     @classmethod
     def from_obg_graph(cls, graph, seq_graph=None):
         node_lens = graph.blocks._array[1:]
-        adj_list = AdjList.from_obg_adj(graph.adj_list, node_lens.size)
+        n_nodes = node_lens.size
+        adj_list = AdjList.from_obg_adj(graph.adj_list, n_nodes)
+        assert adj_list._node_index.size == n_nodes+1, (adj_list._node_index.size, n_nodes)
 
         if seq_graph is not None:
-            seqs = Sequences(seq_graph._indices[seq_graph._node_id_offset+1:],
-                             seq_graph._sequence_array)
+            seqs = Sequences.from_sequence_graph(seq_graph)
+            assert seqs._node_indices.size == n_nodes+1, (seqs._node_indices.size, n_nodes)
+
         else:
             seqs = None
-
+        
         return cls(node_lens, adj_list, snps=SNPs(), seqs=seqs)
 
 

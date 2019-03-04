@@ -107,4 +107,5 @@ class FullVCFGraph:
     def from_full_graph(cls, full_graph):
         graph = VCFGraph.from_obg_graph(full_graph.graph, full_graph.seq_graph)
         path = IndexedPath.from_indexed_interval(full_graph.linear_path)
+        assert path._node_ids[-1] < graph._node_lens.size, (path._node_ids[-1],  graph._node_lens.size)
         return cls(graph, path, full_graph.graph.min_node)
