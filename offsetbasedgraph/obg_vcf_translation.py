@@ -83,7 +83,7 @@ class Translator:
         end = self.translate_position(interval.end_position, vcf_graph, False)
         e_node = end.node_id
         end = end.offset
-        if not e_node == node_ids[-1]:
+        while not e_node == node_ids[-1]:
             node_ids = node_ids[:-1]
         assert e_node == node_ids[-1], (e_node, node_ids)
 

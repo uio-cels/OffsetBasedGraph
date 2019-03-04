@@ -141,12 +141,14 @@ if __name__ == "__main__":
         from knut_config import *
     elif config == "server":
         from server_config import *
-    build_graph = len(sys.argv) > 2 and int(sys.argv[2])
-    if build_graph:
+    skip_graph = len(sys.argv) > 2 and int(sys.argv[2])
+    skip_translation = len(sys.argv) > 3 and int(sys.argv[3])
+    if not build_graph:
         build_vcf_graphs()
     chroms = list(chroms)
     for i in chroms:
-        build_translation(i)
+        if not skip_translation:
+            build_translation(i)
         translate_intervals(i)
     for i in chroms:
         run_callpeaks(i)
