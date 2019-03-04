@@ -39,12 +39,10 @@ def build_translation(i=20):
     obg_full_graph = FullGraph.from_files(obg_base_name % i)
     vcf_full_graph = FullVCFGraph.from_files(vcf_base_name % i)
     obg_full_graph = FullVCFGraph.from_full_graph(obg_full_graph)
-    print(obg_full_graph.path._node_ids[-1], obg_full_graph.graph._node_lens.size,
-          obg_full_graph.graph._adj_list._node_index.size)
-
     t = TranslationBuilder(obg_full_graph, vcf_full_graph)
     translator = t.build()
     translator.save(vcf_base_name % i)
+
 
 def translate_interval(interval, translator, graph, ob_graph):
     reverse = interval.region_paths[0] < 0
@@ -86,7 +84,6 @@ def translate_intervals(i=20):
     print("----------------------------------")
     counter = 0
     for i1, i2 in zip(intervals, new_intervals):
-
         if not i2.length() == i1.length():
             counter += 1
             if abs(i2.length()-i1.length()) > 5:
