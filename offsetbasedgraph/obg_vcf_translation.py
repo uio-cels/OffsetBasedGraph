@@ -67,12 +67,7 @@ class Translator:
         """TODO: Only handles forward intervals"""
         interval = self.offset_interval(interval)
         node_ids = self._translation.node_id[interval.region_paths]
-        offsets = self._translation.offset[interval.region_paths]
-        changes = np.flatnonzero(np.diff(node_ids))
-        node_sizes = np.array([interval.graph.node_size(n) for n in interval.region_paths])
-
         unique_node_ids = np.unique(node_ids)
-        ends = offsets[changes]+node_sizes[changes]
         e_node_ids = []
         for i, node_id in enumerate(unique_node_ids):
             e_node_ids.append(node_id)
@@ -81,26 +76,19 @@ class Translator:
         unique_node_ids = np.array(e_node_ids, dtype="int")
         for node_a, node_b in zip(unique_node_ids[:-1], unique_node_ids[1:]):
             if node_b not in vcf_graph._adj_list[node_a]:
-                print("Node not in adj_list")
-                print(node_a, node_b, vcf_graph._adj_list[node_a], interval)
-                print(node_ids, unique_node_ids)
-        # true_ends = vcf_graph._node_lens[unique_node_ids[:-1]]
-        # assert np.all(ends == true_ends), (ends, true_ends, node_ids, offsets, interval)
-        # assert np.all(offsets[changes+1] == 0), (node_ids, offsets, interval)
+                print("Node not in adj_list", interval)
         node_ids = np.unique(node_ids)
-
-        # print(node_ids)
-        start = self.translate_position(interval.start_position, vcf_graph, True).offset
+        start = self.translate_position(
+            interval.start_position, vcf_graph, True).offset
         end = self.translate_position(interval.end_position, vcf_graph, False)
         e_node = end.node_id
-        end = end.offset 
+        end = end.offset
         if not e_node == node_ids[-1]:
             node_ids = node_ids[:-1]
         assert e_node == node_ids[-1], (e_node, node_ids)
 
         snps = self.get_snp_indices(interval.region_paths)
         new_interval = VCFInterval(start, end, node_ids, snps)
-        # assert vcf_graph.interval_length(new_interval) == interval.length(), (interval, new_interval)
         return new_interval
 
 
