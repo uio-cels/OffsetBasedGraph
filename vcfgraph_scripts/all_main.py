@@ -84,7 +84,7 @@ def translate_intervals(i=20):
     counter = 0
     not_equal_length = sum(1 for i1, i2 in zip(intervals, new_intervals) if
                            i2.length() != i1.length())
-    logging.info("Number of unequeal length: %s/%s" % (not_equal_length, intervals.size()))
+    logging.info("Number of unequeal length: %s/%s" % (not_equal_length, len(intervals)))
     obg.IntervalCollection(new_intervals).to_file("%s_test_translated.intervalcollection" % i)
 
 def run_old_callpeaks():
@@ -143,7 +143,7 @@ if __name__ == "__main__":
         from server_config import *
     skip_graph = len(sys.argv) > 2 and int(sys.argv[2])
     skip_translation = len(sys.argv) > 3 and int(sys.argv[3])
-    if not build_graph:
+    if not skip_graph:
         build_vcf_graphs()
     chroms = list(chroms)
     for i in chroms:
