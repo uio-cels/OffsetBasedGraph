@@ -97,7 +97,7 @@ class TranslationBuilder:
     def __init__(self, full_obg_graph, full_vcf_graph):
         self.full_obg_graph = full_obg_graph
         self.full_vcf_graph = full_vcf_graph
-        size = full_obg_graph.graph.blocks.max_node_id()+1
+        size = full_obg_graph.graph._node_sizes.size
         self.translation = Translation(
             -1*np.ones(size, dtype="int"),
             -1*np.ones(size, dtype="int"))
@@ -109,23 +109,8 @@ class TranslationBuilder:
     def build(self):
         logging.info("Building Ref tranlsation")
         self.build_ref_translation_numpy()
-        # for node_id in self.full_obg_graph.traverse_ref_nodes():
-        #     obg_pos = self.full_obg_graph.linear_path.get_offset_at_node(node_id)
-        #     vcf_node = self.translation.node_id[node_id]
-        #     assert vcf_node != -1, node_id
-        #     vcf_pos = self.full_vcf_graph.path.distance_to_node_id(vcf_node)
-        #     assert vcf_pos<=obg_pos<=vcf_pos+self.full_vcf_graph.graph._node_lens[vcf_node], (node_id, obg_pos, vcf_node, vcf_pos)
-        print("EXTRA:")
-        print(self.extra_nodes)
-        print("------------")
-        # assert not any(self.translation.node_id[node_id]== -1 for node_id in self.full_obg_graph.traverse_ref_nodes())
         logging.info("Building Alt translation")
         self.build_alt_translation()
-        # for node_id in self.full_obg_graph.traverse_ref_nodes():
-        #     obg_pos = self.full_obg_graph.linear_path.get_offset_at_node(node_id)
-        #     vcf_node = self.translation.node_id[node_id]
-        #     vcf_pos = self.full_vcf_graph.path.distance_to_node_id(vcf_node)
-        #     assert vcf_pos<=obg_pos<=vcf_pos+self.full_vcf_graph.graph._node_lens[vcf_node], (node_id, obg_pos, vcf_node, vcf_pos)
 
         return Translator(self.translation, self.snp_index, self.extra_nodes)
 
