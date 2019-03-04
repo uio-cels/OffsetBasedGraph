@@ -28,7 +28,7 @@ class VCFMap:
 
 
 class SNPs:
-    def __init__(self, node_index=[0], snps=[], seqs=None, char_seqs=True):
+    def __init__(self, node_index=[0], snps=[], seqs=[], char_seqs=True):
         self._node_index = np.asanyarray(node_index, dtype="int")
         self._snps = np.asanyarray(snps, dtype="int")
         if char_seqs:
@@ -155,6 +155,20 @@ class IndexedPath(Path):
         return cls(node_ids, distances)
 
 
+class Sequences:
+    _letters = np.array(["n", "a", "c", "t", "g", "m"])
+
+    def __init__(self, indices, sequence):
+        self._node_indices = np.asanyarray(indices, dtype="int")
+        self._sequences = np.asanyarray(sequence, dtype="uint8")
+
+    def __getitem__(self, node_id):
+        if isinstance(node_id, list):
+            return [self[n] for n in node_id]
+        start, end = self._node_indices[[node_id, node_id+1]]
+        return "".join(self._letters[self._sequences[start:end]])
+
+
 class AdjList:
     def __init__(self, node_index=[0], to_nodes=[]):
         self._node_index = np.asanyarray(node_index, dtype="int")
@@ -209,7 +223,7 @@ class VCFGraph:
         self._node_lens = np.asanyarray(node_lens, dtype="int")
         self._adj_list = adj_list
         self._snps = snps
-        self._seqs = np.asanyarray(seqs)
+        self._seqs = seqs  # np.asanyarray(seqs)
 
     def save(self, basename):
         np.save(basename+"_node_lens.npy", self._node_lens)
@@ -248,6 +262,20 @@ class VCFGraph:
     def from_vcf(filename):
         with open(filename) as f:
             pass
+
+    @classmethod
+    def from_obg_graph(cls, graph, seq_graph=None):
+        node_lens = graph.blocks._array[1:]
+        adj_indices = np.hstack((graph.adj_list._indices,
+                                 graph.adj_list._values.size))
+        adj_list = AdjList(adj_indices, graph.adj_list._values)
+        if seq_graph is not None:
+            seqs = Sequences(seq_graph._indices,
+                             seq_graph._sequence_array)
+        else:
+            seqs = None
+
+        return cls(node_lens, adj_list, snps=SNPs(), seqs=seqs)
 
 
 def classify_vcf_entry(vcf_entry):

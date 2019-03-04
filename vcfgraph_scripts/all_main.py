@@ -38,6 +38,7 @@ def build_translation(i=20):
     logging.info("Building traslation: %s", i)
     obg_full_graph = FullGraph.from_files(obg_base_name % i)
     vcf_full_graph = FullVCFGraph.from_files(vcf_base_name % i)
+    obg_full_graph = FullVCFGraph.from_full_graph(obg_full_graph)
     t = TranslationBuilder(obg_full_graph, vcf_full_graph)
     translator = t.build()
     translator.save(vcf_base_name % i)
@@ -119,6 +120,7 @@ def run_callpeaks(i=20):
     linear_map = find_or_create_linear_map(obg_graph, config.linear_map_name)
     callpeaks = CallPeaks(obg_graph, config, Reporter("testrun%s" %i))
     callpeaks.run(sample, control)
+
 
 def compare_peaks():
     new_peaks = gpc.peakcollection.PeakCollection.from_file("testrunmax_paths.intervalcollection", text_file=True)

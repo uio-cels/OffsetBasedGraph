@@ -1,5 +1,6 @@
 import offsetbasedgraph as obg
-from offsetbasedgraph.vcfgraph import VCFGraph, Path, IndexedPath
+from offsetbasedgraph.vcfgraph import VCFGraph, Path, IndexedPath,\
+    Sequences, AdjList
 import numpy as np
 from itertools import takewhile, chain
 from collections import deque, namedtuple
@@ -20,12 +21,6 @@ class FullGraph:
         return self.indexed_path.traverse_ref_nodes(node)
         # if node is None:
         #     node = self.linear_path.get_node_at_offset(0)
-        # while True:
-        #     yield node
-        #     if not len(self.graph.adj_list[node]):
-        #         break
-        #     node = self.get_next_node(node)
-
     def ref_nodes_between(self, start_node, end_node):
         return self.indexed_path.ref_nodes_between(start_node, end_node)
         # return list(takewhile(lambda node: node != end_node,
@@ -88,18 +83,37 @@ class FullVCFGraph:
     def __init__(self, graph, path):
         self.graph = graph
         self.path = path
-        self.ref_nodes = set(self.path._node_ids)
+
+    def get_next_node(self, node_id):
+        path_nodes = self.path._node_ids
+        return min(
+            (self.path.distance_to_ndoe_id(new_node), new_node)
+            for new_node in self.graph._adj_list[node_id]
+            if new_node in path_nodes)[1]
+
+    def get_prev_node(self, node):
+        path_nodes = self.path._node_ids
+        path_nodes = self.linear_path.nodes_in_interval()
+        return max(
+            (self.linear_path.get_offset_at_node(-prev_node), -prev_node)
+            for prev_node in self.graph.reverse_adj_list[-node]
+            if -prev_node in path_nodes)[1]
+
+    def traverse_ref_nodes(self, node=None):
+        return self.indexed_path.traverse_ref_nodes(node)
+
+    def ref_nodes_between(self, start_node, end_node):
+        return self.indexed_path.ref_nodes_between(start_node, end_node)
 
     def next_node(self, node_id):
         return self.path.next_node(node_id)
-    # return min(n for n in self.graph._adj_list[node_id] if n in self.ref_nodes)
 
     def find_insertion_from_node(self, node, seq):
         node = int(node)
         next_nodes = self.graph._adj_list[node]
         next_ref = self.next_node(node)
         for next_node in next_nodes:
-            if next_node in self.ref_nodes:
+            if self.path.is_in_path(next_node):
                 continue
             if next_ref not in self.graph._adj_list[next_node]:
                 continue
@@ -117,8 +131,37 @@ class FullVCFGraph:
             assert interval.start < node_lens[0], (interval, node_lens[0])
         return sum(node_lens) - interval.start + interval.end
 
+    def get_variants_from_node(self, node_id):
+        self._visited[node_id] = 1
+        next_nodes = self.graph.adj_list[node_id]
+        stack = deque([[node] for node in self.graph.adj_list[node_id]
+                       if not self.path.is_in_path(node) and node_id == self.get_prev_node(node)])
+        variants = []
+        while stack:
+            path = stack.popleft()
+            assert isinstance(path, list), (path, list(path))
+            node = path[-1]
+            next_nodes = self.graph.adj_list[node]
+            if any(self.path.is_in_path(n) for n in next_nodes):
+                end_node = self.get_next_node(node)
+                ref_path = list(self.ref_nodes_between(node_id, end_node)[1:])
+                alt_seq = "".join(self.graph._seqs[path])
+                ref_seq = "".join(self.graph._seqs[path])
+                self._visited[path] = 1
+                variants.append(Variant(ref_path, path, ref_seq, alt_seq, node_id))
+            else:
+                assert isinstance(path, list), (path, list(path))
+                stack.extend([path+[n] for n in next_nodes])
+        return variants
+
     @classmethod
     def from_files(cls, base_name):
         graph = VCFGraph.load(base_name + "_graph")
         path = IndexedPath.load(base_name + "_ref")
+        return cls(graph, path)
+
+    @classmethod
+    def from_full_graph(cls, full_graph):
+        graph = VCFGraph.from_obg_graph(full_graph.graph)
+        path = IndexedPath.from_indexed_interval(full_graph.linear_path)
         return cls(graph, path)
