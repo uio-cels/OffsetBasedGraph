@@ -1,3 +1,6 @@
+*.profile
+*.json
+*.gam
 *.bak
 .idea
 *.pyc

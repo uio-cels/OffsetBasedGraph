@@ -1,10 +1,13 @@
 from .vcfmap import *
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 import numpy as np
 import logging
 
 char_codes = {"a": 0, "c": 1, "g": 2, "t": 3}
 char_rev = np.array(["a", "c", "g", "t"])
+
+Interval = namedtuple("Interval", ["start", "end", "node_ids",  "direction"])
+Position = namedtuple("Position", ["node_id", "offset"])
 
 
 class VCFMap:
@@ -120,7 +123,28 @@ class IndexedPath(Path):
         self._node_lookup[self._node_ids] = np.arange(self._node_ids.size)
 
     def is_in_path(self, node_id):
-        return node_id < self._node_lookup.size and self._node_lookup[node_id] >= 0
+        return self._node_lookup[node_id] >= 0
+
+    def project_position(self, position):
+        if self.is_in_path(position.node_id):
+            return self.distance_to_node_id(position.node_id)+position.offset
+        idx = np.searchsorted(self._node_ids, position.node_id)
+        return self._distance_to_node[idx]
+
+    def project_positions(self, positions):
+        node_ids = positions[:, 0]
+        offsets = positions[:, 1]
+        is_in_path = self.is_in_path(node_ids)
+        path_positions = self.distance_to_node_id(node_ids)+offsets
+        idxs = np.searchsorted(self._node_ids, node_ids)
+        non_path_positions = self._distance_to_node[idxs]
+        return np.where(is_in_path, path_positions, non_path_positions)
+
+    def back_project_positions(self, positions):
+        idxs = np.searchsorted(self._distance_to_node, positions, side="right")-1
+        offsets = np.maximum(0, positions-self._distance_to_node[idxs])
+        node_ids = self._node_ids[idxs]
+        return node_ids, offsets
 
     def distance_to_node_id(self, node_id):
         idx = self._node_lookup[node_id]
